@@ -202,7 +202,7 @@
   body.master-mode .role-toggle-badge { background: #FCE8E6; color: #C5221F; }
 
   .pinkey {
-    height:60px; border:none; border-radius:18px; background:#F1F5F9; color:var(--navy);
+    height:min(60px, 8.2vh); border:none; border-radius:18px; background:#F1F5F9; color:var(--navy);
     font-size:calc(21px * var(--font-scale)); font-weight:700; cursor:pointer;
     font-family:inherit; transition:transform 0.08s, background 0.15s;
   }
@@ -717,8 +717,9 @@ Day2 12:00 outlet購物，預計逛一小時
 </div>
 
 <!-- 自製密碼鍵盤：取代瀏覽器原生 prompt，避免叫出系統鍵盤、也讓視覺跟 App 一致 -->
-<div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end;">
-  <div onclick="event.stopPropagation()" style="background:#fff; width:100%; max-width:420px; border-radius:30px 30px 0 0; padding:26px 22px calc(26px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -12px 40px rgba(29,53,87,0.18);">
+<!-- 遮罩的 padding 要歸零、面板要限制高度，否則在螢幕較矮或平板上底部整排按鍵會被切掉 -->
+<div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end; padding:0;">
+  <div onclick="event.stopPropagation()" style="background:#fff; width:100%; max-width:420px; border-radius:30px 30px 0 0; padding:22px 22px calc(22px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -12px 40px rgba(29,53,87,0.18); max-height:92dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; box-sizing:border-box;">
     <div style="text-align:center; margin-bottom:4px;">
       <div id="pin-pad-icon" style="width:52px; height:52px; border-radius:17px; background:linear-gradient(140deg,#244A70 0%,#5C91C2 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
         <i class="fa-solid fa-lock" style="color:#fff; font-size:calc(19px * var(--font-scale));"></i>
@@ -728,10 +729,10 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>
 
     <!-- 圓點指示目前輸入了幾位 -->
-    <div id="pin-pad-dots" style="display:flex; justify-content:center; gap:14px; margin:20px 0 6px;"></div>
+    <div id="pin-pad-dots" style="display:flex; justify-content:center; gap:14px; margin:16px 0 4px;"></div>
     <div id="pin-pad-err" style="text-align:center; color:var(--warn); font-size:calc(12px * var(--font-scale)); font-weight:700; height:18px;"></div>
 
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-top:12px;">
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;">
       <button class="pinkey" onclick="pinPadPress('1')">1</button>
       <button class="pinkey" onclick="pinPadPress('2')">2</button>
       <button class="pinkey" onclick="pinPadPress('3')">3</button>
@@ -827,7 +828,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 11:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 11:55</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
