@@ -58,14 +58,14 @@
   }
   
   .app-container {
-    max-width: 460px; margin: 24px auto; min-height: 90vh;
+    max-width: 460px; margin: 0 auto 24px; min-height: 90vh;
     padding: 0 16px 120px; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative; background: var(--bg); border-radius: 36px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
   body.tablet-view .app-container { max-width: 700px; padding-bottom: 130px; }
   /* 平板模式原本把上留白壓成 32px，會讓內容鑽到右上角切換列底下 */
-  body.tablet-view .hero-header { padding: calc(12px + env(safe-area-inset-top, 0px)) 32px 32px; }
+  body.tablet-view .hero-header { padding: max(24px, calc(12px + env(safe-area-inset-top, 0px))) 32px 32px; }
   body.tablet-view .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
   body.tablet-view .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
   body.tablet-view .card { padding: 26px; }
@@ -79,10 +79,11 @@
   
   .hero-header {
     background: linear-gradient(140deg, #16283f 0%, #1d3557 45%, #457b9d 100%);
-    /* 往上拉 -24px 抵銷 .app-container 的上邊距，header 才會真的貼齊容器頂端；
-       上留白只留「安全區 + 10px」，不再跟容器邊距疊加成一大塊空白 */
-    padding: calc(10px + env(safe-area-inset-top, 0px)) 25px 30px; color: white; 
-    border-radius: 0 0 36px 36px; position: relative; overflow: hidden; margin: -24px -16px 0;
+    /* 上留白用 max()：瀏覽器裡沒有瀏海安全區（值為 0），全螢幕模式才有約 59px。
+       取兩者較大值，兩種情境都不會太擠也不會空一大塊。
+       不可以用負邊距往上拉——容器是 overflow:hidden，會把內容直接裁掉 */
+    padding: max(22px, calc(10px + env(safe-area-inset-top, 0px))) 25px 30px; color: white; 
+    border-radius: 0 0 36px 36px; position: relative; overflow: hidden; margin: 0 -16px;
     box-shadow: 0 10px 30px rgba(29,53,87,0.22);
   }
   /* 左下角補一道冷色光暈，跟右上角原有的暖色光暈平衡，讓大色塊不會太平 */
@@ -97,7 +98,7 @@
     background: radial-gradient(circle, rgba(255,142,126,0.4) 0%, rgba(255,255,255,0) 70%); filter: blur(15px);
     pointer-events: none; /* 純裝飾光暈，位置正好蓋在右上角齒輪上，不加這行會把點擊事件吃掉 */
   }
-  .page-header { padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 15px; margin-top: -8px; }
+  .page-header { padding: max(20px, calc(8px + env(safe-area-inset-top, 0px))) 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
   .section-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(18px * var(--font-scale)); font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
   .calc-tabs { display: flex; background: #E2E7EC; border-radius: 20px; padding: 4px; margin-bottom: 20px; }
@@ -665,7 +666,7 @@ Day2 12:00 outlet購物，預計逛一小時
     </g>
   </svg>
 
-  <div style="padding-top:calc(18px + env(safe-area-inset-top, 0px)); position:relative; z-index:1;">
+  <div style="padding-top:max(26px, calc(18px + env(safe-area-inset-top, 0px))); position:relative; z-index:1;">
     <div style="width:78px; height:78px; border-radius:24px; background:linear-gradient(135deg, #1d3557 0%, #457b9d 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; box-shadow:0 14px 30px rgba(29,53,87,0.32), 0 2px 6px rgba(29,53,87,0.15);">
       <i class="fa-solid fa-route" style="font-size:calc(32px * var(--font-scale)); color:#fff;"></i>
     </div>
@@ -826,7 +827,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 11:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 11:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
