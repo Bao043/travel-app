@@ -126,6 +126,16 @@
   /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
   .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
   body.tablet-view .bottom-nav { max-width: 640px; }
+    #main-app-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-bottom: 0;
+    padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+    border-radius: 36px 36px 0 0;
+  }
+  body.tablet-view #main-app-container {
+    padding-bottom: calc(134px + env(safe-area-inset-bottom, 0px));
+  }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: var(--gray); border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 600; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
   .nav-btn i { font-size:calc(20px * var(--font-scale)); margin-bottom: 4px; transition: 0.3s; }
