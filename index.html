@@ -838,7 +838,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 11:55</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-15 16:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1223,7 +1223,7 @@ Day2 12:00 outlet購物，預計逛一小時
   let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金', qaCurrency = 'KRW'; let expItemSeq = 1;
   let expBreakdownMode = 'category';
   let currentFontScale = 1;
-  let travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+  let travelDocs = { flights: [], cars: [], hotels: [], passes: [], coupons: [] };
   let docItemSeq = 1; let activeDocType = 'flight'; let expandedDocIds = new Set();
   let wishlistData = []; let wishlistItemSeq = 1; // 購物清單
   let foodListData = []; let foodListItemSeq = 1; // 美食清單
@@ -1336,6 +1336,20 @@ Day2 12:00 outlet購物，預計逛一小時
         { key:'plannedSpots', label:'計畫景點／美食', type:'textarea' },
         { key:'bookingRef', label:'憑證／訂單編號', type:'text' },
         { key:'notes', label:'備註', type:'textarea' }
+      ]},
+    coupon: { label:'優惠碼', icon:'fa-tags', color:'#7C3AED',
+      headlineKeys: ['name','code','discount','expiry','url','imageUrl'],
+      fields: [
+        { key:'name', label:'優惠名稱', type:'text', placeholder:'例如：樂天免稅店會員優惠' },
+        { key:'code', label:'優惠碼', type:'text', placeholder:'例如：TRAVEL2026' },
+        { key:'discount', label:'折扣內容', type:'text', placeholder:'例如：9折／滿1萬折1000' },
+        { key:'store', label:'適用店家／平台', type:'text' },
+        { key:'url', label:'使用連結（官網／活動頁）', type:'url', placeholder:'https://' },
+        { key:'imageUrl', label:'圖片（QR碼或截圖）', type:'image' },
+        { key:'expiry', label:'有效期限', type:'date' },
+        { key:'howTo', label:'使用方式', type:'textarea', placeholder:'例如：結帳時輸入優惠碼；或出示此QR給店員掃描' },
+        { key:'storeInfo', label:'店家資訊（地址／營業時間／電話）', type:'textarea' },
+        { key:'notes', label:'備註（使用限制等）', type:'textarea' }
       ]}
   };
 
@@ -2105,7 +2119,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (prepCount>0) ok('打包清單', `${Object.keys(prepData||{}).length} 個分類、${prepCount} 項`); else warn('打包清單','目前是空的');
     ok('支出紀錄', `${(expenseRecords||[]).length} 筆`);
     ok('旅伴成員', `${(travelers||[]).length} 人`);
-    const docCount = ['flights','cars','hotels','passes'].reduce((s,k)=>s+((travelDocs&&travelDocs[k])?travelDocs[k].length:0),0);
+    const docCount = ['flights','cars','hotels','passes','coupons'].reduce((s,k)=>s+((travelDocs&&travelDocs[k])?travelDocs[k].length:0),0);
     ok('憑證資訊', `${docCount} 筆`);
     ok('購物／美食清單', `${(wishlistData||[]).length} / ${(foodListData||[]).length} 筆`);
 
@@ -2707,7 +2721,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
     if (!hasLocal) {
       // 首次升級：從舊版機票欄位與住宿資訊遷移過來，避免資料遺失
-      travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+      travelDocs = { flights: [], cars: [], hotels: [], passes: [], coupons: [] };
       if (tripSettings.flightNo1 || tripSettings.flightTime1) {
         travelDocs.flights.push({ id: docItemSeq++, label:'去程', flightNo: tripSettings.flightNo1||'', depCode: tripSettings.depCode||'', arrCode: tripSettings.arrCode||'', date: tripSettings.startDate||'', time:'', gate: tripSettings.flightGate||'', baggage:'', bookingRef:'', price:'', notes: tripSettings.flightTime1||'' });
       }
@@ -2726,7 +2740,7 @@ Day2 12:00 outlet購物，預計逛一小時
       await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs));
     }
 
-    ['flights','cars','hotels','passes'].forEach(k => { if(!travelDocs[k]) travelDocs[k]=[]; });
+    ['flights','cars','hotels','passes','coupons'].forEach(k => { if(!travelDocs[k]) travelDocs[k]=[]; });
     Object.values(travelDocs).flat().forEach(e => { if (e.id >= docItemSeq) docItemSeq = e.id + 1; });
 
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
@@ -2752,7 +2766,7 @@ Day2 12:00 outlet購物，預計逛一小時
   function renderDocList() {
     const wrap = document.getElementById('doc-list-container'); if (!wrap) return;
     const schema = DOC_TYPES[activeDocType];
-    const sortKey = { flight:'date', car:'pickupDate', hotel:'checkinDate', pass:'startDate' }[activeDocType];
+    const sortKey = { flight:'date', car:'pickupDate', hotel:'checkinDate', pass:'startDate', coupon:'expiry' }[activeDocType];
     const arr = (travelDocs[activeDocType+'s']||[]).slice().sort((a,b)=>(a[sortKey]||'').localeCompare(b[sortKey]||''));
 
     let html = '';
@@ -2792,6 +2806,13 @@ Day2 12:00 outlet購物，預計逛一小時
       extra = `<div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:800; font-size:calc(16px * var(--font-scale)); color:var(--teal); margin-top:8px;">計算中...</div>`;
     }
 
+    if (type === 'coupon') {
+      headline = escapeHtml(entry.name || '優惠碼');
+      const expTxt = entry.expiry ? `${formatMDLabel(entry.expiry)} 到期` : '未填期限';
+      sub = `${entry.discount ? escapeHtml(entry.discount) + ' ・ ' : ''}${expTxt}${couponExpired(entry) ? '（已過期）' : ''}`;
+      extra = couponExtraHtml(entry);
+    }
+
     const detailRows = schema.fields
       .filter(f => !schema.headlineKeys.includes(f.key))
       .map(f => entry[f.key] ? `<div class="detail-row"><i class="fa-solid fa-circle" style="font-size:calc(5px * var(--font-scale)); color:var(--gold);"></i><span><b>${f.label}：</b>${escapeHtml(entry[f.key])}</span></div>` : '')
@@ -2809,6 +2830,73 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>`;
   }
 
+  // 優惠碼：到期判斷、卡片上的「複製碼／開連結／圖片預覽」、以及圖片壓縮上傳
+  function couponExpired(entry) {
+    if (!entry.expiry) return false;
+    const p = entry.expiry.split('-'); if (p.length !== 3) return false;
+    const end = new Date(+p[0], +p[1]-1, +p[2]); end.setHours(23,59,59,999);
+    return end < new Date();
+  }
+  async function copyCouponCode(id) {
+    const entry = (travelDocs.coupons||[]).find(e => e.id === id); if (!entry || !entry.code) return;
+    try {
+      await navigator.clipboard.writeText(entry.code);
+      const el = document.getElementById('coupon-code-' + id);
+      if (el) { const o = el.innerText; el.innerText = '已複製！'; setTimeout(() => { if (el) el.innerText = o; }, 1200); }
+    } catch(e) { alert('複製失敗，請長按文字手動複製'); }
+  }
+  function openCouponLink(id) {
+    const entry = (travelDocs.coupons||[]).find(e => e.id === id); if (!entry) return;
+    const u = (entry.url||'').trim();
+    if (/^https?:\/\//i.test(u)) window.open(u, '_blank'); else alert('這筆還沒有填有效的連結');
+  }
+  function couponExtraHtml(entry) {
+    let html = '';
+    if (entry.code) {
+      html += `<div style="display:flex; align-items:center; gap:8px; margin-top:10px; background:#F5F3FF; border:1px dashed #C4B5FD; border-radius:12px; padding:10px 12px;">
+        <span id="coupon-code-${entry.id}" style="flex:1; min-width:0; font-weight:800; font-size:calc(15px * var(--font-scale)); color:#5B21B6; letter-spacing:1px; word-break:break-all;">${escapeHtml(entry.code)}</span>
+        <button onclick="event.stopPropagation(); copyCouponCode(${entry.id})" style="flex-shrink:0; background:#7C3AED; border:none; color:#fff; padding:7px 13px; border-radius:9px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-copy"></i> 複製</button>
+      </div>`;
+    }
+    if ((entry.url||'').trim()) {
+      html += `<button onclick="event.stopPropagation(); openCouponLink(${entry.id})" style="width:100%; margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-up-right-from-square"></i> 開啟優惠連結</button>`;
+    }
+    if (entry.imageUrl) {
+      html += `<img src="${escapeHtml(entry.imageUrl)}" alt="優惠圖片" style="width:100%; margin-top:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`;
+    }
+    return html;
+  }
+  // 圖片壓到長邊 700px 再轉存，避免整份資料同步時變得很肥
+  function compressImageToDataUrl(file, maxEdge, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch(e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('無法讀取這張圖片')); };
+      img.src = url;
+    });
+  }
+  async function handleDocImagePick(event, targetId) {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file) return;
+    try {
+      const dataUrl = await compressImageToDataUrl(file, 700, 0.7);
+      const kb = Math.round(dataUrl.length * 0.75 / 1024);
+      if (kb > 400) alert(`這張圖壓縮後仍有約 ${kb} KB，建議改貼圖片網址，避免雲端同步變慢。`);
+      const input = document.getElementById(targetId); if (input) input.value = dataUrl;
+      const prev = document.getElementById(targetId + '-preview');
+      if (prev) prev.innerHTML = `<img src="${dataUrl}" style="width:100%; border-radius:10px; border:1px solid var(--line);">`;
+    } catch(e) { alert('圖片處理失敗：' + e.message); }
+  }
+
   function openDocForm(type, editId) {
     const schema = DOC_TYPES[type];
     const arr = travelDocs[type+'s'] || [];
@@ -2818,6 +2906,13 @@ Day2 12:00 outlet購物，預計逛一小時
       const id = `docf-${f.key}`;
       if (f.type === 'textarea') {
         return `<div class="input-label">${f.label}</div><textarea id="${id}" placeholder="${f.placeholder||''}" style="width:100%; min-height:60px; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">${escapeHtml(val)}</textarea>`;
+      }
+      if (f.type === 'image') {
+        return `<div class="input-label">${f.label}</div>
+          <input type="text" id="${id}" placeholder="貼上圖片網址，或按下方按鈕從相簿選" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0; margin-bottom:8px;">
+          <button type="button" class="ghost-btn" style="margin-bottom:10px; font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="document.getElementById('${id}-file').click()"><i class="fa-solid fa-image"></i> 從相簿選擇圖片</button>
+          <input type="file" id="${id}-file" accept="image/*" style="display:none;" onchange="handleDocImagePick(event,'${id}')">
+          <div id="${id}-preview" style="margin-bottom:10px;">${val ? `<img src="${escapeHtml(val)}" style="width:100%; border-radius:10px; border:1px solid var(--line);">` : ''}</div>`;
       }
       return `<div class="input-label">${f.label}</div><input type="${f.type}" id="${id}" placeholder="${f.placeholder||''}" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0;">`;
     }).join('');
@@ -4643,6 +4738,7 @@ ${dayContextLines}
     const external = {};   // 不在旅伴名單的代購對象
 
     (expenseRecords || []).forEach(raw => {
+      if (raw.settled) return;   // 已結帳的不再列入分帳計算
       const res = allocateExpense(raw);
       const rounded = roundToTarget(res.byPerson, res.paidTotal);
       // 原幣別算完才換算成台幣，避免逐項換算累積誤差
@@ -4739,12 +4835,28 @@ ${dayContextLines}
     const pIdx = (travelers || []).indexOf(name);
     const paidLines = []; let paidSum = 0;
     const owedBlocks = []; let owedSum = 0;
+    const settledRows = []; let settledNet = 0;   // 已結帳的不進應收回／應再付，另外列出
 
     (expenseRecords||[]).forEach(raw => {
       const res = allocateExpense(raw);
       const rounded = roundToTarget(res.byPerson, res.paidTotal);
       const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
       const sym = CURRENCY_SYMBOL[raw.currency] || '';
+
+      if (raw.settled) {
+        const myPaidS = res.payers.reduce((s,pp) => s + (pp.who === name ? Math.round((Number(pp.amount)||0) * rate) : 0), 0);
+        const myOweS = (rounded[name] !== undefined) ? Math.round(rounded[name] * rate) : 0;
+        if (myPaidS || myOweS) {
+          const netS = myPaidS - myOweS;
+          settledNet += netS;
+          settledRows.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11px * var(--font-scale)); color:#065F46; padding:3px 0;">
+            <span style="flex:1; min-width:0;">${escapeHtml(raw.item||raw.category||'支出')}</span>
+            <span style="flex-shrink:0;">${netS >= 0 ? '＋' : '−'}NT$ ${f(Math.abs(netS))}</span>
+            <button class="only-master" onclick="event.stopPropagation(); toggleExpenseSettled(${raw.id})" title="取消已結帳" style="flex-shrink:0; background:#fff; border:1px solid #A7F3D0; color:#065F46; border-radius:8px; padding:2px 7px; font-size:calc(10px * var(--font-scale)); font-weight:700; cursor:pointer;">取消</button>
+          </div>`);
+        }
+        return;
+      }
 
       res.payers.forEach(pp => {
         if (pp.who !== name) return;
@@ -4785,6 +4897,7 @@ ${dayContextLines}
         <div onclick="event.stopPropagation(); toggleSettleRecord('${detailId}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:var(--navy); cursor:pointer; padding:3px 0;">
           <span style="flex:1; min-width:0;"><i class="fa-solid fa-chevron-right" id="${detailId}-chev" style="font-size:calc(9px * var(--font-scale)); color:var(--gray); transition:transform 0.2s; margin-right:5px;"></i>${escapeHtml(raw.item||raw.category||'支出')}${raw.refNo?`（#${raw.refNo}）`:''}${itemCount?`<span style="color:var(--gray); font-weight:600;"> · ${itemCount}項</span>`:''}</span>
           <span style="flex-shrink:0;">NT$ ${f(myTotal)}</span>
+          <button class="only-master" onclick="event.stopPropagation(); toggleExpenseSettled(${raw.id})" title="標記這筆已結帳" style="flex-shrink:0; background:#F1F5F9; border:none; width:22px; height:22px; border-radius:50%; color:var(--gray); cursor:pointer; font-size:calc(10px * var(--font-scale));"><i class="fa-solid fa-check"></i></button>
         </div>
         <div id="${detailId}" style="display:none; padding:4px 0 2px 14px;">
           ${itemRows || `<div style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">整筆均分</div>`}
@@ -4801,6 +4914,11 @@ ${dayContextLines}
         ${myProxies.map(x=>`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11px * var(--font-scale)); color:#8A6A42; padding:2px 0;"><span>幫 ${escapeHtml(x.forWhom)} 買 ${escapeHtml(x.item)}${x.qty>1?` ×${x.qty}`:''}</span><span>NT$ ${f(x.twd)}</span></div>`).join('')}
       </div>` : '';
 
+    const settledBlock = settledRows.length ? `
+      <div style="margin-top:9px; padding:8px 10px; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px;">
+        <div style="font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#065F46; margin-bottom:4px;"><i class="fa-solid fa-circle-check"></i> 已結帳 ${settledRows.length} 筆・不列入下方計算（淨額 ${settledNet>=0?'＋':'−'}NT$ ${f(Math.abs(settledNet))}）</div>
+        ${settledRows.join('')}
+      </div>` : '';
     const net = paidSum - owedSum;
     return `
       <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin-bottom:4px;">我先代墊 NT$ ${f(paidSum)}</div>
@@ -4811,6 +4929,7 @@ ${dayContextLines}
       </div>
       ${owedBlocks.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有應付</div>'}
       ${proxyBlock}
+      ${settledBlock}
       <div style="margin-top:9px; padding-top:8px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; font-size:calc(12.5px * var(--font-scale)); font-weight:800;">
         <span style="color:var(--navy);">${net >= 0 ? '應收回' : '應再付'}</span>
         <span style="color:${net >= 0 ? 'var(--teal)' : 'var(--coral)'};">NT$ ${f(Math.abs(net))}</span>
@@ -5065,7 +5184,7 @@ ${dayContextLines}
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="flex:1; min-width:0;">
-          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}</div>
+          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}${r.settled ? `<span style="display:inline-block; margin-left:6px; background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; border-radius:7px; padding:1px 7px; font-size:calc(10.5px * var(--font-scale)); font-weight:800; vertical-align:middle;">已結帳</span>` : ''}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
         </div>
         <!-- 右側改成上下兩段：金額在上、操作鈕在下。原本按鈕用絕對定位釘在右上角，
@@ -5076,6 +5195,7 @@ ${dayContextLines}
             <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
           </div>
           <div class="only-master" style="display:flex; gap:6px;">
+            <button onclick="event.stopPropagation(); toggleExpenseSettled(${r.id})" title="${r.settled?'取消已結帳':'標記已結帳'}" style="background:${r.settled?'var(--teal)':'#F1F5F9'}; border:none; width:26px; height:26px; border-radius:50%; color:${r.settled?'#fff':'var(--gray)'}; cursor:pointer;"><i class="fa-solid fa-circle-check"></i></button>
             ${(r.items && r.items.length) ? `<button onclick="event.stopPropagation(); openOwnerEditor(${r.id})" title="編輯誰買的" style="background:#EAF7FA; border:none; width:26px; height:26px; border-radius:50%; color:var(--teal); cursor:pointer;"><i class="fa-solid fa-user-check"></i></button>` : ''}
             <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
             <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
@@ -5084,6 +5204,16 @@ ${dayContextLines}
       </div>
       <div class="timeline-detail ${isExpanded?'active':''}">${detailRows || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節</span>`}</div>
     </div>`;
+  }
+
+  // 每筆支出的「已結帳」：勾起來代表這筆已經私下結清，
+  // 之後不再列入分帳計算（每人收支、結清清單都會自動扣掉）
+  function toggleExpenseSettled(id) {
+    const r = expenseRecords.find(x => x.id === id); if (!r) return;
+    r.settled = !r.settled;
+    saveExpense(); renderExpenseSummary();
+    const settleBox = document.getElementById('calc-settle-box');
+    if (settleBox && settleBox.style.display !== 'none') renderSettlement();
   }
 
   function deleteExpenseItem(id) {
@@ -5333,7 +5463,7 @@ ${dayContextLines}
   function resetRoomDataInMemory() {
     tripSettings = { title: '', sub: '', startDate: '', endDate: '', notes: [], warns: [] };
     prepData = {}; itinData = {}; expenseRecords = [];
-    travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+    travelDocs = { flights: [], cars: [], hotels: [], passes: [], coupons: [] };
     travelers = []; wishlistData = []; foodListData = [];
     masterPin = '1234';            // 主操作密碼是分房間存的，不重設會沿用上一個房間的
     autoClimateNoteText = '';      // 自動氣候提醒的暫存文字，不清會顯示上一個房間的城市
@@ -5445,7 +5575,7 @@ ${dayContextLines}
     tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true, geminiApiKey: savedDeviceKey, creator: creator || '', createdAt: Date.now() };
     prepData = {};
     Object.keys(PREP_DEFAULT).forEach(cat => { prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); }); // 新房間也要有預設打包清單，不能空白開始
-    itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+    itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [], coupons: [] };
     travelers = [creator || '我']; // 建立者直接當第一位成員，記帳時才有付款人可選
     wishlistData = []; foodListData = [];
     refreshItinDays();
@@ -5520,7 +5650,7 @@ ${dayContextLines}
       return Math.max(cur, next);
     };
     expItemSeq = bump(expenseRecords, expItemSeq);
-    docItemSeq = ['flights','cars','hotels','passes'].reduce((c,k)=>bump(travelDocs && travelDocs[k], c), docItemSeq);
+    docItemSeq = ['flights','cars','hotels','passes','coupons'].reduce((c,k)=>bump(travelDocs && travelDocs[k], c), docItemSeq);
     itinItemSeq = Object.values(itinData||{}).reduce((c,arr)=>bump(arr, c), itinItemSeq);
     prepItemSeq = Object.values(prepData||{}).reduce((c,arr)=>bump(arr, c), prepItemSeq);
     wishlistItemSeq = bump(wishlistData, wishlistItemSeq);
