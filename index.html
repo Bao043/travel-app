@@ -397,7 +397,7 @@
     <div id="prep-tab-lists" style="display:none;">
       <div class="calc-tabs" id="prep-lists-subtabs" style="margin-bottom:14px;">
         <button class="tab-btn-sub active" onclick="switchPrepListType('shopping', this)">購物清單</button>
-        <button class="tab-btn-sub" onclick="switchPrepListType('food', this)">美食清單</button>
+        <button class="tab-btn-sub" onclick="switchPrepListType('food', this)">店家清單</button>
       </div>
       <div id="prep-list-shopping">
         <div id="wishlist-items"></div>
@@ -405,7 +405,7 @@
       </div>
       <div id="prep-list-food" style="display:none;">
         <div id="food-list-items"></div>
-        <button class="ghost-btn only-master" onclick="openFoodListForm()"><i class="fa-solid fa-plus"></i> 新增想吃的美食</button>
+        <button class="ghost-btn only-master" onclick="openFoodListForm()"><i class="fa-solid fa-plus"></i> 新增店家</button>
       </div>
     </div>
   </section>
@@ -838,7 +838,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-15 16:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-15 20:25</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1977,49 +1977,74 @@ Day2 12:00 outlet購物，預計逛一小時
     wishlistData.forEach(it => { if (it.id >= wishlistItemSeq) wishlistItemSeq = it.id + 1; });
   }
 
-  // ===== 美食清單：想吃／想去的店家或料理，跟每日行程分開先列出來，之後再挑要排進哪一天 =====
+  // ===== 店家清單：想吃的餐廳、想逛的店都放這裡，含營業時間／公休日，並可直接導航 =====
+  const SHOP_TYPES = ['美食','購物','咖啡甜點','藥妝','景點','其他'];
+  const SHOP_TYPE_ICON = {'美食':'🍜','購物':'🛍️','咖啡甜點':'☕','藥妝':'💊','景點':'📸','其他':'📍'};
+  function openShopMap(id) {
+    const it = foodListData.find(x => x.id === id); if (!it) return;
+    openMapSearch([it.name, it.location].filter(x => (x||'').trim()).join(' '));
+  }
   function renderFoodList() {
     const wrap = document.getElementById('food-list-items'); if (!wrap) return;
-    if (!foodListData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增想吃的美食</div>`; return; }
-    wrap.innerHTML = foodListData.map(it => `
+    if (!foodListData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增店家</div>`; return; }
+    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
+    wrap.innerHTML = foodListData.map(it => {
+      const typeLabel = SHOP_TYPES.includes(it.type) ? it.type : '美食';
+      const meta = [it.location ? escapeHtml(it.location) : '', it.budget ? `預算 ${symbol}${f(it.budget)}` : ''].filter(Boolean).join(' · ');
+      const hoursLine = [it.hours ? `營業 ${escapeHtml(it.hours)}` : '', it.closed ? `公休 ${escapeHtml(it.closed)}` : ''].filter(Boolean).join('　');
+      const navQuery = [it.name, it.location].filter(x => (x||'').trim()).join(' ');
+      return `
       <div class="timeline-card" style="margin-bottom:10px; padding:14px;">
         <div style="display:flex; align-items:flex-start; gap:10px;">
-          <div onclick="toggleFoodTried(${it.id})" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.tried?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.tried?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+          <div onclick="toggleFoodTried(${it.id})" title="標記已去過" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.tried?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.tried?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.tried?'var(--gray)':'var(--navy)'}; text-decoration:${it.tried?'line-through':'none'};">${escapeHtml(it.name)}</div>
-            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${it.location ? escapeHtml(it.location) : ''}${it.location && it.budget ? ' · ' : ''}${it.budget ? `預算 ${CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency+' ')}${f(it.budget)}` : ''}</div>
+            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.tried?'var(--gray)':'var(--navy)'}; text-decoration:${it.tried?'line-through':'none'};">${SHOP_TYPE_ICON[typeLabel]||'📍'} ${escapeHtml(it.name)}</div>
+            ${meta ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${meta}</div>` : ''}
+            ${hoursLine ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;"><i class="fa-solid fa-clock" style="color:var(--gold);"></i> ${hoursLine}</div>` : ''}
             ${it.note ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(it.note)}</div>` : ''}
+            ${navQuery ? `<button onclick="event.stopPropagation(); openShopMap(${it.id})" style="margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:7px 12px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> 導航到這裡</button>` : ''}
           </div>
           <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
             <button onclick="openFoodListForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
             <button onclick="deleteFoodListItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
   function toggleFoodTried(id) { const it = foodListData.find(i=>i.id===id); if(it){ it.tried=!it.tried; saveFoodList(); renderFoodList(); } }
-  function deleteFoodListItem(id) { if(!confirm('確定要刪除這筆美食清單嗎？')) return; const i = foodListData.findIndex(x=>x.id===id); if (i>=0) foodListData.splice(i,1); saveFoodList(); renderFoodList(); }
+  function deleteFoodListItem(id) { if(!confirm('確定要刪除這家店嗎？')) return; const i = foodListData.findIndex(x=>x.id===id); if (i>=0) foodListData.splice(i,1); saveFoodList(); renderFoodList(); }
   function openFoodListForm(editId) {
     const editing = editId ? foodListData.find(i=>i.id===editId) : null;
+    const curType = (editing && SHOP_TYPES.includes(editing.type)) ? editing.type : '美食';
+    const inputStyle = 'width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;';
     const fields = `
-      <div class="input-label">店名／料理名稱</div>
-      <input type="text" id="fl-name" value="${editing?escapeHtml(editing.name):''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
-      <div class="input-label">地點</div>
-      <input type="text" id="fl-location" value="${editing?escapeHtml(editing.location||''):''}" placeholder="區域或地址" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <div class="input-label">店家名稱</div>
+      <input type="text" id="fl-name" value="${editing?escapeHtml(editing.name):''}" placeholder="店名／料理或商品名稱" style="${inputStyle}">
+      <div class="input-label">類型</div>
+      <select id="fl-type" style="${inputStyle} background:#fff; font-family:inherit;">${SHOP_TYPES.map(t=>`<option value="${t}" ${t===curType?'selected':''}>${SHOP_TYPE_ICON[t]} ${t}</option>`).join('')}</select>
+      <div class="input-label">地點／地址（填完整一點，導航才抓得準）</div>
+      <input type="text" id="fl-location" value="${editing?escapeHtml(editing.location||''):''}" placeholder="例如：札幌市中央區南3條西4丁目" style="${inputStyle}">
+      <div class="input-label">營業時間</div>
+      <input type="text" id="fl-hours" value="${editing?escapeHtml(editing.hours||''):''}" placeholder="例如：11:00-21:00（最後點餐 20:30）" style="${inputStyle}">
+      <div class="input-label">公休日</div>
+      <input type="text" id="fl-closed" value="${editing?escapeHtml(editing.closed||''):''}" placeholder="例如：每週三公休、每月 1 號公休" style="${inputStyle}">
       <div class="input-label">預算 (${getCountryInfo().currency})</div>
-      <input type="text" inputmode="decimal" id="fl-budget" value="${editing&&editing.budget?editing.budget:''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <input type="text" inputmode="decimal" id="fl-budget" value="${editing&&editing.budget?editing.budget:''}" style="${inputStyle}">
       <div class="input-label">備註</div>
-      <textarea id="fl-note" placeholder="例如：必吃招牌、要提前預約" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">${editing?escapeHtml(editing.note||''):''}</textarea>
+      <textarea id="fl-note" placeholder="例如：必吃招牌、要提前預約、可退稅" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">${editing?escapeHtml(editing.note||''):''}</textarea>
     `;
-    setupGeneralEdit(editing?'編輯美食清單':'新增想吃的美食', fields, () => {
+    setupGeneralEdit(editing?'編輯店家':'新增店家', fields, () => {
       const name = document.getElementById('fl-name').value.trim();
-      if (!name) { alert('請輸入店名或料理名稱！'); return; }
+      if (!name) { alert('請輸入店家名稱！'); return; }
+      const type = document.getElementById('fl-type').value;
       const location = document.getElementById('fl-location').value.trim();
+      const hours = document.getElementById('fl-hours').value.trim();
+      const closed = document.getElementById('fl-closed').value.trim();
       const budget = p(document.getElementById('fl-budget').value);
       const note = document.getElementById('fl-note').value.trim();
-      if (editing) { Object.assign(editing, {name, location, budget, note}); }
-      else { foodListData.push({ id: foodListItemSeq++, name, location, budget, note, tried:false }); }
+      if (editing) { Object.assign(editing, {name, type, location, hours, closed, budget, note}); }
+      else { foodListData.push({ id: foodListItemSeq++, name, type, location, hours, closed, budget, note, tried:false }); }
       saveFoodList(); renderFoodList(); closeGeneralEdit();
     });
   }
@@ -2121,7 +2146,7 @@ Day2 12:00 outlet購物，預計逛一小時
     ok('旅伴成員', `${(travelers||[]).length} 人`);
     const docCount = ['flights','cars','hotels','passes','coupons'].reduce((s,k)=>s+((travelDocs&&travelDocs[k])?travelDocs[k].length:0),0);
     ok('憑證資訊', `${docCount} 筆`);
-    ok('購物／美食清單', `${(wishlistData||[]).length} / ${(foodListData||[]).length} 筆`);
+    ok('購物／店家清單', `${(wishlistData||[]).length} / ${(foodListData||[]).length} 筆`);
 
     // 3. 每一天的城市判斷（最容易出錯的地方）
     let cityOk = 0, cityFail = [];
@@ -2806,6 +2831,19 @@ Day2 12:00 outlet購物，預計逛一小時
       extra = `<div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:800; font-size:calc(16px * var(--font-scale)); color:var(--teal); margin-top:8px;">計算中...</div>`;
     }
 
+    if (type === 'car') {
+      const pick = [entry.company, entry.pickupLocation].filter(x => (x||'').trim()).join(' ');
+      const retLoc = (entry.returnLocation||'').trim();
+      const hasRet = retLoc && retLoc !== (entry.pickupLocation||'').trim();
+      let btns = '';
+      if (pick) btns += docNavBtn('car', entry.id, 'pickup', hasRet ? '導航到取車點' : '導航到這裡');
+      if (hasRet) btns += docNavBtn('car', entry.id, 'return', '導航到還車點');
+      if (btns) extra += `<div style="display:flex; gap:6px; margin-top:10px;">${btns}</div>`;
+    } else if (type === 'hotel') {
+      const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
+      if (q) extra += `<div style="display:flex; margin-top:10px;">${docNavBtn('hotel', entry.id, '', '導航到這裡')}</div>`;
+    }
+
     if (type === 'coupon') {
       headline = escapeHtml(entry.name || '優惠碼');
       const expTxt = entry.expiry ? `${formatMDLabel(entry.expiry)} 到期` : '未填期限';
@@ -2828,6 +2866,23 @@ Day2 12:00 outlet購物，預計逛一小時
       ${extra}
       <div class="timeline-detail ${isExpanded?'active':''}">${detailRows || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}</div>
     </div>`;
+  }
+
+  // 用店家名稱＋地點直接開 Google 地圖搜尋，不用自己複製貼上
+  function openMapSearch(query) {
+    const q = (query||'').trim();
+    if (!q) { alert('沒有可用的地點資訊，請先填寫店家名稱或地址'); return; }
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+  }
+  function openDocMap(type, id, which) {
+    const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
+    let q = '';
+    if (type === 'car') q = [e.company, which === 'return' ? e.returnLocation : e.pickupLocation].filter(x => (x||'').trim()).join(' ');
+    else if (type === 'hotel') q = [e.name, e.address].filter(x => (x||'').trim()).join(' ');
+    openMapSearch(q);
+  }
+  function docNavBtn(type, id, which, label) {
+    return `<button onclick="event.stopPropagation(); openDocMap('${type}',${id},'${which}')" style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px 6px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> ${label}</button>`;
   }
 
   // 優惠碼：到期判斷、卡片上的「複製碼／開連結／圖片預覽」、以及圖片壓縮上傳
@@ -4738,16 +4793,24 @@ ${dayContextLines}
     const external = {};   // 不在旅伴名單的代購對象
 
     (expenseRecords || []).forEach(raw => {
-      if (raw.settled) return;   // 已結帳的不再列入分帳計算
       const res = allocateExpense(raw);
       const rounded = roundToTarget(res.byPerson, res.paidTotal);
       // 原幣別算完才換算成台幣，避免逐項換算累積誤差
       const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
       const payers = res.payers;
       const paidSum = payers.reduce((s, pp) => s + (Number(pp.amount) || 0), 0) || 1;
-      payers.forEach(pp => { if (paid[pp.who] !== undefined) paid[pp.who] += (Number(pp.amount) || 0) * rate; });
+      // 已私下結清的人：他的應付不算，代墊者的已付也要同步扣掉，兩邊才會一起歸零
+      const sb = settledMapOf(raw);
+      let settledAmt = 0;
+      Object.entries(rounded).forEach(([who, amt]) => { if (sb[who] && owed[who] !== undefined) settledAmt += amt; });
+      payers.forEach(pp => {
+        if (paid[pp.who] === undefined) return;
+        const portion = (Number(pp.amount) || 0) / paidSum;
+        paid[pp.who] += ((Number(pp.amount) || 0) - settledAmt * portion) * rate;
+      });
 
       Object.entries(rounded).forEach(([who, amt]) => {
+        if (sb[who] && owed[who] !== undefined) return;   // 這個人已結清，不列入應付
         const twd = amt * rate;
         if (owed[who] !== undefined) { owed[who] += twd; return; }
         const ext = external[who] || (external[who] = { amount: 0, creditors: {}, arrangedBy: [] });
@@ -4843,32 +4906,37 @@ ${dayContextLines}
       const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
       const sym = CURRENCY_SYMBOL[raw.currency] || '';
 
-      if (raw.settled) {
-        const myPaidS = res.payers.reduce((s,pp) => s + (pp.who === name ? Math.round((Number(pp.amount)||0) * rate) : 0), 0);
-        const myOweS = (rounded[name] !== undefined) ? Math.round(rounded[name] * rate) : 0;
-        if (myPaidS || myOweS) {
-          const netS = myPaidS - myOweS;
-          settledNet += netS;
-          settledRows.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11px * var(--font-scale)); color:#065F46; padding:3px 0;">
-            <span style="flex:1; min-width:0;">${escapeHtml(raw.item||raw.category||'支出')}</span>
-            <span style="flex-shrink:0;">${netS >= 0 ? '＋' : '−'}NT$ ${f(Math.abs(netS))}</span>
-            <button class="only-master" onclick="event.stopPropagation(); toggleExpenseSettled(${raw.id})" title="取消已結帳" style="flex-shrink:0; background:#fff; border:1px solid #A7F3D0; color:#065F46; border-radius:8px; padding:2px 7px; font-size:calc(10px * var(--font-scale)); font-weight:700; cursor:pointer;">取消</button>
-          </div>`);
-        }
-        return;
-      }
+      const sb = settledMapOf(raw);
+      const paidSumAll = res.payers.reduce((s,pp) => s + (Number(pp.amount)||0), 0) || 1;
+      // 別人已結清、且屬於我代墊的部分，要從「我先代墊」扣掉（錢已經拿回來了）
+      let settledFromOthers = 0;
+      Object.entries(rounded).forEach(([who, amt]) => {
+        if (!sb[who] || who === name || !travelers.includes(who)) return;
+        res.payers.forEach(pp => { if (pp.who === name) settledFromOthers += amt * ((Number(pp.amount)||0) / paidSumAll); });
+      });
 
       res.payers.forEach(pp => {
         if (pp.who !== name) return;
-        const twd = Math.round((Number(pp.amount)||0) * rate); if (!twd) return;
+        const gross = Math.round((Number(pp.amount)||0) * rate); if (!gross) return;
+        const back = Math.round(settledFromOthers * rate);
+        const twd = gross - back;
         paidSum += twd;
-        paidLines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:2px 0;"><span>${escapeHtml(raw.item||raw.category||'支出')}</span><span>NT$ ${f(twd)}</span></div>`);
+        paidLines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:2px 0;"><span style="flex:1; min-width:0;">${escapeHtml(raw.item||raw.category||'支出')}${back?`<span style="color:#065F46;">（已收回 NT$ ${f(back)}）</span>`:''}</span><span style="flex-shrink:0;">NT$ ${f(twd)}</span></div>`);
       });
 
       if (rounded[name] === undefined) return;
       const myTotal = Math.round(rounded[name] * rate);
       if (!myTotal) return;
-      owedSum += myTotal;
+      if (sb[name]) {   // 我這筆已經結清：不列入應付，改放到下面的已結清區
+        settledNet += myTotal;
+        settledRows.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11px * var(--font-scale)); color:#065F46; padding:3px 0;">
+          <span style="flex:1; min-width:0;">${escapeHtml(raw.item||raw.category||'支出')}</span>
+          <span style="flex-shrink:0;">NT$ ${f(myTotal)}</span>
+          <button class="only-master" onclick="event.stopPropagation(); togglePersonSettled(${raw.id},'${escapeHtml(name)}')" title="取消已結帳" style="flex-shrink:0; background:#fff; border:1px solid #A7F3D0; color:#065F46; border-radius:8px; padding:2px 7px; font-size:calc(10px * var(--font-scale)); font-weight:700; cursor:pointer;">取消</button>
+        </div>`);
+        return;
+      }
+      owedSum += myTotal;      owedSum += myTotal;
 
       // 逐項列出：哪些是自己選的、哪些是沒人認領算到自己頭上的、哪些是代購
       const mine = res.lines.filter(l => (l.proxyFor || l.who) === name);
@@ -4897,7 +4965,7 @@ ${dayContextLines}
         <div onclick="event.stopPropagation(); toggleSettleRecord('${detailId}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:var(--navy); cursor:pointer; padding:3px 0;">
           <span style="flex:1; min-width:0;"><i class="fa-solid fa-chevron-right" id="${detailId}-chev" style="font-size:calc(9px * var(--font-scale)); color:var(--gray); transition:transform 0.2s; margin-right:5px;"></i>${escapeHtml(raw.item||raw.category||'支出')}${raw.refNo?`（#${raw.refNo}）`:''}${itemCount?`<span style="color:var(--gray); font-weight:600;"> · ${itemCount}項</span>`:''}</span>
           <span style="flex-shrink:0;">NT$ ${f(myTotal)}</span>
-          <button class="only-master" onclick="event.stopPropagation(); toggleExpenseSettled(${raw.id})" title="標記這筆已結帳" style="flex-shrink:0; background:#F1F5F9; border:none; width:22px; height:22px; border-radius:50%; color:var(--gray); cursor:pointer; font-size:calc(10px * var(--font-scale));"><i class="fa-solid fa-check"></i></button>
+          <button class="only-master" onclick="event.stopPropagation(); togglePersonSettled(${raw.id},'${escapeHtml(name)}')" title="標記我這筆已結清" style="flex-shrink:0; background:#F1F5F9; border:none; width:22px; height:22px; border-radius:50%; color:var(--gray); cursor:pointer; font-size:calc(10px * var(--font-scale));"><i class="fa-solid fa-check"></i></button>
         </div>
         <div id="${detailId}" style="display:none; padding:4px 0 2px 14px;">
           ${itemRows || `<div style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">整筆均分</div>`}
@@ -4916,7 +4984,7 @@ ${dayContextLines}
 
     const settledBlock = settledRows.length ? `
       <div style="margin-top:9px; padding:8px 10px; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px;">
-        <div style="font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#065F46; margin-bottom:4px;"><i class="fa-solid fa-circle-check"></i> 已結帳 ${settledRows.length} 筆・不列入下方計算（淨額 ${settledNet>=0?'＋':'−'}NT$ ${f(Math.abs(settledNet))}）</div>
+        <div style="font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#065F46; margin-bottom:4px;"><i class="fa-solid fa-circle-check"></i> 我已結清 ${settledRows.length} 筆・共 NT$ ${f(settledNet)}（不列入下方計算）</div>
         ${settledRows.join('')}
       </div>` : '';
     const net = paidSum - owedSum;
@@ -5133,6 +5201,8 @@ ${dayContextLines}
   }
 
   function renderExpenseCard(r) {
+    const recSettled = isRecordFullySettled(r);
+    const recPartSettled = !recSettled && isRecordPartlySettled(r);
     const cur = r.currency || 'KRW';
     const isTwd = cur === 'TWD';
     const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
@@ -5184,7 +5254,7 @@ ${dayContextLines}
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="flex:1; min-width:0;">
-          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}${r.settled ? `<span style="display:inline-block; margin-left:6px; background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; border-radius:7px; padding:1px 7px; font-size:calc(10.5px * var(--font-scale)); font-weight:800; vertical-align:middle;">已結帳</span>` : ''}</div>
+          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}${(recSettled || recPartSettled) ? `<span style="display:inline-block; margin-left:6px; background:${recSettled?'#ECFDF5':'#FBF7F1'}; border:1px solid ${recSettled?'#A7F3D0':'#E8D9C5'}; color:${recSettled?'#065F46':'#8A6A42'}; border-radius:7px; padding:1px 7px; font-size:calc(10.5px * var(--font-scale)); font-weight:800; vertical-align:middle;">${recSettled?'已結帳':'部分結清'}</span>` : ''}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
         </div>
         <!-- 右側改成上下兩段：金額在上、操作鈕在下。原本按鈕用絕對定位釘在右上角，
@@ -5195,7 +5265,7 @@ ${dayContextLines}
             <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
           </div>
           <div class="only-master" style="display:flex; gap:6px;">
-            <button onclick="event.stopPropagation(); toggleExpenseSettled(${r.id})" title="${r.settled?'取消已結帳':'標記已結帳'}" style="background:${r.settled?'var(--teal)':'#F1F5F9'}; border:none; width:26px; height:26px; border-radius:50%; color:${r.settled?'#fff':'var(--gray)'}; cursor:pointer;"><i class="fa-solid fa-circle-check"></i></button>
+            <button onclick="event.stopPropagation(); toggleExpenseSettled(${r.id})" title="${recSettled?'取消全部已結帳':'整筆標記已結帳'}" style="background:${recSettled?'var(--teal)':'#F1F5F9'}; border:none; width:26px; height:26px; border-radius:50%; color:${recSettled?'#fff':'var(--gray)'}; cursor:pointer;"><i class="fa-solid fa-circle-check"></i></button>
             ${(r.items && r.items.length) ? `<button onclick="event.stopPropagation(); openOwnerEditor(${r.id})" title="編輯誰買的" style="background:#EAF7FA; border:none; width:26px; height:26px; border-radius:50%; color:var(--teal); cursor:pointer;"><i class="fa-solid fa-user-check"></i></button>` : ''}
             <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
             <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
@@ -5206,14 +5276,46 @@ ${dayContextLines}
     </div>`;
   }
 
-  // 每筆支出的「已結帳」：勾起來代表這筆已經私下結清，
-  // 之後不再列入分帳計算（每人收支、結清清單都會自動扣掉）
-  function toggleExpenseSettled(id) {
-    const r = expenseRecords.find(x => x.id === id); if (!r) return;
-    r.settled = !r.settled;
+  // 「已結帳」是記在「每個人」身上：r.settledBy = { 成員名稱: true }
+  // 某人把他該付的錢拿給代墊者後，只勾他自己那一筆，不會影響同一筆裡的其他人
+  function settledMapOf(r) {
+    if (r && r.settled) { const m = {}; (travelers||[]).forEach(t => m[t] = true); return m; } // 相容舊版「整筆結清」的資料
+    return (r && r.settledBy) || {};
+  }
+  function recordSettleablePeople(r) {
+    const res = allocateExpense(r);
+    const rounded = roundToTarget(res.byPerson, res.paidTotal);
+    return Object.keys(rounded).filter(w => (travelers||[]).includes(w));
+  }
+  function isRecordFullySettled(r) {
+    const ppl = recordSettleablePeople(r); if (!ppl.length) return false;
+    const sb = settledMapOf(r); return ppl.every(p => sb[p]);
+  }
+  function isRecordPartlySettled(r) {
+    const sb = settledMapOf(r); return recordSettleablePeople(r).some(p => sb[p]);
+  }
+  function afterSettleChange() {
     saveExpense(); renderExpenseSummary();
     const settleBox = document.getElementById('calc-settle-box');
     if (settleBox && settleBox.style.display !== 'none') renderSettlement();
+  }
+  // 支出卡上的按鈕：一次把這筆的所有人都標記已結帳／全部取消
+  function toggleExpenseSettled(id) {
+    const r = expenseRecords.find(x => x.id === id); if (!r) return;
+    const full = isRecordFullySettled(r);
+    delete r.settled;
+    r.settledBy = {};
+    if (!full) recordSettleablePeople(r).forEach(p => { r.settledBy[p] = true; });
+    afterSettleChange();
+  }
+  // 每人收支裡的按鈕：只標記「這個人」在這筆的應付已結清
+  function togglePersonSettled(id, who) {
+    const r = expenseRecords.find(x => x.id === id); if (!r || !who) return;
+    const sb = Object.assign({}, settledMapOf(r));
+    delete r.settled;
+    if (sb[who]) delete sb[who]; else sb[who] = true;
+    r.settledBy = sb;
+    afterSettleChange();
   }
 
   function deleteExpenseItem(id) {
@@ -6123,9 +6225,9 @@ ${dayContextLines}
     // 既有使用者（已經有房號、但這是升級後第一次載入、還沒有 app-screen 紀錄）視同他們原本就在房間裡，不要突然被丟回首頁；
     // 全新使用者、或上次是自己按「返回首頁」離開的，才會看到首頁
     const savedRoom = localStorage.getItem('sync-room-id');
-    let savedScreen = localStorage.getItem('app-screen');
-    if (savedScreen === null && savedRoom) { savedScreen = 'room'; localStorage.setItem('app-screen', 'room'); }
-
+    const savedScreen = localStorage.getItem('app-screen');
+    // 只有「這台裝置上次關掉前正停在某個房間」才會自動回到那個房間；
+    // 從沒開過（例如別人第一次點連結進來）一律先看到首頁，不會直接鑽進某個房號
     if (savedScreen !== 'room' || !savedRoom) {
       showHomeScreen();
       await maybeShowOnboarding();
