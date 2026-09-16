@@ -63,16 +63,8 @@
     position: relative; background: var(--bg); border-radius: 36px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
-  body.tablet-view .app-container { max-width: 700px; padding-bottom: 130px; }
-  /* 平板模式原本把上留白壓成 32px，會讓內容鑽到右上角切換列底下 */
-  body.tablet-view .hero-header { padding: max(24px, calc(12px + env(safe-area-inset-top, 0px))) 32px 32px; }
-  body.tablet-view .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
-  body.tablet-view .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
-  body.tablet-view .card { padding: 26px; }
-  body.tablet-view .page-header { padding: 40px 12px 18px; }
-  /* 修正平板 inactive 面板重疊問題 */
-  body.tablet-view .grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  body.tablet-view .full-width { grid-column: 1 / -1; }
+  /* 版面寬度改由檔案下方的「響應式版面」媒體查詢依實際螢幕寬度自動決定，
+     不再需要使用者手動切換手機／平板 */
   
   
   .clean-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight: 800; font-size:calc(28px * var(--font-scale)); margin: 0; letter-spacing: -0.5px; color: var(--navy); }
@@ -125,7 +117,6 @@
   
   /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
   .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
-  body.tablet-view .bottom-nav { max-width: 640px; }
     #main-app-container {
     min-height: 100vh;
     min-height: 100dvh;
@@ -133,8 +124,32 @@
     padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
     border-radius: 36px 36px 0 0;
   }
-  body.tablet-view #main-app-container {
-    padding-bottom: calc(134px + env(safe-area-inset-bottom, 0px));
+  /* ===== 響應式版面 =====
+     依裝置實際可視寬度自動判斷，橫置／分割畫面／縮放視窗都會即時跟著變：
+       ‧ 未滿 700px  → 手機：單欄，維持原本的窄版排版
+       ‧ 700~1099px → 平板：加寬版面、卡片留白加大，總覽與算帳頁改成雙欄並排
+       ‧ 1100px 以上 → 電腦：再加寬並置中，導覽列與彈窗一併放大 */
+  @media (min-width: 700px) {
+    .app-container { max-width: 700px; }
+    #main-app-container { padding-bottom: calc(134px + env(safe-area-inset-bottom, 0px)); }
+    .hero-header { padding: max(24px, calc(12px + env(safe-area-inset-top, 0px))) 32px 32px; }
+    .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
+    .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
+    .hero-inner { max-width: 620px; }
+    .card { padding: 26px; }
+    .page-header { padding: 40px 12px 18px; }
+    /* 雙欄時要明確指定 display:grid，否則未啟用的面板會疊在一起 */
+    .panel.grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    .full-width { grid-column: 1 / -1; }
+    .bottom-nav { max-width: 640px; }
+    .guide-overlay .guide-content { max-width: 460px; }
+  }
+  @media (min-width: 1100px) {
+    .app-container { max-width: 960px; }
+    .hero-inner { max-width: 880px; }
+    .panel.grid-panel.active { gap: 24px; }
+    .bottom-nav { max-width: 720px; }
+    .guide-overlay .guide-content { max-width: 520px; }
   }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: var(--gray); border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 600; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
@@ -838,7 +853,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-16 01:15</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-16 02:05</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -848,17 +863,6 @@ Day2 12:00 outlet購物，預計逛一小時
         <button class="tab-btn-sub" data-fs="1" onclick="setFontScale(1, this)">標準</button>
         <button class="tab-btn-sub" data-fs="1.15" onclick="setFontScale(1.15, this)">大</button>
         <button class="tab-btn-sub" data-fs="1.3" onclick="setFontScale(1.3, this)">特大</button>
-      </div>
-    </div>
-
-    <!-- 顯示模式：原本是右上角的浮動切換列，但為了避開它，每一頁頂部都得空出一大塊，
-         移到這裡跟文字大小放一起（同樣是顯示偏好），版面就能收回來 -->
-    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
-      <h4 style="margin-top:0; margin-bottom:6px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-display"></i> 顯示模式</h4>
-      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px;">平板模式會加寬版面、部分卡片改成雙欄並排</p>
-      <div class="calc-tabs" style="margin-bottom:0;">
-        <button class="tab-btn-sub" id="btn-m" onclick="toggleView('mobile', this)"><i class="fa-solid fa-mobile-screen-button"></i> 手機</button>
-        <button class="tab-btn-sub" id="btn-t" onclick="toggleView('tablet', this)"><i class="fa-solid fa-tablet-screen-button"></i> 平板</button>
       </div>
     </div>
 
@@ -1761,14 +1765,6 @@ Day2 12:00 outlet購物，預計逛一小時
   function f(v) { return isNaN(v) ? "0" : Math.round(v).toLocaleString(); }
   function p(s) { return parseFloat(s.toString().replace(/,/g, '')) || 0; }
   
-  function toggleView(v) {
-    document.body.classList.toggle('tablet-view', v==='tablet');
-    const m = document.getElementById('btn-m'), t = document.getElementById('btn-t');
-    if (m) m.classList.toggle('active', v==='mobile');
-    if (t) t.classList.toggle('active', v==='tablet');
-    try { localStorage.setItem('view-mode', v); } catch(e) {} // 記住選擇，下次開啟沿用
-  }
-
   function showP(id, b) {
     // 離開支出頁時關掉沒送出的記帳表單，不然下次回來會看到它還開著
     if (id !== 'p-expense') {
@@ -6319,8 +6315,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   // ===== 全域初始化入口 =====
   window.onload = async () => {
     await loadFontScale();
-    // 還原上次選的顯示模式（手機/平板）
-    try { const vm = localStorage.getItem('view-mode'); toggleView(vm === 'tablet' ? 'tablet' : 'mobile'); } catch(e) {}
+    // 顯示模式已改為依螢幕寬度自動判斷（見 CSS 的響應式版面），不再需要記住使用者的選擇
     // 即時同步預設開啟（只有第一次、還沒有任何設定時才套用；使用者自己關掉的話尊重其選擇）
     try { if (localStorage.getItem('sync-auto-enabled') === null) localStorage.setItem('sync-auto-enabled', 'true'); } catch(e) {}
     updateKoreaTime(); setInterval(updateKoreaTime, 30000);
