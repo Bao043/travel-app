@@ -838,7 +838,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-15 20:25</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-16 01:15</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1267,10 +1267,17 @@ Day2 12:00 outlet購物，預計逛一小時
   // 這裡是收合區塊裡的其餘欄位，同一套定義同時驅動表單產生與展開細節顯示
   const ITIN_EXTRA_FIELDS = [
     { key: 'place', label: '地點/店家', icon: 'fa-shop' },
+    { key: 'nameOriginal', label: '原文店名', icon: 'fa-language', placeholder: '當地語言店名，給店員看或導航用' },
+    { key: 'area', label: '區域', icon: 'fa-map-pin', placeholder: '例如：西面、海雲台、機張、新千歲' },
     { key: 'address', label: '地址', icon: 'fa-location-dot' },
     { key: 'mapLink', label: '地圖連結', icon: 'fa-map', placeholder: 'Google Map 或 Naver Map 連結' },
     { key: 'transport', label: '交通方式', icon: 'fa-route', placeholder: '地鐵、步行、計程車...' },
     { key: 'transportTime', label: '通勤時間', icon: 'fa-clock', placeholder: '例如：8分鐘' },
+    { key: 'hours', label: '營業時間', icon: 'fa-clock', placeholder: '例如：11:00-21:00（最後點餐 20:30）' },
+    { key: 'closed', label: '公休日', icon: 'fa-calendar-xmark', placeholder: '例如：每週三公休' },
+    { key: 'veg', label: '素食', icon: 'fa-seedling', placeholder: '全素／蛋奶素／有素食選項／無' },
+    { key: 'intro', label: '店家簡介', icon: 'fa-circle-info' },
+    { key: 'recommend', label: '推薦品項', icon: 'fa-star' },
     { key: 'costActual', label: '實際花費', icon: 'fa-coins' },
     { key: 'duration', label: '停留時間', icon: 'fa-hourglass-half', placeholder: '例如：1小時' },
     { key: 'reservationTime', label: '預約時間', icon: 'fa-calendar-check' },
@@ -1977,38 +1984,101 @@ Day2 12:00 outlet購物，預計逛一小時
     wishlistData.forEach(it => { if (it.id >= wishlistItemSeq) wishlistItemSeq = it.id + 1; });
   }
 
-  // ===== 店家清單：想吃的餐廳、想逛的店都放這裡，含營業時間／公休日，並可直接導航 =====
+  // ===== 店家清單：依「區域」自動分組，每區預設收合，點區域標題才展開該區店家；
+  // 店家卡片再點一下可展開營業時間、公休、地址等細節，並提供 Google／NAVER 導航 =====
   const SHOP_TYPES = ['美食','購物','咖啡甜點','藥妝','景點','其他'];
   const SHOP_TYPE_ICON = {'美食':'🍜','購物':'🛍️','咖啡甜點':'☕','藥妝':'💊','景點':'📸','其他':'📍'};
+  // 常見商圈關鍵字：沒有手動填區域時，會從店名／地址裡自動判斷要歸到哪一區
+  const AREA_KEYWORDS = [
+    '西面','海雲台','機張','南浦洞','廣安里','田浦','釜山站','東萊','松島','影島','太宗台','光復洞','釜田','centum','Centum','沙上','金海',
+    '明洞','弘大','江南','東大門','聖水','梨泰院','仁寺洞','望遠','延南','漢南','蠶室','汝矣島','北村','三清洞',
+    '新千歲','札幌','大通','狸小路','薄野','小樽','富良野','美瑛','旭川','函館','登別','洞爺',
+    '心齋橋','難波','梅田','道頓堀','天王寺','日本橋','京都','祇園','嵐山','清水寺','奈良','神戶','和歌山',
+    '新宿','澀谷','涉谷','池袋','銀座','淺草','上野','台場','秋葉原','原宿','表參道','橫濱','箱根','輕井澤','沖繩','那霸','國際通'
+  ];
+  let expandedShopAreas = new Set();   // 預設全部收合
+  let expandedShopIds = new Set();
+
+  function detectShopArea(it) {
+    const manual = ((it && it.area) || '').trim();
+    if (manual) return manual;
+    const hay = [it.location, it.name, it.note].filter(Boolean).join(' ');
+    const hit = AREA_KEYWORDS.find(k => hay.includes(k));
+    return hit || '未分區';
+  }
+  function toggleShopArea(area) {
+    if (expandedShopAreas.has(area)) expandedShopAreas.delete(area); else expandedShopAreas.add(area);
+    renderFoodList();
+  }
+  function toggleShopDetail(id) {
+    if (expandedShopIds.has(id)) expandedShopIds.delete(id); else expandedShopIds.add(id);
+    renderFoodList();
+  }
+  function shopMapQuery(it) { return [it.name, it.location].filter(x => (x||'').trim()).join(' '); }
   function openShopMap(id) {
     const it = foodListData.find(x => x.id === id); if (!it) return;
-    openMapSearch([it.name, it.location].filter(x => (x||'').trim()).join(' '));
+    openMapSearch(shopMapQuery(it));
   }
+  function openShopNaver(id) {
+    const it = foodListData.find(x => x.id === id); if (!it) return;
+    openNaverMap(shopMapQuery(it));
+  }
+
+  function renderShopCard(it, symbol) {
+    const typeLabel = SHOP_TYPES.includes(it.type) ? it.type : '美食';
+    const meta = [it.location ? escapeHtml(it.location) : '', it.budget ? `每人約 ${symbol}${f(it.budget)}` : ''].filter(Boolean).join(' · ');
+    const hasQuery = !!shopMapQuery(it);
+    const expanded = expandedShopIds.has(it.id);
+    const row = (icon, label, val) => val ? `<div class="detail-row"><i class="fa-solid ${icon}"></i><span><b>${label}：</b>${escapeHtml(val)}</span></div>` : '';
+    const navRow = hasQuery ? `<div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+        <button onclick="event.stopPropagation(); openShopMap(${it.id})" style="${NAV_BTN_STYLE} background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF;"><i class="fa-solid fa-map-location-dot"></i> Google 地圖</button>
+        ${isKoreaTrip() ? `<button onclick="event.stopPropagation(); openShopNaver(${it.id})" style="${NAV_BTN_STYLE} background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F;"><i class="fa-solid fa-map"></i> NAVER 地圖</button>` : ''}
+      </div>` : '';
+    const detail = navRow
+      + row('fa-location-dot', '地址', it.location)
+      + row('fa-clock', '營業時間', it.hours)
+      + row('fa-calendar-xmark', '公休', it.closed)
+      + (it.budget ? row('fa-coins', '每人預算', `${symbol}${f(it.budget)}`) : '')
+      + row('fa-tag', '類型', typeLabel)
+      + row('fa-note-sticky', '備註', it.note);
+
+    return `
+      <div class="timeline-card" style="margin-bottom:10px; padding:14px;" onclick="toggleShopDetail(${it.id})">
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <div onclick="event.stopPropagation(); toggleFoodTried(${it.id})" title="標記已去過" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.tried?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.tried?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.tried?'var(--gray)':'var(--navy)'}; text-decoration:${it.tried?'line-through':'none'};">${SHOP_TYPE_ICON[typeLabel]||'📍'} ${escapeHtml(it.name)}</div>
+            ${meta ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${meta}</div>` : ''}
+            ${it.hours ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;"><i class="fa-solid fa-clock" style="color:var(--gold);"></i> ${escapeHtml(it.hours)}${it.closed?`　公休 ${escapeHtml(it.closed)}`:''}</div>` : ''}
+          </div>
+          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
+            <button onclick="event.stopPropagation(); openFoodListForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="event.stopPropagation(); deleteFoodListItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <div class="timeline-detail ${expanded?'active':''}">${detail || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多資訊，點右上角鉛筆補充</span>`}</div>
+      </div>`;
+  }
+
   function renderFoodList() {
     const wrap = document.getElementById('food-list-items'); if (!wrap) return;
     if (!foodListData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增店家</div>`; return; }
     const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
-    wrap.innerHTML = foodListData.map(it => {
-      const typeLabel = SHOP_TYPES.includes(it.type) ? it.type : '美食';
-      const meta = [it.location ? escapeHtml(it.location) : '', it.budget ? `預算 ${symbol}${f(it.budget)}` : ''].filter(Boolean).join(' · ');
-      const hoursLine = [it.hours ? `營業 ${escapeHtml(it.hours)}` : '', it.closed ? `公休 ${escapeHtml(it.closed)}` : ''].filter(Boolean).join('　');
-      const navQuery = [it.name, it.location].filter(x => (x||'').trim()).join(' ');
+    const groups = {}; const order = [];
+    foodListData.forEach(it => { const a = detectShopArea(it); if (!groups[a]) { groups[a] = []; order.push(a); } groups[a].push(it); });
+    order.sort((a, b) => (a === '未分區' ? 1 : 0) - (b === '未分區' ? 1 : 0));   // 未分區固定排最後
+    wrap.innerHTML = order.map(area => {
+      const open = expandedShopAreas.has(area);
+      const done = groups[area].filter(x => x.tried).length;
       return `
-      <div class="timeline-card" style="margin-bottom:10px; padding:14px;">
-        <div style="display:flex; align-items:flex-start; gap:10px;">
-          <div onclick="toggleFoodTried(${it.id})" title="標記已去過" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.tried?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.tried?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
-          <div style="flex:1; min-width:0;">
-            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.tried?'var(--gray)':'var(--navy)'}; text-decoration:${it.tried?'line-through':'none'};">${SHOP_TYPE_ICON[typeLabel]||'📍'} ${escapeHtml(it.name)}</div>
-            ${meta ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${meta}</div>` : ''}
-            ${hoursLine ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;"><i class="fa-solid fa-clock" style="color:var(--gold);"></i> ${hoursLine}</div>` : ''}
-            ${it.note ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(it.note)}</div>` : ''}
-            ${navQuery ? `<button onclick="event.stopPropagation(); openShopMap(${it.id})" style="margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:7px 12px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> 導航到這裡</button>` : ''}
-          </div>
-          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
-            <button onclick="openFoodListForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="deleteFoodListItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-          </div>
+      <div class="card" style="padding:0; margin-bottom:10px; overflow:hidden;">
+        <div onclick="toggleShopArea('${escapeHtml(area.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))}')" style="display:flex; align-items:center; gap:9px; padding:14px; cursor:pointer;">
+          <i class="fa-solid fa-chevron-right" style="font-size:calc(11px * var(--font-scale)); color:var(--gray); transition:transform 0.2s; transform:rotate(${open?90:0}deg);"></i>
+          <i class="fa-solid fa-location-dot" style="color:var(--gold);"></i>
+          <b style="flex:1; min-width:0; color:var(--navy); font-size:calc(14.5px * var(--font-scale));">${escapeHtml(area)}</b>
+          <span style="color:var(--gray); font-size:calc(11.5px * var(--font-scale)); font-weight:700;">${done?`${done}/`:''}${groups[area].length} 間</span>
         </div>
+        ${open ? `<div style="padding:0 10px 4px;">${groups[area].map(it => renderShopCard(it, symbol)).join('')}</div>` : ''}
       </div>`;
     }).join('');
   }
@@ -2023,6 +2093,8 @@ Day2 12:00 outlet購物，預計逛一小時
       <input type="text" id="fl-name" value="${editing?escapeHtml(editing.name):''}" placeholder="店名／料理或商品名稱" style="${inputStyle}">
       <div class="input-label">類型</div>
       <select id="fl-type" style="${inputStyle} background:#fff; font-family:inherit;">${SHOP_TYPES.map(t=>`<option value="${t}" ${t===curType?'selected':''}>${SHOP_TYPE_ICON[t]} ${t}</option>`).join('')}</select>
+      <div class="input-label">區域（留空會自動從地址判斷，例如：西面、海雲台、新千歲）</div>
+      <input type="text" id="fl-area" value="${editing?escapeHtml(editing.area||''):''}" placeholder="同一區的店家會收在同一個區塊裡" style="${inputStyle}">
       <div class="input-label">地點／地址（填完整一點，導航才抓得準）</div>
       <input type="text" id="fl-location" value="${editing?escapeHtml(editing.location||''):''}" placeholder="例如：札幌市中央區南3條西4丁目" style="${inputStyle}">
       <div class="input-label">營業時間</div>
@@ -2038,13 +2110,14 @@ Day2 12:00 outlet購物，預計逛一小時
       const name = document.getElementById('fl-name').value.trim();
       if (!name) { alert('請輸入店家名稱！'); return; }
       const type = document.getElementById('fl-type').value;
+      const area = document.getElementById('fl-area').value.trim();
       const location = document.getElementById('fl-location').value.trim();
       const hours = document.getElementById('fl-hours').value.trim();
       const closed = document.getElementById('fl-closed').value.trim();
       const budget = p(document.getElementById('fl-budget').value);
       const note = document.getElementById('fl-note').value.trim();
-      if (editing) { Object.assign(editing, {name, type, location, hours, closed, budget, note}); }
-      else { foodListData.push({ id: foodListItemSeq++, name, type, location, hours, closed, budget, note, tried:false }); }
+      if (editing) { Object.assign(editing, {name, type, area, location, hours, closed, budget, note}); }
+      else { foodListData.push({ id: foodListItemSeq++, name, type, area, location, hours, closed, budget, note, tried:false }); }
       saveFoodList(); renderFoodList(); closeGeneralEdit();
     });
   }
@@ -2836,12 +2909,18 @@ Day2 12:00 outlet購物，預計逛一小時
       const retLoc = (entry.returnLocation||'').trim();
       const hasRet = retLoc && retLoc !== (entry.pickupLocation||'').trim();
       let btns = '';
-      if (pick) btns += docNavBtn('car', entry.id, 'pickup', hasRet ? '導航到取車點' : '導航到這裡');
-      if (hasRet) btns += docNavBtn('car', entry.id, 'return', '導航到還車點');
-      if (btns) extra += `<div style="display:flex; gap:6px; margin-top:10px;">${btns}</div>`;
+      if (pick) {
+        btns += docNavBtn('car', entry.id, 'pickup', hasRet ? '取車點導航' : 'Google 地圖');
+        if (isKoreaTrip()) btns += docNaverBtn('car', entry.id, 'pickup', hasRet ? '取車點 NAVER' : 'NAVER 地圖');
+      }
+      if (hasRet) {
+        btns += docNavBtn('car', entry.id, 'return', '還車點導航');
+        if (isKoreaTrip()) btns += docNaverBtn('car', entry.id, 'return', '還車點 NAVER');
+      }
+      if (btns) extra += `<div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">${btns}</div>`;
     } else if (type === 'hotel') {
       const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
-      if (q) extra += `<div style="display:flex; margin-top:10px;">${docNavBtn('hotel', entry.id, '', '導航到這裡')}</div>`;
+      if (q) extra += `<div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">${docNavBtn('hotel', entry.id, '', 'Google 地圖')}${isKoreaTrip() ? docNaverBtn('hotel', entry.id, '', 'NAVER 地圖') : ''}</div>`;
     }
 
     if (type === 'coupon') {
@@ -2874,15 +2953,32 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!q) { alert('沒有可用的地點資訊，請先填寫店家名稱或地址'); return; }
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
   }
+  // 韓國的 Google 地圖資料不完整，當地人都用 NAVER，所以韓國旅程會多給一顆 NAVER 導航鈕
+  function isKoreaTrip() { return (((tripSettings && tripSettings.country) || '🇰🇷 韓國') === '🇰🇷 韓國'); }
+  function openNaverMap(query) {
+    const q = (query||'').trim();
+    if (!q) { alert('沒有可用的地點資訊，請先填寫店家名稱或地址'); return; }
+    window.open(`https://map.naver.com/p/search/${encodeURIComponent(q)}`, '_blank');
+  }
+  function docMapQuery(type, e, which) {
+    if (type === 'car') return [e.company, which === 'return' ? e.returnLocation : e.pickupLocation].filter(x => (x||'').trim()).join(' ');
+    if (type === 'hotel') return [e.name, e.address].filter(x => (x||'').trim()).join(' ');
+    return '';
+  }
   function openDocMap(type, id, which) {
     const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
-    let q = '';
-    if (type === 'car') q = [e.company, which === 'return' ? e.returnLocation : e.pickupLocation].filter(x => (x||'').trim()).join(' ');
-    else if (type === 'hotel') q = [e.name, e.address].filter(x => (x||'').trim()).join(' ');
-    openMapSearch(q);
+    openMapSearch(docMapQuery(type, e, which));
   }
+  function openDocNaver(type, id, which) {
+    const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
+    openNaverMap(docMapQuery(type, e, which));
+  }
+  const NAV_BTN_STYLE = 'flex:1; min-width:120px; padding:9px 6px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;';
   function docNavBtn(type, id, which, label) {
-    return `<button onclick="event.stopPropagation(); openDocMap('${type}',${id},'${which}')" style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px 6px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> ${label}</button>`;
+    return `<button onclick="event.stopPropagation(); openDocMap('${type}',${id},'${which}')" style="${NAV_BTN_STYLE} background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF;"><i class="fa-solid fa-map-location-dot"></i> ${label}</button>`;
+  }
+  function docNaverBtn(type, id, which, label) {
+    return `<button onclick="event.stopPropagation(); openDocNaver('${type}',${id},'${which}')" style="${NAV_BTN_STYLE} background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F;"><i class="fa-solid fa-map"></i> ${label}</button>`;
   }
 
   // 優惠碼：到期判斷、卡片上的「複製碼／開連結／圖片預覽」、以及圖片壓縮上傳
@@ -3474,6 +3570,7 @@ Day2 12:00 outlet購物，預計逛一小時
   function buildItinAiInstructions(includeRawText, rawText) {
     const dayContextLines = ITIN_DAYS.map((d, i) => `${d.date}(週${d.wd}) = ${d.key} = Day${i+1}`).join('\n');
     const catList = ITIN_CATS.join('、');
+    const countryLabel = (tripSettings && tripSettings.country) || '未指定';
     let instructions = `你是旅遊行程助理。請閱讀${includeRawText ? '以下使用者提供的行程描述文字' : '本則訊息附上的行程圖片或文件內容'}，判斷其中包含幾個「獨立的行程活動」，並為每個活動萃取出結構化資料。
 
 行程活動的定義：每一個有明確主要行為（通常伴隨時間點）的段落算一個活動，例如「12:00 outlet購物」是一個活動。同一個活動內的補充說明——例如預計停留多久、預估花費、是否已訂位、交通移動方式、注意事項等——都不要拆成獨立活動，應合併寫入該活動對應欄位，不要重複列出成新的項目。
@@ -3484,8 +3581,13 @@ ${dayContextLines}
 
 請自動判斷每個活動的分類，從這些選項中選一個最符合的：${catList}；無法判斷則留空字串。若內容中提到交通方式（如地鐵、步行、計程車）與通勤時間，請分別填入 transport 與 transportTime；若提到地點或店家名稱，填入 place。
 
+【重要】使用者常常只寫「幾點去哪一間店」而已。只要你能辨識出那是哪一間實際存在的店家、餐廳、咖啡店、商場或景點，請主動以你已知的資訊補齊下列欄位，讓使用者不必自己再查一次：nameOriginal（當地原文店名）、area（所在區域／商圈）、address（完整地址）、hours（營業時間）、closed（公休日）、transport（怎麼去，例如最近的地鐵站與出口）、transportTime（大約要走多久）、veg（是否有素食）、intro（這家店在賣什麼、有什麼特色，40字內）、recommend（招牌或必點必買）、price（每人大約要花多少）。
+本次旅程國家：${countryLabel}。area 請用當地人習慣的商圈或行政區名稱（例如韓國：西面、海雲台、機張、南浦洞、廣安里；日本：新千歲、札幌大通、心齋橋、淺草），同一個商圈務必每次都寫成完全一樣的名稱。
+veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項中擇一填寫。
+沒有把握的欄位一律回空字串，絕對不要編造地址、電話或營業時間；營業時間與公休日若不確定，寧可留空讓使用者自己查。
+
 請只回傳一個 JSON 陣列，不要有任何其他文字、說明、或 markdown 標記（不要加\`\`\`json），格式為：
-[{"date": "YYYY-MM-DD格式，若未提及日期則為空字串", "time": "HH:MM格式，若未明確提及則依上下文合理推斷，否則用12:00", "endTime": "HH:MM格式，若未提及則空字串", "title": "活動名稱，簡潔扼要", "category": "分類，從上述選項中選一個或空字串", "place": "地點或店家名稱，若未提及則空字串", "transport": "交通方式，若未提及則空字串", "transportTime": "通勤時間，若未提及則空字串", "price": "費用相關描述，若未提及則空字串", "notes": "訂位狀態、注意事項等其他補充細節，若未提及則空字串"}]`;
+[{"date": "YYYY-MM-DD格式，若未提及日期則為空字串", "time": "HH:MM格式，若未明確提及則依上下文合理推斷，否則用12:00", "endTime": "HH:MM格式，若未提及則空字串", "title": "活動名稱，簡潔扼要", "category": "分類，從上述選項中選一個或空字串", "place": "地點或店家名稱，若未提及則空字串", "nameOriginal": "該店家的當地原文名稱，不確定則空字串", "area": "所在區域或商圈，不確定則空字串", "address": "完整地址，不確定則空字串", "transport": "交通方式，例如 地鐵西面站7號出口步行3分鐘", "transportTime": "通勤時間，若未提及則空字串", "hours": "營業時間，不確定則空字串", "closed": "公休日，不確定則空字串", "veg": "素食情況，四選一，不確定則空字串", "intro": "店家簡介，40字內", "recommend": "招牌或推薦品項", "price": "每人預估花費或費用描述，若未提及則空字串", "notes": "訂位狀態、注意事項等其他補充細節，若未提及則空字串"}]`;
 
     if (includeRawText) {
       instructions += `\n\n使用者提供的文字如下：\n"""\n${rawText}\n"""`;
@@ -5576,6 +5678,7 @@ ${dayContextLines}
     receiptReviewItemsState = [];
     // 折扣試算的暫存（跨房間留著會讓人以為是這個房間的資料）
     shopItems = [{ _sid: shopItemSeq++, name: '', price: 0 }]; shopDiscounts = [];
+    const settleContent = document.getElementById('settle-content'); if (settleContent) settleContent.innerHTML = '';
   }
 
   async function enterRoom(roomId) {
@@ -5606,6 +5709,8 @@ ${dayContextLines}
     } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
 
     if (!travelers.length) travelers = ['我']; // 清空後若該房間確實沒有成員資料，補一個預設值，記帳才有付款人可選
+    // 分帳結算的內容只有在切換到該分頁時才會重畫，換房間時不重畫就會看到上一個房間的結算結果
+    renderExpenseSummary(); renderSettlement();
     rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
     registerRoom(roomId, tripSettings.title);
     renderHeroSyncStatus();
@@ -5787,7 +5892,7 @@ ${dayContextLines}
 
     renderTripSettingsUI(); renderPrep(); renderDayTabs();
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
-    renderExpenseSummary(); renderDayPills(); renderMembersSettingsList();
+    renderExpenseSummary(); renderSettlement(); renderDayPills(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
     const listsTab = document.getElementById('prep-tab-lists'); if (listsTab && listsTab.style.display !== 'none') { renderWishlist(); renderFoodList(); }
     renderReminder(true);
