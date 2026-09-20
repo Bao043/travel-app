@@ -346,8 +346,8 @@
             <div class="mini-label"><i class="fa-solid fa-money-bill-transfer"></i> 即時匯率</div>
             <div id="overview-rate" class="mini-value">讀取中...</div>
         </div>
-        <div class="card mini-card">
-            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> <span id="weather-city-label">釜山天氣</span></div>
+        <div class="card mini-card" onclick="openWeatherCityEdit()" style="cursor:pointer;" title="城市抓錯了？點一下可以手動指定">
+            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> <span id="weather-city-label">釜山天氣</span> <i class="fa-solid fa-pen only-master" style="font-size:calc(9px * var(--font-scale)); color:var(--gray);"></i></div>
             <div id="overview-weather" class="mini-value">讀取中...</div>
             <div class="mini-sub" id="korea-time">當地時間 --:--</div>
         </div>
@@ -853,7 +853,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-18 14:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-20 11:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1943,7 +1943,8 @@ Day2 12:00 outlet購物，預計逛一小時
       const total = price * qty;
       const twd = (cur === 'TWD' || !total) ? 0 : Math.round(total / rate);
       const expanded = expandedWishIds.has(it.id);
-      const photo = (it.imageUrl||'').trim();
+      const photos = imagesOf(it);
+      const photo = photos[0] || '';
       // 「誰幫誰買」：前者是旅程成員（下拉選），後者是收禮的人（自己打字）
       const buyer = (it.buyer||'').trim();
       const forWhom = (it.forWhom||'').trim();
@@ -1951,10 +1952,13 @@ Day2 12:00 outlet購物，預計逛一小時
         ? `<span style="color:var(--navy); font-weight:700;">${escapeHtml(buyer||'未指定')}</span> <i class="fa-solid fa-arrow-right-long" style="color:var(--gold); font-size:calc(10px * var(--font-scale));"></i> <span>${escapeHtml(forWhom||'自己')}</span>`
         : '';
       const thumb = photo
-        ? `<img src="${escapeHtml(photo)}" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:14px; flex-shrink:0; border:1px solid var(--line); ${it.bought?'opacity:0.55;':''}" onerror="this.style.display='none'">`
+        ? `<div style="position:relative; flex-shrink:0;"><img src="${escapeHtml(photo)}" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:14px; display:block; border:1px solid var(--line); ${it.bought?'opacity:0.55;':''}" onerror="this.style.display='none'">${photos.length>1?`<span style="position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,0.6); color:#fff; font-size:calc(9.5px * var(--font-scale)); font-weight:800; border-radius:6px; padding:1px 6px;">+${photos.length-1}</span>`:''}</div>`
         : `<div style="width:70px; height:70px; border-radius:14px; flex-shrink:0; background:#F1F5F9; display:flex; align-items:center; justify-content:center; color:#C5CEDA;"><i class="fa-solid fa-bag-shopping" style="font-size:calc(22px * var(--font-scale));"></i></div>`;
       const row = (icon, label, val) => val ? `<div class="detail-row"><i class="fa-solid ${icon}"></i><span><b>${label}：</b>${escapeHtml(String(val))}</span></div>` : '';
-      const detail = row('fa-layer-group', '數量／組數', qty + ' 組')
+      const gallery = photos.length > 1
+        ? `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">${photos.map(s=>`<img src="${escapeHtml(s)}" alt="" style="width:110px; height:110px; object-fit:cover; border-radius:12px; border:1px solid var(--line); flex:0 0 auto;" onerror="this.style.display='none'">`).join('')}</div>`
+        : (photos.length === 1 ? `<img src="${escapeHtml(photos[0])}" alt="" style="width:100%; border-radius:12px; border:1px solid var(--line); margin-bottom:9px;" onerror="this.style.display='none'">` : '');
+      const detail = gallery + row('fa-layer-group', '數量／組數', qty + ' 組')
         + row('fa-tag', '預估單價', price ? `${symbol}${f(price)}（共 ${symbol}${f(total)}${twd?`　約 NT$ ${f(twd)}`:''}）` : '')
         + row('fa-shop', '購買地點', it.store)
         + row('fa-user', '代購人', buyer)
@@ -1992,15 +1996,12 @@ Day2 12:00 outlet購物，預計逛一小時
     const st = 'width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;';
     const v = (k) => editing ? escapeHtml(editing[k]||'') : '';
     const curBuyer = editing ? (editing.buyer||'') : '';
-    const img = editing ? (editing.imageUrl||'') : '';
+    imgEditorInit(imagesOf(editing));
     const fields = `
       <div class="input-label">商品名稱</div>
       <input type="text" id="wl-name" value="${editing?escapeHtml(editing.name):''}" placeholder="例如：Medicube AGE-R 潔顏儀" style="${st}">
-      <div class="input-label">商品圖片（貼圖片網址，或從相簿選）</div>
-      <input type="text" id="wl-image" value="${escapeHtml(img)}" placeholder="https://..." style="${st}">
-      <button type="button" class="ghost-btn" style="margin-bottom:10px; font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="document.getElementById('wl-image-file').click()"><i class="fa-solid fa-image"></i> 從相簿選擇圖片</button>
-      <input type="file" id="wl-image-file" accept="image/*" style="display:none;" onchange="handleDocImagePick(event,'wl-image')">
-      <div id="wl-image-preview" style="margin-bottom:12px;">${img?`<img src="${escapeHtml(img)}" style="width:100%; border-radius:12px; border:1px solid var(--line);">`:''}</div>
+      <div class="input-label">商品圖片（可放多張，能刪除、也能指定封面）</div>
+      ${imgEditorHtml()}
       <div style="display:flex; gap:8px;">
         <div style="flex:1; min-width:0;">
           <div class="input-label">誰買（成員）</div>
@@ -2026,13 +2027,15 @@ Day2 12:00 outlet購物，預計逛一小時
       <div class="input-label">備註</div>
       <textarea id="wl-note" placeholder="例如：要買 50ml 的、記得問有沒有贈品" style="${st} min-height:50px;">${editing?escapeHtml(editing.note||''):''}</textarea>
     `;
+    setTimeout(imgEditorRender, 30);
     setupGeneralEdit(editing?'編輯購物項目':'新增購物項目', fields, () => {
       const g = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
       const name = g('wl-name');
       if (!name) { alert('請輸入商品名稱！'); return; }
       const data = {
         name,
-        imageUrl: g('wl-image'),
+        images: imgEditorValue(),
+        imageUrl: (imgEditorValue()[0] || ''),
         buyer: g('wl-buyer'),
         forWhom: g('wl-forwhom'),
         qty: parseInt(document.getElementById('wl-qty').value, 10) || 1,
@@ -2157,6 +2160,89 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   function toggleFoodTried(id) { const it = foodListData.find(i=>i.id===id); if(it){ it.tried=!it.tried; saveFoodList(); renderFoodList(); } }
   function deleteFoodListItem(id) { if(!confirm('確定要刪除這家店嗎？')) return; const i = foodListData.findIndex(x=>x.id===id); if (i>=0) foodListData.splice(i,1); saveFoodList(); renderFoodList(); }
+  // ===== 店家 AI 帶入：只輸入店名，AI 會查出地址、電話、營業時間等資料。
+  // 同名分店很多時最容易抓錯，所以一律先列出候選（附地址與電話），由使用者確認是哪一間後才填入 =====
+  let shopAiCandidates = [];
+  function buildShopLookupPrompt(name, areaHint) {
+    const country = (tripSettings && tripSettings.country) || '未指定';
+    const cur = getCountryInfo().currency;
+    return `你是熟悉當地的旅遊資料助理。使用者要把一間店加入旅遊店家清單，但只給了店名。
+
+店名：${name}
+本次旅程國家：${country}
+使用者提供的區域提示：${areaHint || '（沒有提示）'}
+
+請找出最符合的店家。如果這個名字有很多分店、或你無法確定是哪一間，請列出最多 3 間最可能的候選，並確保每一筆都有能互相區分的資訊（完整地址、電話、所在商圈）。如果可以確定只有一間，就只回傳一筆。
+不確定的欄位一律回空字串，絕對不要編造地址或電話；營業時間與公休日若沒把握就留空。
+
+只回傳一個 JSON 陣列，不要有任何其他文字、說明或 markdown 標記（不要加\`\`\`json）：
+[{"name":"店名（中文或常用名）","branch":"分店名稱，例如 西面店、新千歲機場店，沒有分店就空字串","type":"從 美食、購物、咖啡甜點、藥妝、景點、其他 擇一","area":"所在商圈或行政區，例如 西面、海雲台、機張、新千歲","location":"完整地址","phone":"電話（含區碼，韓國導航會用到）","hours":"營業時間","closed":"公休日","budget":每人預估消費金額數字（${cur}，不確定填0）,"note":"招牌品項或提醒，30字內","confidence":"高、中、低 擇一，代表你對這筆資料的把握程度"}]`;
+  }
+  function shopAiBox(html) { const el = document.getElementById('fl-ai-box'); if (el) el.innerHTML = html; }
+  async function aiLookupShop() {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey) { alert('這個功能需要先在「雲端同步與安全設定」填入 Gemini API 金鑰。'); return; }
+    const nameEl = document.getElementById('fl-name'); const areaEl = document.getElementById('fl-area');
+    const name = nameEl ? nameEl.value.trim() : '';
+    if (!name) { alert('請先輸入店家名稱！'); return; }
+    shopAiBox(`<div style="padding:14px; text-align:center; border:2px solid #7C3AED; border-radius:12px; margin-bottom:12px;"><i class="fa-solid fa-spinner fa-spin" style="color:#7C3AED;"></i> <span style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);">AI 查詢中，請稍候...</span></div>`);
+    try {
+      const prompt = buildShopLookupPrompt(name, areaEl ? areaEl.value.trim() : '');
+      const responseText = await callGeminiVision(prompt, null,
+        (n) => shopAiBox(`<div style="padding:14px; text-align:center; border:2px solid #7C3AED; border-radius:12px; margin-bottom:12px;"><i class="fa-solid fa-spinner fa-spin" style="color:#7C3AED;"></i> AI 忙碌中，重試第 ${n} 次...</div>`),
+        'shop-lookup');
+      const list = JSON.parse(extractJsonBlock(responseText));
+      if (!Array.isArray(list) || !list.length) throw new Error('AI 找不到這間店，可以補上區域或完整店名再試一次');
+      shopAiCandidates = list.slice(0, 3);
+      renderShopAiCandidates();
+    } catch (err) {
+      console.error('店家 AI 查詢失敗:', err);
+      shopAiBox(`<div style="padding:12px 14px; border:2px solid var(--warn-border); background:var(--warn-bg); border-radius:12px; margin-bottom:12px; font-size:calc(12px * var(--font-scale)); color:#943126; line-height:1.6;">AI 查詢失敗：${escapeHtml(friendlyAiErrorMessage(err))}</div>`);
+    }
+  }
+  function renderShopAiCandidates() {
+    if (!shopAiCandidates.length) { shopAiBox(''); return; }
+    const confColor = { '高':'var(--teal)', '中':'var(--gold)', '低':'var(--warn)' };
+    const cards = shopAiCandidates.map((c, i) => {
+      const title = [c.name || '', c.branch || ''].filter(Boolean).join(' ');
+      const rows = [
+        ['地址', c.location], ['電話', c.phone], ['商圈', c.area],
+        ['營業', c.hours], ['公休', c.closed], ['備註', c.note]
+      ].filter(r => (r[1]||'').toString().trim())
+       .map(r => `<div style="display:flex; gap:7px; font-size:calc(11.5px * var(--font-scale)); padding:1px 0;"><span style="flex:0 0 40px; color:var(--gray);">${r[0]}</span><span style="flex:1; color:var(--navy); word-break:break-all;">${escapeHtml(String(r[1]))}</span></div>`).join('');
+      return `<div style="border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; margin-bottom:8px; background:#fff;">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:6px;">
+          <b style="flex:1; min-width:0; color:var(--navy); font-size:calc(13.5px * var(--font-scale));">${escapeHtml(title || '未命名')}</b>
+          ${c.confidence ? `<span style="flex-shrink:0; font-size:calc(10px * var(--font-scale)); font-weight:800; color:${confColor[c.confidence]||'var(--gray)'};">把握度 ${escapeHtml(c.confidence)}</span>` : ''}
+        </div>
+        ${rows || `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">AI 沒有提供更多資訊</div>`}
+        <button type="button" onclick="applyShopAiCandidate(${i})" style="width:100%; margin-top:9px; background:#7C3AED; color:#fff; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer;"><i class="fa-solid fa-check"></i> 就是這間，帶入資料</button>
+      </div>`;
+    }).join('');
+    shopAiBox(`<div style="background:#F5F3FF; border:1.5px solid #C4B5FD; border-radius:14px; padding:11px; margin-bottom:12px;">
+      <div style="font-size:calc(12px * var(--font-scale)); color:#5B21B6; font-weight:800; margin-bottom:8px;"><i class="fa-solid fa-circle-question"></i> 找到 ${shopAiCandidates.length} 間可能的店，請確認是哪一間</div>
+      ${cards}
+      <div style="font-size:calc(10.5px * var(--font-scale)); color:#6D28D9; line-height:1.6;">※ 都不是的話，補上區域或更完整的店名再查一次。AI 提供的營業時間可能不是最新，出發前建議再確認。</div>
+    </div>`);
+  }
+  function applyShopAiCandidate(i) {
+    const c = shopAiCandidates[i]; if (!c) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && (val||'').toString().trim()) el.value = String(val).trim(); };
+    set('fl-name', [c.name||'', c.branch||''].filter(Boolean).join(' '));
+    set('fl-area', c.area);
+    set('fl-location', c.location);
+    set('fl-phone', c.phone);
+    set('fl-hours', c.hours);
+    set('fl-closed', c.closed);
+    if (Number(c.budget) > 0) set('fl-budget', Number(c.budget));
+    const typeEl = document.getElementById('fl-type');
+    if (typeEl && SHOP_TYPES.includes(c.type)) typeEl.value = c.type;
+    const noteEl = document.getElementById('fl-note');
+    if (noteEl && (c.note||'').trim() && !noteEl.value.trim()) noteEl.value = c.note.trim();
+    shopAiBox(`<div style="padding:11px 13px; background:#ECFDF5; border:1.5px solid #A7F3D0; border-radius:12px; margin-bottom:12px; font-size:calc(12px * var(--font-scale)); color:#065F46; line-height:1.6;"><i class="fa-solid fa-circle-check"></i> 已帶入「${escapeHtml([c.name||'', c.branch||''].filter(Boolean).join(' '))}」的資料，可以再自行修改後儲存。</div>`);
+    shopAiCandidates = [];
+  }
+
   function openFoodListForm(editId) {
     const editing = editId ? foodListData.find(i=>i.id===editId) : null;
     const curType = (editing && SHOP_TYPES.includes(editing.type)) ? editing.type : '美食';
@@ -2164,6 +2250,9 @@ Day2 12:00 outlet購物，預計逛一小時
     const fields = `
       <div class="input-label">店家名稱</div>
       <input type="text" id="fl-name" value="${editing?escapeHtml(editing.name):''}" placeholder="店名／料理或商品名稱" style="${inputStyle}">
+      <button type="button" class="ghost-btn" style="margin-bottom:10px; font-size:calc(12.5px * var(--font-scale)); padding:10px; border-color:#7C3AED; color:#7C3AED;" onclick="aiLookupShop()"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 自動帶入店家資訊</button>
+      <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px; line-height:1.6;">只要輸入店名（分店多的話可先填下面的區域），AI 會列出候選店家讓你確認是哪一間，確認後自動填好地址、電話、營業時間等欄位。</p>
+      <div id="fl-ai-box"></div>
       <div class="input-label">類型</div>
       <select id="fl-type" style="${inputStyle} background:#fff; font-family:inherit;">${SHOP_TYPES.map(t=>`<option value="${t}" ${t===curType?'selected':''}>${SHOP_TYPE_ICON[t]} ${t}</option>`).join('')}</select>
       <div class="input-label">區域（留空會自動從地址判斷，例如：西面、海雲台、新千歲）</div>
@@ -2724,19 +2813,41 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   // 回傳一串由可信度高到低的候選地名，呼叫端可以逐個嘗試地理編碼，
   // 避免第一個查不到就整個放棄、直接退回國家預設城市
+  // 從一天的行程裡挑出最可能的所在城市。
+  // 原本只是「在整段文字裡找到第一個城市名就用」，所以備註隨口提到的別的城市（例如釜山行程裡寫到首爾）
+  // 會因為剛好排在城市表前面而蓋掉真正的所在地。改成：地點／地址／區域欄位權重最高，
+  // 標題與備註只當參考且至少要出現兩次才採信，並以出現次數最多的為準。
+  function pickCityFromDay(items) {
+    const table = CITY_COORDS[(tripSettings && tripSettings.country)] || {};
+    const strong = items.map(it => `${it.place||''} ${it.address||''} ${it.area||''}`).join(' ');
+    const weak = items.map(it => `${it.title||''} ${it.notes||''} ${it.transport||''}`).join(' ');
+    const countOf = (hay, k) => (hay && k) ? hay.split(k).length - 1 : 0;
+    let best = '', bestScore = 0, bestPos = Infinity, bestStrong = false;
+    Object.keys(table).forEach(city => {
+      const s = countOf(strong, city), w = countOf(weak, city);
+      const score = s * 3 + w;
+      if (!score) return;
+      if (!s && w < 2) return;   // 只在標題／備註出現一次的，多半是順口提到，不採信
+      const pos = s ? strong.indexOf(city) : 10000 + weak.indexOf(city);
+      if (score > bestScore || (score === bestScore && pos < bestPos)) { best = city; bestScore = score; bestPos = pos; bestStrong = s > 0; }
+    });
+    return { city: best, strong: bestStrong };
+  }
   function resolveDayCity(dayKey, _noInherit) {
     const manual = tripSettings.dayCities && tripSettings.dayCities[dayKey];
     if (manual) return { city: manual, candidates: [manual], source: 'manual' };
 
     const items = (itinData[dayKey] || []).slice().sort((a,b) => (a.time||'').localeCompare(b.time||''));
-    const dayText = items.map(it => `${it.place||''} ${it.address||''} ${it.title||''} ${it.notes||''}`).join(' ');
+    const strongText = items.map(it => `${it.place||''} ${it.address||''} ${it.area||''}`).join(' ');
+    const weakText = items.map(it => `${it.title||''} ${it.notes||''}`).join(' ');
     const candidates = [];
     const push = (v) => { const t = (v||'').trim(); if (t && !candidates.includes(t)) candidates.push(t); };
 
-    // 1. 文字裡直接出現城市名，最可信
-    push(findKnownCity(dayText));
-    // 2. 出現的是知名地標，換算成它所在的城市（天氣只查得到城市）
-    push(landmarkToCity(dayText));
+    // 1. 依權重與出現次數挑出的城市，最可信
+    push(pickCityFromDay(items).city);
+    // 2. 出現的是知名地標，換算成它所在的城市（天氣只查得到城市）；一樣先看地點欄位再看標題備註
+    push(landmarkToCity(strongText));
+    push(landmarkToCity(weakText));
     // 3. 都沒有的話，沿用前一天已判斷出的城市——多天待在同一個城市是常態
     if (!candidates.length && !_noInherit) {
       const idx = ITIN_DAYS.findIndex(d => d.key === dayKey);
@@ -2751,6 +2862,11 @@ Day2 12:00 outlet購物，預計逛一小時
 
     if (!candidates.length) return { city: '', candidates: [], source: 'default' };
     return { city: candidates[0], candidates, source: 'auto' };
+  }
+  let weatherDayKey = '';
+  function openWeatherCityEdit() {
+    if (!isMasterMode) { alert('切換成主操作者模式後，就可以手動指定這天的城市'); return; }
+    openDayCityEdit(weatherDayKey || todayOrTripDate());
   }
   // 總覽頁天氣：優先看「今天」這一天實際所在地點（手動指定，或自動抓行程「地點」欄位），
   // 查到就用那個地點的天氣；還沒到旅程當天、或當天沒有可用地點，就用旅程國家的預設代表城市
@@ -2785,6 +2901,7 @@ Day2 12:00 outlet購物，預計逛一小時
         if (geo) { lat = geo.lat; lon = geo.lon; cityLabel = cand; break; }
       }
     }
+    weatherDayKey = relevantDayKey;   // 記住天氣是抓哪一天，點卡片時才知道要改哪一天的城市
     addDebugLog('weather_resolve', { relevantDayKey, resolvedSource: resolved ? resolved.source : '', tried, finalCityLabel: cityLabel, lat, lon });
 
     // 標示這是哪一天的城市，跟行程頁對照時才不會覺得兩邊兜不起來
@@ -3092,18 +3209,80 @@ Day2 12:00 outlet購物，預計逛一小時
     if ((entry.url||'').trim()) {
       html += `<button onclick="event.stopPropagation(); openCouponLink(${entry.id})" style="width:100%; margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-up-right-from-square"></i> 開啟優惠連結</button>`;
     }
-    if (entry.imageUrl) {   // 收合時只放縮圖，避免整張優惠券把版面撐開；大圖移到展開後才顯示
+    const imgs = imagesOf(entry);
+    if (imgs.length) {   // 收合時只放縮圖，避免整張優惠券把版面撐開；大圖移到展開後才顯示
       html += `<div style="display:flex; align-items:center; gap:9px; margin-top:9px; padding:7px 9px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px;">
-        <img src="${escapeHtml(entry.imageUrl)}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:9px; flex-shrink:0;" onerror="this.style.display='none'">
-        <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">附有優惠圖片，點卡片展開看大圖</span>
+        <img src="${escapeHtml(imgs[0])}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:9px; flex-shrink:0;" onerror="this.style.display='none'">
+        <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">附有 ${imgs.length} 張優惠圖片，點卡片展開看大圖</span>
       </div>`;
     }
     return html;
   }
   function couponImageHtml(entry) {
-    if (!entry.imageUrl) return '';
-    return `<img src="${escapeHtml(entry.imageUrl)}" alt="優惠圖片" style="width:100%; margin-bottom:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`;
+    const imgs = imagesOf(entry);
+    if (!imgs.length) return '';
+    return imgs.map(s => `<img src="${escapeHtml(s)}" alt="優惠圖片" style="width:100%; margin-bottom:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`).join('');
   }
+  // ===== 多張圖片編輯器：可以一次加好幾張、刪掉不要的、也可以指定哪一張當封面。
+  // 優惠碼與購物清單共用同一套；資料存成 images 陣列，第一張同時寫回舊的 imageUrl 欄位保持相容 =====
+  const IMG_EDITOR_MAX = 8;
+  let imgEditorList = [];
+  function imagesOf(obj) {
+    if (!obj) return [];
+    if (Array.isArray(obj.images) && obj.images.length) return obj.images.filter(Boolean);
+    return (obj.imageUrl||'').trim() ? [obj.imageUrl.trim()] : [];
+  }
+  function imgEditorInit(list) { imgEditorList = (list||[]).filter(Boolean).slice(0, IMG_EDITOR_MAX); }
+  function imgEditorValue() { return imgEditorList.slice(); }
+  function imgEditorHtml() {
+    return `<div id="img-editor-box" style="margin-bottom:8px;"></div>
+      <div style="display:flex; gap:6px; margin-bottom:12px;">
+        <button type="button" class="ghost-btn" style="flex:1; font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="document.getElementById('img-editor-file').click()"><i class="fa-solid fa-image"></i> 從相簿加入</button>
+        <input type="text" id="img-editor-url" placeholder="或貼上圖片網址" style="flex:1; min-width:0; padding:9px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+        <button type="button" onclick="imgEditorAddUrl()" style="flex-shrink:0; width:42px; background:var(--navy); color:#fff; border:none; border-radius:12px; cursor:pointer; font-size:calc(16px * var(--font-scale));"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <input type="file" id="img-editor-file" accept="image/*" multiple style="display:none;" onchange="imgEditorAddFiles(event)">`;
+  }
+  function imgEditorRender() {
+    const box = document.getElementById('img-editor-box'); if (!box) return;
+    if (!imgEditorList.length) {
+      box.innerHTML = `<div style="padding:14px; border:1.5px dashed var(--line); border-radius:12px; text-align:center; color:var(--gray); font-size:calc(12px * var(--font-scale));">尚未加入圖片，最多可放 ${IMG_EDITOR_MAX} 張</div>`;
+      return;
+    }
+    box.innerHTML = `<div style="display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px;">` + imgEditorList.map((s, i) => `
+      <div style="position:relative; flex:0 0 auto;">
+        <img src="${escapeHtml(s)}" alt="" style="width:94px; height:94px; object-fit:cover; border-radius:13px; border:2px solid ${i===0?'var(--teal)':'var(--line)'};" onerror="this.style.opacity='0.25'">
+        ${i===0
+          ? `<span style="position:absolute; left:5px; bottom:5px; background:var(--teal); color:#fff; font-size:calc(9.5px * var(--font-scale)); font-weight:800; border-radius:6px; padding:2px 7px;">封面</span>`
+          : `<button type="button" onclick="imgEditorMakeCover(${i})" style="position:absolute; left:5px; bottom:5px; background:rgba(0,0,0,0.55); color:#fff; border:none; font-size:calc(9.5px * var(--font-scale)); font-weight:700; border-radius:6px; padding:3px 7px; cursor:pointer;">設為封面</button>`}
+        <button type="button" onclick="imgEditorRemove(${i})" title="刪除這張" style="position:absolute; top:-6px; right:-6px; width:25px; height:25px; border-radius:50%; background:var(--warn); color:#fff; border:2px solid #fff; cursor:pointer; font-size:calc(12px * var(--font-scale)); line-height:1; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
+      </div>`).join('') + `</div>
+      <div style="font-size:calc(11px * var(--font-scale)); color:var(--gray); padding-left:2px;">共 ${imgEditorList.length} 張・左右滑動可看全部，右上角叉叉可刪除</div>`;
+  }
+  async function imgEditorAddFiles(event) {
+    const files = Array.from(event.target.files || []); event.target.value = '';
+    for (const file of files) {
+      if (imgEditorList.length >= IMG_EDITOR_MAX) { alert(`最多只能放 ${IMG_EDITOR_MAX} 張圖片`); break; }
+      try {
+        const dataUrl = await compressImageToDataUrl(file, 700, 0.7);
+        const kb = Math.round(dataUrl.length * 0.75 / 1024);
+        if (kb > 400) alert(`這張圖壓縮後仍有約 ${kb} KB，建議改貼圖片網址，避免雲端同步變慢。`);
+        imgEditorList.push(dataUrl);
+      } catch(e) { alert('圖片處理失敗：' + e.message); }
+    }
+    imgEditorRender();
+  }
+  function imgEditorAddUrl() {
+    const el = document.getElementById('img-editor-url'); if (!el) return;
+    const u = (el.value||'').trim();
+    if (!u) { alert('請先貼上圖片網址'); return; }
+    if (!/^https?:\/\//i.test(u) && u.indexOf('data:image') !== 0) { alert('請貼上以 http 或 https 開頭的圖片網址'); return; }
+    if (imgEditorList.length >= IMG_EDITOR_MAX) { alert(`最多只能放 ${IMG_EDITOR_MAX} 張圖片`); return; }
+    imgEditorList.push(u); el.value = ''; imgEditorRender();
+  }
+  function imgEditorRemove(i) { imgEditorList.splice(i, 1); imgEditorRender(); }
+  function imgEditorMakeCover(i) { const x = imgEditorList.splice(i, 1)[0]; imgEditorList.unshift(x); imgEditorRender(); }
+
   // 圖片壓到長邊 700px 再轉存，避免整份資料同步時變得很肥
   function compressImageToDataUrl(file, maxEdge, quality) {
     return new Promise((resolve, reject) => {
@@ -3139,6 +3318,8 @@ Day2 12:00 outlet購物，預計逛一小時
     const schema = DOC_TYPES[type];
     const arr = travelDocs[type+'s'] || [];
     const editing = editId ? arr.find(e => e.id === editId) : null;
+    const hasImageField = schema.fields.some(f => f.type === 'image');
+    if (hasImageField) imgEditorInit(imagesOf(editing));
     const fieldsHtml = schema.fields.map(f => {
       const val = editing ? (editing[f.key] || '') : '';
       const id = `docf-${f.key}`;
@@ -3146,18 +3327,18 @@ Day2 12:00 outlet購物，預計逛一小時
         return `<div class="input-label">${f.label}</div><textarea id="${id}" placeholder="${f.placeholder||''}" style="width:100%; min-height:60px; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">${escapeHtml(val)}</textarea>`;
       }
       if (f.type === 'image') {
-        return `<div class="input-label">${f.label}</div>
-          <input type="text" id="${id}" placeholder="貼上圖片網址，或按下方按鈕從相簿選" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0; margin-bottom:8px;">
-          <button type="button" class="ghost-btn" style="margin-bottom:10px; font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="document.getElementById('${id}-file').click()"><i class="fa-solid fa-image"></i> 從相簿選擇圖片</button>
-          <input type="file" id="${id}-file" accept="image/*" style="display:none;" onchange="handleDocImagePick(event,'${id}')">
-          <div id="${id}-preview" style="margin-bottom:10px;">${val ? `<img src="${escapeHtml(val)}" style="width:100%; border-radius:10px; border:1px solid var(--line);">` : ''}</div>`;
+        return `<div class="input-label">${f.label}（可放多張，能刪除、也能指定封面）</div>${imgEditorHtml()}`;
       }
       return `<div class="input-label">${f.label}</div><input type="${f.type}" id="${id}" placeholder="${f.placeholder||''}" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0;">`;
     }).join('');
 
+    if (hasImageField) setTimeout(imgEditorRender, 30);   // 等彈窗的 DOM 出現後再畫縮圖列
     setupGeneralEdit(`${editing ? '編輯' : '新增'}${schema.label}`, fieldsHtml, () => {
       const entry = editing || { id: docItemSeq++ };
-      schema.fields.forEach(f => { const el = document.getElementById(`docf-${f.key}`); entry[f.key] = el ? el.value.trim() : ''; });
+      schema.fields.forEach(f => {
+        if (f.type === 'image') { entry.images = imgEditorValue(); entry[f.key] = entry.images[0] || ''; return; }
+        const el = document.getElementById(`docf-${f.key}`); entry[f.key] = el ? el.value.trim() : '';
+      });
       if (!editing) arr.push(entry);
       travelDocs[type+'s'] = arr;
       saveTravelDocs();
@@ -3294,15 +3475,16 @@ Day2 12:00 outlet購物，預計逛一小時
     wrap.querySelectorAll('.day-tab').forEach(tab => { if(tab.classList.contains('active')) { tab.style.background = 'var(--navy)'; tab.style.color = '#fff'; } });
   }
   function selectDay(key) { activeDay = key; renderDayTabs(); renderDayContent(); }
-  function openDayCityEdit() {
-    const current = (tripSettings.dayCities && tripSettings.dayCities[activeDay]) || '';
+  function openDayCityEdit(dayKey) {
+    const target = dayKey || activeDay;
+    const current = (tripSettings.dayCities && tripSettings.dayCities[target]) || '';
     const fields = `<div class="input-label">這天所在城市（會影響總覽頁天氣顯示，例如：札幌、東京、大阪）</div><input type="text" id="edf-daycity" value="${escapeHtml(current)}" placeholder="留空則使用旅程預設城市" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; box-sizing:border-box;">`;
     setupGeneralEdit('編輯這天所在城市', fields, () => {
       if (!tripSettings.dayCities) tripSettings.dayCities = {};
       const val = document.getElementById('edf-daycity').value.trim();
-      if (val) { tripSettings.dayCities[activeDay] = val; } else { delete tripSettings.dayCities[activeDay]; }
+      if (val) { tripSettings.dayCities[target] = val; } else { delete tripSettings.dayCities[target]; }
       saveTripSettings(); renderDayContent();
-      if (activeDay === todayOrTripDate()) { fetchWeather(); } // 如果改的正好是今天，總覽頁天氣要跟著立刻更新
+      fetchWeather();   // 城市一改，總覽頁天氣與氣候提醒立刻跟著更新
       closeGeneralEdit();
     });
   }
@@ -6278,8 +6460,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     // ② 優惠碼（離線時最需要看得到碼本身）
     let coupons = '';
     (travelDocs.coupons||[]).slice().sort(byKey('expiry')).forEach(x => {
-      const img = (x.imageUrl||'').indexOf('data:') === 0
-        ? '<img class="cimg" src="' + esc(x.imageUrl) + '" alt="">' : '';
+      const img = imagesOf(x).filter(u => u.indexOf('data:') === 0)
+        .map(u => '<img class="cimg" src="' + esc(u) + '" alt="">').join('');
       coupons += item(x.name||'優惠碼', x.discount||'',
         [['優惠碼', x.code], ['適用店家', x.store], ['有效期限', x.expiry],
          ['使用方式', x.howTo], ['店家資訊', x.storeInfo], ['連結', x.url], ['備註', x.notes]], img);
@@ -6341,8 +6523,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const qty = Number(it.qty) || 1;
       const price = Number(it.price) || 0;
       const total = price * qty;
-      const img = (it.imageUrl||'').indexOf('data:') === 0
-        ? '<img class="cimg" src="' + esc(it.imageUrl) + '" alt="">' : '';
+      const img = imagesOf(it).filter(u => u.indexOf('data:') === 0)
+        .map(u => '<img class="cimg" src="' + esc(u) + '" alt="">').join('');
       wish += item((it.bought ? '✓ ' : '') + (it.name||''),
         [it.buyer||'', it.forWhom||''].filter(Boolean).join(' → '),
         [['數量', qty + ' 組'],
