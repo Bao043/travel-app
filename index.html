@@ -853,7 +853,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-20 11:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-20 15:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -6405,12 +6405,16 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   // ===== 離線行程手冊：把整趟資料輸出成一個獨立的 HTML 檔案。
   // 檔案本身不連網、不吃 App，存在手機或雲端硬碟裡，沒網路或 App 壞掉時打開就能看，
   // 也可以在瀏覽器直接列印／儲存成 PDF 或截圖保存 =====
+  // ===== 離線行程手冊：資料量大，所以整份做成可收合的結構——
+  // 大分類（憑證／行程／店家／購物／支出）各自收合，行程再依「每一天」、店家依「區域」分層展開，
+  // 一打開先看到目錄與摘要，要看細節再點開；列印或存成 PDF 前會自動把全部展開，不會漏印 =====
   function offlineBookSections() {
     const esc = (s) => String(s === null || s === undefined ? '' : s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const cur = getCountryInfo().currency;
     const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
     const rate = currentRateForCurrency(cur) || 1;
+    const toc = [];
     const out = [];
 
     const kv = (pairs) => pairs
@@ -6421,58 +6425,86 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       '<div class="item"><div class="ih"><b>' + esc(title) + '</b>' +
       (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</div>' +
       kv(pairs || []) + (extraHtml || '') + '</div>';
-    const sec = (title, inner) => inner ? '<section><h2>' + esc(title) + '</h2>' + inner + '</section>' : '';
+    // 第二層收合：一天的行程、一個區域的店家…
+    const sub = (title, note, inner, open) => inner
+      ? '<details class="sub"' + (open ? ' open' : '') + '><summary><span class="t">' + esc(title) + '</span>' +
+        (note ? '<span class="n">' + esc(note) + '</span>' : '') + '</summary><div class="subbody">' + inner + '</div></details>'
+      : '';
+    // 第一層收合：大分類，並登記到目錄
+    const sec = (id, title, inner, note, open) => {
+      if (!inner) return;
+      toc.push({ id: id, title: title });
+      out.push('<details class="sec" id="' + id + '"' + (open ? ' open' : '') + '><summary><span class="st">' + esc(title) + '</span>' +
+        (note ? '<span class="cnt">' + esc(note) + '</span>' : '') + '</summary><div class="secbody">' + inner + '</div></details>');
+    };
     const byKey = (k) => (a, b) => String(a[k]||'').localeCompare(String(b[k]||''));
 
-    // ① 憑證
-    let docs = '';
+    // ① 重要憑證：依機票／住宿／租車／票券再分一層
+    let docs = '', docCount = 0;
+    let s1 = '';
     (travelDocs.flights||[]).slice().sort(byKey('date')).forEach(x => {
-      docs += item((x.label||'航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
+      s1 += item((x.label||'航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
         [x.depCode||'', x.arrCode||''].filter(Boolean).join(' → '),
         [['航空公司', x.airline], ['日期時間', [x.date, x.time].filter(Boolean).join(' ')],
          ['登機門', x.gate], ['行李轉盤', x.baggage], ['訂位代號', x.bookingRef],
          ['票價', x.price], ['備註', x.notes]]);
     });
+    docCount += (travelDocs.flights||[]).length;
+    docs += sub('機票', (travelDocs.flights||[]).length + ' 筆', s1, true);
+
+    let s2 = '';
     (travelDocs.hotels||[]).slice().sort(byKey('checkinDate')).forEach(x => {
-      docs += item(x.name||'住宿',
+      s2 += item(x.name||'住宿',
         [x.checkinDate||'', x.checkoutDate||''].filter(Boolean).join(' → '),
         [['地址', x.address], ['電話', x.phone],
          ['入住', [x.checkinDate, x.checkinTime].filter(Boolean).join(' ')],
          ['退房', [x.checkoutDate, x.checkoutTime].filter(Boolean).join(' ')],
          ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
     });
+    docCount += (travelDocs.hotels||[]).length;
+    docs += sub('住宿', (travelDocs.hotels||[]).length + ' 筆', s2, true);
+
+    let s3 = '';
     (travelDocs.cars||[]).slice().sort(byKey('pickupDate')).forEach(x => {
-      docs += item(x.company||'租車', x.carModel||'',
+      s3 += item(x.company||'租車', x.carModel||'',
         [['取車', [x.pickupDate, x.pickupTime, x.pickupLocation].filter(Boolean).join(' ')],
          ['還車', [x.returnDate, x.returnTime, x.returnLocation].filter(Boolean).join(' ')],
          ['電話', x.phone], ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
     });
+    docCount += (travelDocs.cars||[]).length;
+    docs += sub('租車', (travelDocs.cars||[]).length + ' 筆', s3, true);
+
+    let s4 = '';
     (travelDocs.passes||[]).slice().sort(byKey('startDate')).forEach(x => {
       const ms = calcPassExpiry(x);
-      docs += item(x.name||'票券', x.durationHours ? x.durationHours + ' 小時方案' : '',
+      s4 += item(x.name||'票券', x.durationHours ? x.durationHours + ' 小時方案' : '',
         [['啟用', [x.startDate, x.startTime].filter(Boolean).join(' ')],
          ['到期(當地時間)', ms ? formatKoreaDateTime(ms) : ''],
          ['費用', x.price], ['計畫景點', x.plannedSpots],
          ['憑證編號', x.bookingRef], ['備註', x.notes]]);
     });
-    out.push(sec('重要憑證', docs));
+    docCount += (travelDocs.passes||[]).length;
+    docs += sub('票券', (travelDocs.passes||[]).length + ' 筆', s4, true);
+    sec('s-docs', '重要憑證', docs, docCount + ' 筆', true);
 
-    // ② 優惠碼（離線時最需要看得到碼本身）
+    // ② 優惠碼：每一張各自收合，摘要就看得到優惠碼本身
     let coupons = '';
     (travelDocs.coupons||[]).slice().sort(byKey('expiry')).forEach(x => {
-      const img = imagesOf(x).filter(u => u.indexOf('data:') === 0)
+      const imgs = imagesOf(x).filter(u => u.indexOf('data:') === 0)
         .map(u => '<img class="cimg" src="' + esc(u) + '" alt="">').join('');
-      coupons += item(x.name||'優惠碼', x.discount||'',
-        [['優惠碼', x.code], ['適用店家', x.store], ['有效期限', x.expiry],
-         ['使用方式', x.howTo], ['店家資訊', x.storeInfo], ['連結', x.url], ['備註', x.notes]], img);
+      coupons += sub((x.name||'優惠碼') + (x.code ? '　' + x.code : ''),
+        [x.discount||'', x.expiry ? x.expiry + ' 到期' : ''].filter(Boolean).join(' · '),
+        kv([['優惠碼', x.code], ['適用店家', x.store], ['有效期限', x.expiry],
+            ['使用方式', x.howTo], ['店家資訊', x.storeInfo], ['連結', x.url], ['備註', x.notes]]) + imgs);
     });
-    out.push(sec('優惠碼', coupons));
+    sec('s-coupon', '優惠碼', coupons, (travelDocs.coupons||[]).length + ' 張');
 
-    // ③ 每日行程
-    let days = '';
+    // ③ 每日行程：一天一個收合區塊，摘要顯示時段與項目數
+    let days = '', dayTotal = 0;
     (ITIN_DAYS||[]).forEach((d, i) => {
       const list = (itinData[d.key]||[]).slice().sort(byKey('time'));
       if (!list.length) return;
+      dayTotal += list.length;
       let rows = '';
       list.forEach(it => {
         const lines = [];
@@ -6496,60 +6528,70 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           (it.category ? '<span class="chip">' + esc(it.category) + '</span>' : '') + '</div>' +
           kv(lines) + '</div></div>';
       });
-      days += '<div class="day"><h3>Day ' + (i+1) + '　' + esc(d.date) + '（週' + esc(d.wd) + '）</h3>' + rows + '</div>';
+      const span = [list[0].time || '', (list[list.length-1].endTime || list[list.length-1].time || '')].filter(Boolean).join('–');
+      days += sub('Day ' + (i+1) + '　' + d.date + '（週' + d.wd + '）',
+        [span, list.length + ' 項'].filter(Boolean).join(' · '), rows, i === 0);
     });
-    out.push(sec('每日行程', days));
+    sec('s-itin', '每日行程', days, dayTotal + ' 項');
 
-    // ④ 店家清單（依區域）
+    // ④ 店家清單：依區域收合
     let shops = '';
     if ((foodListData||[]).length) {
       const groups = {}; const order = [];
       foodListData.forEach(it => { const a = detectShopArea(it); if (!groups[a]) { groups[a] = []; order.push(a); } groups[a].push(it); });
       order.sort((a, b) => (a === '未分區' ? 1 : 0) - (b === '未分區' ? 1 : 0));
       order.forEach(area => {
-        shops += '<h3>' + esc(area) + '（' + groups[area].length + ' 間）</h3>';
+        let inner = '';
         groups[area].forEach(it => {
-          shops += item((it.tried ? '✓ ' : '') + (it.name||''), it.type||'',
+          inner += item((it.tried ? '✓ ' : '') + (it.name||''), it.type||'',
             [['地址', it.location], ['電話', it.phone], ['營業時間', it.hours], ['公休', it.closed],
              ['每人預算', it.budget ? symbol + f(it.budget) : ''], ['備註', it.note]]);
         });
+        shops += sub(area, groups[area].length + ' 間', inner);
       });
     }
-    out.push(sec('店家清單', shops));
+    sec('s-shop', '店家清單', shops, (foodListData||[]).length + ' 間');
 
-    // ⑤ 購物清單
+    // ⑤ 購物清單：分成「還沒買」與「已買到」
     let wish = '';
-    (wishlistData||[]).forEach(it => {
-      const qty = Number(it.qty) || 1;
-      const price = Number(it.price) || 0;
-      const total = price * qty;
-      const img = imagesOf(it).filter(u => u.indexOf('data:') === 0)
-        .map(u => '<img class="cimg" src="' + esc(u) + '" alt="">').join('');
-      wish += item((it.bought ? '✓ ' : '') + (it.name||''),
-        [it.buyer||'', it.forWhom||''].filter(Boolean).join(' → '),
-        [['數量', qty + ' 組'],
-         ['預估金額', price ? symbol + f(total) + (cur !== 'TWD' ? '（約 NT$ ' + f(Math.round(total / rate)) + '）' : '') : ''],
-         ['購買地點', it.store],
-         ['實際花費', Number(it.actualPrice) ? symbol + f(Number(it.actualPrice)) : ''],
-         ['狀態', it.bought ? '已買到' : '未購買'],
-         ['備註', it.note]], img);
-    });
-    out.push(sec('購物清單', wish));
+    if ((wishlistData||[]).length) {
+      const card = (it) => {
+        const qty = Number(it.qty) || 1;
+        const price = Number(it.price) || 0;
+        const total = price * qty;
+        const imgs = imagesOf(it).filter(u => u.indexOf('data:') === 0)
+          .map(u => '<img class="cimg" src="' + esc(u) + '" alt="">').join('');
+        return item(it.name||'',
+          [it.buyer||'', it.forWhom||''].filter(Boolean).join(' → '),
+          [['數量', qty + ' 組'],
+           ['預估金額', price ? symbol + f(total) + (cur !== 'TWD' ? '（約 NT$ ' + f(Math.round(total / rate)) + '）' : '') : ''],
+           ['購買地點', it.store],
+           ['實際花費', Number(it.actualPrice) ? symbol + f(Number(it.actualPrice)) : ''],
+           ['備註', it.note]], imgs);
+      };
+      const todo = wishlistData.filter(x => !x.bought);
+      const done = wishlistData.filter(x => x.bought);
+      wish += sub('還沒買', todo.length + ' 項', todo.map(card).join(''), true);
+      wish += sub('已買到', done.length + ' 項', done.map(card).join(''));
+    }
+    sec('s-wish', '購物清單', wish, (wishlistData||[]).length + ' 項');
 
     // ⑥ 支出與分帳
-    let money = '';
+    let money = '', moneyNote = '';
     try {
       if ((expenseRecords||[]).length) {
         const st = computeSettlement();
+        moneyNote = 'NT$ ' + f(st.totalTWD);
         let people = '';
         st.rows.forEach(r => {
           people += '<div class="kv"><span class="k">' + esc(r.name) + '</span><span class="v">已付 NT$ ' + f(r.paid) +
             '　應付 NT$ ' + f(r.share) + '　' + (r.balance >= 0 ? '應收回' : '應再付') + ' NT$ ' + f(Math.abs(r.balance)) + '</span></div>';
         });
-        money += '<div class="item"><div class="ih"><b>本趟總支出</b><span class="sub">NT$ ' + f(st.totalTWD) + '</span></div>' + people + '</div>';
+        money += sub('每人收支', '總支出 NT$ ' + f(st.totalTWD), '<div class="item">' + people + '</div>', true);
         const pend = (st.transfers||[]).filter(t => !isSettled(t.from, t.to, t.amount));
         if (pend.length) {
-          money += item('待結清轉帳', '', pend.map(t => [t.from + ' → ' + t.to, 'NT$ ' + f(t.amount)]));
+          money += sub('待結清轉帳', pend.length + ' 筆',
+            '<div class="item">' + kv(pend.map(t => [t.from + ' → ' + t.to, 'NT$ ' + f(t.amount)])) + '</div>', true);
         }
         let recs = '';
         (expenseRecords||[]).slice().sort(byKey('date')).forEach(r => {
@@ -6560,16 +6602,21 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
             '</span><span class="v">' + esc(rsym + f(r.amount)) + (payers ? '　付款：' + esc(payers) : '') +
             (isRecordFullySettled(r) ? '　(已結帳)' : '') + '</span></div>';
         });
-        if (recs) money += '<div class="item"><div class="ih"><b>支出明細</b><span class="sub">' + (expenseRecords||[]).length + ' 筆</span></div>' + recs + '</div>';
+        if (recs) money += sub('支出明細', (expenseRecords||[]).length + ' 筆', '<div class="item">' + recs + '</div>');
       }
     } catch (e) { console.error('離線手冊分帳區塊失敗:', e); }
-    out.push(sec('支出與分帳', money));
+    sec('s-money', '支出與分帳', money, moneyNote);
 
     // ⑦ 注意事項
     const notes = (tripSettings.notes||[]).concat(tripSettings.warns||[]).filter(Boolean);
-    out.push(sec('注意事項', notes.length ? '<div class="item">' + notes.map(n => '<div class="kv"><span class="k">・</span><span class="v">' + esc(n) + '</span></div>').join('') + '</div>' : ''));
+    sec('s-note', '注意事項', notes.length
+      ? '<div class="item">' + notes.map(n => '<div class="kv"><span class="k">・</span><span class="v">' + esc(n) + '</span></div>').join('') + '</div>'
+      : '', notes.length + ' 條');
 
-    return out.filter(Boolean).join('');
+    const tocHtml = toc.length
+      ? '<nav class="toc">' + toc.map(t => '<a href="#' + t.id + '">' + esc(t.title) + '</a>').join('') + '</nav>'
+      : '';
+    return { toc: tocHtml, body: out.join('') };
   }
 
   function buildOfflineBookHtml() {
@@ -6589,56 +6636,92 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     ].filter(pr => pr[1])
      .map(pr => '<div class="mkv"><span>' + esc(pr[0]) + '</span><b>' + esc(pr[1]) + '</b></div>').join('');
 
+    const parts = offlineBookSections();
+
     const css = [
       '*{box-sizing:border-box;}',
       'body{margin:0;background:#EEF1F4;color:#26364a;font-family:"PingFang TC","Noto Sans TC","Hiragino Sans",-apple-system,"Segoe UI",sans-serif;line-height:1.65;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
       '.page{max-width:860px;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.08);}',
-      '.cover{background:linear-gradient(140deg,#16283f 0%,#1d3557 45%,#457b9d 100%);color:#fff;padding:44px 40px 38px;}',
-      '.cover .eyebrow{font-size:12px;letter-spacing:4px;opacity:.75;text-transform:uppercase;}',
-      '.cover h1{margin:8px 0 6px;font-size:34px;font-weight:800;letter-spacing:-.5px;}',
+      '.bar{position:sticky;top:0;z-index:9;background:#16283f;color:#fff;padding:9px 24px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;}',
+      '.bar .btns{display:flex;gap:7px;flex-shrink:0;}',
+      '.bar button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;}',
+      '.bar button.main{background:#C5A07A;border-color:#C5A07A;}',
+      '.cover{background:linear-gradient(140deg,#16283f 0%,#1d3557 45%,#457b9d 100%);color:#fff;padding:38px 40px 32px;}',
+      '.cover .eyebrow{font-size:12px;letter-spacing:4px;opacity:.75;}',
+      '.cover h1{margin:8px 0 6px;font-size:33px;font-weight:800;letter-spacing:-.5px;}',
       '.cover .dl{font-size:15px;opacity:.85;}',
-      '.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}',
-      '.mkv{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:7px 12px;font-size:13px;}',
+      '.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px;}',
+      '.mkv{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:6px 12px;font-size:12.5px;}',
       '.mkv span{opacity:.75;margin-right:7px;}',
-      '.body{padding:12px 40px 46px;}',
-      'section{margin-top:30px;page-break-inside:auto;}',
-      'h2{font-size:19px;font-weight:800;color:#1d3557;margin:0 0 14px;padding-bottom:9px;border-bottom:2px solid #C5A07A;letter-spacing:.5px;}',
-      'h3{font-size:15px;font-weight:800;color:#1d3557;margin:20px 0 9px;padding-left:10px;border-left:4px solid #49b8d0;}',
-      '.item{border:1px solid #E4E9EF;border-radius:14px;padding:13px 16px;margin-bottom:11px;background:#FCFDFE;page-break-inside:avoid;}',
-      '.ih{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px;}',
-      '.ih b{font-size:15.5px;color:#16283f;}',
+      '.toc{display:flex;flex-wrap:wrap;gap:8px;padding:16px 40px 4px;}',
+      '.toc a{text-decoration:none;color:#1d3557;background:#F1F5F9;border:1px solid #E1E7EE;border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;}',
+      '.body{padding:14px 40px 46px;}',
+      'details{border:1px solid #E4E9EF;border-radius:14px;background:#fff;}',
+      'details.sec{margin-bottom:12px;scroll-margin-top:60px;overflow:hidden;}',
+      'details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 18px;background:#F7F9FB;font-weight:800;color:#1d3557;}',
+      'details.sec>summary::-webkit-details-marker{display:none;}',
+      'details.sec>summary::before{content:"";flex-shrink:0;width:0;height:0;border-left:7px solid #C5A07A;border-top:5px solid transparent;border-bottom:5px solid transparent;transition:transform .15s;}',
+      'details.sec[open]>summary::before{transform:rotate(90deg);}',
+      'details.sec>summary .st{flex:1;font-size:16.5px;letter-spacing:.5px;}',
+      'details.sec>summary .cnt{font-size:12px;font-weight:700;color:#8A93A0;}',
+      '.secbody{padding:14px 18px 16px;border-top:1px solid #EDF1F5;}',
+      'details.sub{border:1px solid #E9EEF3;border-radius:12px;margin-bottom:9px;background:#FCFDFE;}',
+      'details.sub>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:10px 13px;}',
+      'details.sub>summary::-webkit-details-marker{display:none;}',
+      'details.sub>summary::before{content:"";flex-shrink:0;width:0;height:0;border-left:6px solid #9FB3C8;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;transition:transform .15s;}',
+      'details.sub[open]>summary::before{transform:rotate(90deg);}',
+      'details.sub>summary .t{flex:1;font-size:14.5px;font-weight:800;color:#16283f;}',
+      'details.sub>summary .n{font-size:12px;color:#8A93A0;font-weight:700;}',
+      '.subbody{padding:4px 13px 12px;}',
+      '.item{border:1px solid #EDF1F5;border-radius:11px;padding:11px 14px;margin-bottom:9px;background:#fff;page-break-inside:avoid;}',
+      '.item:last-child{margin-bottom:0;}',
+      '.ih{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;}',
+      '.ih b{font-size:15px;color:#16283f;}',
       '.ih .sub{font-size:12.5px;color:#7b8794;}',
       '.kv{display:flex;gap:10px;font-size:13px;padding:2px 0;align-items:flex-start;}',
-      '.kv .k{flex:0 0 82px;color:#8A93A0;}',
+      '.kv .k{flex:0 0 78px;color:#8A93A0;}',
       '.kv .v{flex:1;color:#2b3b4f;word-break:break-word;}',
-      '.day{margin-bottom:18px;page-break-inside:auto;}',
-      '.tl{display:flex;gap:13px;padding:10px 0;border-bottom:1px dashed #E4E9EF;page-break-inside:avoid;}',
+      '.tl{display:flex;gap:13px;padding:9px 0;border-bottom:1px dashed #E9EEF3;page-break-inside:avoid;}',
       '.tl:last-child{border-bottom:none;}',
-      '.tlt{flex:0 0 62px;font-weight:800;color:#C5A07A;font-size:14px;}',
+      '.tlt{flex:0 0 58px;font-weight:800;color:#C5A07A;font-size:14px;}',
       '.tlt small{display:block;color:#A9B2BD;font-weight:600;font-size:11px;}',
       '.tlb{flex:1;min-width:0;}',
       '.tln{margin-bottom:3px;}',
       '.tln b{font-size:14.5px;color:#16283f;}',
       '.chip{display:inline-block;margin-left:7px;background:#EAF7FA;color:#19788c;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;}',
-      '.cimg{display:block;width:100%;max-width:330px;margin-top:9px;border-radius:10px;border:1px solid #E4E9EF;}',
-      '.bar{position:sticky;top:0;z-index:5;background:#16283f;color:#fff;padding:10px 40px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;}',
-      '.bar button{background:#C5A07A;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}',
-      '.foot{margin-top:34px;padding-top:14px;border-top:1px solid #E4E9EF;font-size:11.5px;color:#9AA4B0;text-align:center;}',
-      '@media print{body{background:#fff;}.page{box-shadow:none;max-width:none;}.bar{display:none;}.cover{padding:30px 0 24px;}.body{padding:0;}@page{margin:14mm;}}',
-      '@media (max-width:620px){.cover{padding:30px 20px 26px;}.cover h1{font-size:26px;}.body{padding:8px 18px 32px;}.bar{padding:10px 18px;}.kv{flex-direction:column;gap:0;}.kv .k{flex:none;font-size:12px;}}'
+      '.cimg{display:block;width:100%;max-width:320px;margin-top:9px;border-radius:10px;border:1px solid #E4E9EF;}',
+      '.foot{margin-top:30px;padding-top:14px;border-top:1px solid #E4E9EF;font-size:11.5px;color:#9AA4B0;text-align:center;}',
+      '@media print{body{background:#fff;}.page{box-shadow:none;max-width:none;}.bar,.toc{display:none;}.cover{padding:26px 0 20px;}.body{padding:0;}',
+      'details,details.sec,details.sub{border:none;background:none;margin:0;}',
+      'details.sec>summary{background:none;padding:14px 0 6px;border-bottom:2px solid #C5A07A;}',
+      'details.sub>summary{padding:10px 0 4px;}',
+      '.secbody{padding:8px 0 4px;border-top:none;}.subbody{padding:0 0 6px;}',
+      'details.sec{page-break-inside:auto;}@page{margin:14mm;}}',
+      '@media (max-width:620px){.cover{padding:28px 20px 24px;}.cover h1{font-size:26px;}.body{padding:10px 16px 32px;}.toc{padding:14px 16px 2px;}.bar{padding:9px 16px;}.secbody{padding:12px 12px 14px;}.kv{flex-direction:column;gap:0;}.kv .k{flex:none;font-size:12px;}}'
+    ].join('');
+
+    const script = [
+      'function openAll(v){document.querySelectorAll("details").forEach(function(d){d.open=v;});}',
+      'function toggleAll(){var ds=document.querySelectorAll("details");var any=false;ds.forEach(function(d){if(!d.open)any=true;});openAll(any);var b=document.getElementById("tgbtn");if(b)b.textContent=any?"全部收合":"全部展開";}',
+      'function printAll(){openAll(true);setTimeout(function(){window.print();},150);}',
+      'window.addEventListener("beforeprint",function(){openAll(true);});',
+      'if(window.matchMedia){var mq=window.matchMedia("print");if(mq.addEventListener)mq.addEventListener("change",function(e){if(e.matches)openAll(true);});else if(mq.addListener)mq.addListener(function(e){if(e.matches)openAll(true);});}'
     ].join('');
 
     return '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">' +
       '<title>' + esc(title) + ' 離線行程手冊</title><style>' + css + '</style></head><body>' +
       '<div class="page">' +
-      '<div class="bar"><span>離線版 · 不需網路即可閱讀</span><button onclick="window.print()">列印 / 存成 PDF</button></div>' +
+      '<div class="bar"><span>離線版 · 不需網路</span><span class="btns">' +
+      '<button id="tgbtn" onclick="toggleAll()">全部展開</button>' +
+      '<button class="main" onclick="printAll()">列印 / 存成 PDF</button></span></div>' +
       '<div class="cover"><div class="eyebrow">TRAVEL HANDBOOK</div><h1>' + esc(title) + '</h1>' +
       (dateLabel ? '<div class="dl">' + esc(dateLabel) + '</div>' : '') +
       '<div class="meta">' + meta + '</div></div>' +
-      '<div class="body">' + offlineBookSections() +
-      '<div class="foot">此檔案由旅遊行程 App 於 ' + esc(exportedAt) + ' 匯出，內容為匯出當下的資料快照。</div>' +
-      '</div></div></body></html>';
+      parts.toc +
+      '<div class="body">' + parts.body +
+      '<div class="foot">此檔案由旅遊行程 App 於 ' + esc(exportedAt) + ' 匯出，內容為匯出當下的資料快照。<br>點各區塊標題可展開／收合；列印或存成 PDF 時會自動全部展開。</div>' +
+      '</div></div><scr' + 'ipt>' + script + '</scr' + 'ipt></body></html>';
   }
 
   function exportOfflineBook() {
