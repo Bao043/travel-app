@@ -800,7 +800,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <h3 style="margin-top:0; color:var(--navy);"><i class="fa-solid fa-plus"></i> 建立新旅程</h3>
 
     <div class="input-label">房號 (自己設定，旅伴會用這個號碼加入)</div>
-    <input type="text" id="cr-room-id" placeholder="例如：111 或自訂英數字" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:4px;">
+    <input type="text" id="cr-room-id" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="只能輸入數字，例如：1111" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:4px;">
     <div id="cr-room-id-status" style="font-size:calc(11.5px * var(--font-scale)); min-height:16px; margin-bottom:10px; font-weight:700;"></div>
 
     <div class="input-label">旅程名稱</div>
@@ -843,7 +843,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <h3 style="margin-top:0; color:var(--navy);"><i class="fa-solid fa-door-open"></i> 加入房間</h3>
     <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px;">向主辦人索取房號，輸入後即可加入這趟旅程</p>
     <div class="input-label">房號</div>
-    <input type="text" id="jr-room-id" placeholder="請輸入房號" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:16px;">
+    <input type="text" id="jr-room-id" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="請輸入房號（純數字）" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:16px;">
     <button class="save-btn" id="jr-submit-btn" onclick="submitJoinRoom()"><i class="fa-solid fa-check"></i> 加入</button>
     <button class="ghost-btn" style="margin-top:8px;" onclick="closeJoinRoomForm()">取消</button>
   </div>
@@ -853,7 +853,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-16 02:05</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-18 14:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -896,6 +896,8 @@ Day2 12:00 outlet購物，預計逛一小時
       <div style="display:flex; flex-direction:column; gap:8px;">
         <button class="ghost-btn" onclick="openInstallGuide()"><i class="fa-solid fa-mobile-screen-button"></i> 加入桌面捷徑教學</button>
         <button class="ghost-btn" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> 匯出整趟行程 Excel</button>
+        <button class="ghost-btn" style="margin-top:8px;" onclick="exportOfflineBook()"><i class="fa-solid fa-book-open"></i> 匯出離線行程手冊（可存 PDF）</button>
+        <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:8px 2px 0; line-height:1.6;">離線手冊是一個獨立的 HTML 檔，沒網路或 App 出狀況時打開就能看全部行程、憑證、優惠碼與分帳；開啟後可直接列印或存成 PDF。</p>
       </div>
     </div>
 
@@ -1314,6 +1316,7 @@ Day2 12:00 outlet購物，預計逛一小時
         { key:'company', label:'租車公司', type:'text' },
         { key:'carModel', label:'車型', type:'text' },
         { key:'pickupLocation', label:'取車地點', type:'text' },
+        { key:'phone', label:'店家電話（NAVER 地圖用電話搜尋最準）', type:'text', placeholder:'例如：051-123-4567' },
         { key:'pickupDate', label:'取車日期', type:'date' },
         { key:'pickupTime', label:'取車時間', type:'time' },
         { key:'returnLocation', label:'還車地點', type:'text' },
@@ -1328,6 +1331,7 @@ Day2 12:00 outlet購物，預計逛一小時
       fields: [
         { key:'name', label:'飯店名稱', type:'text' },
         { key:'address', label:'地址', type:'text' },
+        { key:'phone', label:'電話（NAVER 地圖用電話搜尋最準）', type:'text', placeholder:'例如：051-123-4567' },
         { key:'checkinDate', label:'入住日期', type:'date' },
         { key:'checkinTime', label:'入住時間', type:'time' },
         { key:'checkoutDate', label:'退房日期', type:'date' },
@@ -1920,56 +1924,125 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s === null || s === undefined ? '' : String(s); return div.innerHTML; }
 
-  // ===== 購物清單：出發前／旅程中想買的東西，跟折扣試算分開，方便先列出來再一項項處理 =====
+  // ===== 購物清單：收合時像商品卡一樣看到圖片、品名、誰幫誰代購、預估金額與是否買到；
+  // 點一下展開才看數量、購買地點、實際花費等細節 =====
+  let expandedWishIds = new Set();
+  function toggleWishDetail(id) {
+    if (expandedWishIds.has(id)) expandedWishIds.delete(id); else expandedWishIds.add(id);
+    renderWishlist();
+  }
   function renderWishlist() {
     const wrap = document.getElementById('wishlist-items'); if (!wrap) return;
     if (!wishlistData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增購物項目</div>`; return; }
-    wrap.innerHTML = wishlistData.map(it => `
-      <div class="timeline-card" style="margin-bottom:10px; padding:14px;">
-        <div style="display:flex; align-items:flex-start; gap:10px;">
-          <div onclick="toggleWishlistBought(${it.id})" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.bought?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.bought?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+    const cur = getCountryInfo().currency;
+    const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
+    const rate = currentRateForCurrency(cur) || 1;
+    wrap.innerHTML = wishlistData.map(it => {
+      const qty = Number(it.qty) || 1;
+      const price = Number(it.price) || 0;
+      const total = price * qty;
+      const twd = (cur === 'TWD' || !total) ? 0 : Math.round(total / rate);
+      const expanded = expandedWishIds.has(it.id);
+      const photo = (it.imageUrl||'').trim();
+      // 「誰幫誰買」：前者是旅程成員（下拉選），後者是收禮的人（自己打字）
+      const buyer = (it.buyer||'').trim();
+      const forWhom = (it.forWhom||'').trim();
+      const whoLine = (buyer || forWhom)
+        ? `<span style="color:var(--navy); font-weight:700;">${escapeHtml(buyer||'未指定')}</span> <i class="fa-solid fa-arrow-right-long" style="color:var(--gold); font-size:calc(10px * var(--font-scale));"></i> <span>${escapeHtml(forWhom||'自己')}</span>`
+        : '';
+      const thumb = photo
+        ? `<img src="${escapeHtml(photo)}" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:14px; flex-shrink:0; border:1px solid var(--line); ${it.bought?'opacity:0.55;':''}" onerror="this.style.display='none'">`
+        : `<div style="width:70px; height:70px; border-radius:14px; flex-shrink:0; background:#F1F5F9; display:flex; align-items:center; justify-content:center; color:#C5CEDA;"><i class="fa-solid fa-bag-shopping" style="font-size:calc(22px * var(--font-scale));"></i></div>`;
+      const row = (icon, label, val) => val ? `<div class="detail-row"><i class="fa-solid ${icon}"></i><span><b>${label}：</b>${escapeHtml(String(val))}</span></div>` : '';
+      const detail = row('fa-layer-group', '數量／組數', qty + ' 組')
+        + row('fa-tag', '預估單價', price ? `${symbol}${f(price)}（共 ${symbol}${f(total)}${twd?`　約 NT$ ${f(twd)}`:''}）` : '')
+        + row('fa-shop', '購買地點', it.store)
+        + row('fa-user', '代購人', buyer)
+        + row('fa-gift', '要給誰', forWhom)
+        + (it.bought && Number(it.actualPrice) ? row('fa-receipt', '實際花費', `${symbol}${f(Number(it.actualPrice))}${cur!=='TWD'?`　約 NT$ ${f(Math.round(Number(it.actualPrice)/rate))}`:''}`) : '')
+        + row('fa-note-sticky', '備註', it.note);
+
+      return `
+      <div class="timeline-card" style="margin-bottom:10px; padding:13px;" onclick="toggleWishDetail(${it.id})">
+        <div style="display:flex; align-items:flex-start; gap:11px;">
+          ${thumb}
           <div style="flex:1; min-width:0;">
-            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.bought?'var(--gray)':'var(--navy)'}; text-decoration:${it.bought?'line-through':'none'};">${escapeHtml(it.name)}${it.qty>1?` ×${it.qty}`:''}</div>
-            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${it.price ? `預計 ${CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency+' ')}${f(it.price)}` : '未填預計金額'}${it.forOther ? ` · 代購給${escapeHtml(it.forWhom||'?')}` : ''}</div>
-            ${it.note ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(it.note)}</div>` : ''}
+            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.bought?'var(--gray)':'var(--navy)'}; text-decoration:${it.bought?'line-through':'none'};">${escapeHtml(it.name)}${qty>1?`<span style="color:var(--gray); font-weight:600;"> ×${qty}</span>`:''}</div>
+            ${whoLine ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:4px;">${whoLine}</div>` : ''}
+            <div style="font-size:calc(12.5px * var(--font-scale)); color:${it.bought?'var(--gray)':'var(--navy)'}; font-weight:700; margin-top:4px;">${price ? `${symbol}${f(total)}` : '未填預估金額'}${twd?`<span style="color:var(--gray); font-weight:600;"> · 約 NT$ ${f(twd)}</span>`:''}</div>
+            ${it.bought ? `<div style="display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; border-radius:8px; padding:2px 8px; font-size:calc(11px * var(--font-scale)); font-weight:800;"><i class="fa-solid fa-receipt"></i> 已買到${Number(it.actualPrice)?`　${symbol}${f(Number(it.actualPrice))}`:''}</div>` : ''}
           </div>
-          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
-            <button onclick="openWishlistForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="deleteWishlistItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
+            <div onclick="event.stopPropagation(); toggleWishlistBought(${it.id})" title="標記已買到" style="width:24px; height:24px; border-radius:7px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.bought?'var(--teal)':'#fff'};">${it.bought?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+            <div class="only-master" style="display:flex; gap:6px;">
+              <button onclick="event.stopPropagation(); openWishlistForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="event.stopPropagation(); deleteWishlistItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+        <div class="timeline-detail ${expanded?'active':''}">${detail || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角鉛筆補充</span>`}</div>
+      </div>`;
+    }).join('');
   }
   function toggleWishlistBought(id) { const it = wishlistData.find(i=>i.id===id); if(it){ it.bought=!it.bought; saveWishlist(); renderWishlist(); } }
   function deleteWishlistItem(id) { if(!confirm('確定要刪除這個購物項目嗎？')) return; const i = wishlistData.findIndex(x=>x.id===id); if (i>=0) wishlistData.splice(i,1); saveWishlist(); renderWishlist(); }
   function openWishlistForm(editId) {
     const editing = editId ? wishlistData.find(i=>i.id===editId) : null;
+    const cur = getCountryInfo().currency;
+    const st = 'width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;';
+    const v = (k) => editing ? escapeHtml(editing[k]||'') : '';
+    const curBuyer = editing ? (editing.buyer||'') : '';
+    const img = editing ? (editing.imageUrl||'') : '';
     const fields = `
-      <div class="input-label">品項名稱</div>
-      <input type="text" id="wl-name" value="${editing?escapeHtml(editing.name):''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <div style="flex:1; min-width:0;"><div class="input-label">數量</div><input type="number" id="wl-qty" min="1" value="${editing?editing.qty:1}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;"></div>
-        <div style="flex:1; min-width:0;"><div class="input-label">預計金額 (${getCountryInfo().currency})</div><input type="text" inputmode="decimal" id="wl-price" value="${editing&&editing.price?editing.price:''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;"></div>
+      <div class="input-label">商品名稱</div>
+      <input type="text" id="wl-name" value="${editing?escapeHtml(editing.name):''}" placeholder="例如：Medicube AGE-R 潔顏儀" style="${st}">
+      <div class="input-label">商品圖片（貼圖片網址，或從相簿選）</div>
+      <input type="text" id="wl-image" value="${escapeHtml(img)}" placeholder="https://..." style="${st}">
+      <button type="button" class="ghost-btn" style="margin-bottom:10px; font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="document.getElementById('wl-image-file').click()"><i class="fa-solid fa-image"></i> 從相簿選擇圖片</button>
+      <input type="file" id="wl-image-file" accept="image/*" style="display:none;" onchange="handleDocImagePick(event,'wl-image')">
+      <div id="wl-image-preview" style="margin-bottom:12px;">${img?`<img src="${escapeHtml(img)}" style="width:100%; border-radius:12px; border:1px solid var(--line);">`:''}</div>
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1; min-width:0;">
+          <div class="input-label">誰買（成員）</div>
+          <select id="wl-buyer" style="${st} background:#fff; font-family:inherit;">
+            <option value="">未指定</option>
+            ${(travelers||[]).map(t=>`<option value="${escapeHtml(t)}" ${t===curBuyer?'selected':''}>${escapeHtml(t)}</option>`).join('')}
+            ${(curBuyer && !(travelers||[]).includes(curBuyer)) ? `<option value="${escapeHtml(curBuyer)}" selected>${escapeHtml(curBuyer)}</option>` : ''}
+          </select>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div class="input-label">買給誰</div>
+          <input type="text" id="wl-forwhom" value="${v('forWhom')}" placeholder="例如：媽媽、同事、自己" style="${st}">
+        </div>
       </div>
-      <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="wl-forother" onchange="document.getElementById('wl-forwhom-wrap').style.display=this.checked?'block':'none'" ${editing&&editing.forOther?'checked':''}> 幫別人代購</label>
-      <div id="wl-forwhom-wrap" style="display:${editing&&editing.forOther?'block':'none'}; margin-bottom:12px;">
-        <div class="input-label">代購對象</div>
-        <input type="text" id="wl-forwhom" value="${editing?escapeHtml(editing.forWhom||''):''}" placeholder="例如：媽媽、同事" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1; min-width:0;"><div class="input-label">數量／組數</div><input type="number" id="wl-qty" min="1" value="${editing?(editing.qty||1):1}" style="${st}"></div>
+        <div style="flex:1; min-width:0;"><div class="input-label">預估單價 (${cur})</div><input type="text" inputmode="decimal" id="wl-price" value="${editing&&editing.price?editing.price:''}" style="${st}"></div>
       </div>
+      <div class="input-label">要在哪裡買</div>
+      <input type="text" id="wl-store" value="${v('store')}" placeholder="例如：Olive Young 明洞店、機場免稅店" style="${st}">
+      <div class="input-label">實際花費 (${cur})（買到後再填，可留空）</div>
+      <input type="text" inputmode="decimal" id="wl-actual" value="${editing&&editing.actualPrice?editing.actualPrice:''}" style="${st}">
       <div class="input-label">備註</div>
-      <textarea id="wl-note" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">${editing?escapeHtml(editing.note||''):''}</textarea>
+      <textarea id="wl-note" placeholder="例如：要買 50ml 的、記得問有沒有贈品" style="${st} min-height:50px;">${editing?escapeHtml(editing.note||''):''}</textarea>
     `;
     setupGeneralEdit(editing?'編輯購物項目':'新增購物項目', fields, () => {
-      const name = document.getElementById('wl-name').value.trim();
-      if (!name) { alert('請輸入品項名稱！'); return; }
-      const qty = parseInt(document.getElementById('wl-qty').value,10) || 1;
-      const price = p(document.getElementById('wl-price').value);
-      const forOther = document.getElementById('wl-forother').checked;
-      const forWhom = document.getElementById('wl-forwhom').value.trim();
-      const note = document.getElementById('wl-note').value.trim();
-      if (editing) { Object.assign(editing, {name, qty, price, forOther, forWhom, note}); }
-      else { wishlistData.push({ id: wishlistItemSeq++, name, qty, price, forOther, forWhom, note, bought:false }); }
+      const g = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      const name = g('wl-name');
+      if (!name) { alert('請輸入商品名稱！'); return; }
+      const data = {
+        name,
+        imageUrl: g('wl-image'),
+        buyer: g('wl-buyer'),
+        forWhom: g('wl-forwhom'),
+        qty: parseInt(document.getElementById('wl-qty').value, 10) || 1,
+        price: p(g('wl-price')),
+        store: g('wl-store'),
+        actualPrice: p(g('wl-actual')),
+        note: g('wl-note')
+      };
+      if (editing) { Object.assign(editing, data); }
+      else { wishlistData.push(Object.assign({ id: wishlistItemSeq++, bought:false }, data)); }
       saveWishlist(); renderWishlist(); closeGeneralEdit();
     });
   }
@@ -2017,6 +2090,9 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   function openShopNaver(id) {
     const it = foodListData.find(x => x.id === id); if (!it) return;
+    const phone = (it.phone||'').trim();
+    if (phone) { openNaverMap(phone.replace(/[^0-9+\-]/g, '')); return; }   // 電話搜尋命中率最高
+    if (!confirm('NAVER 用店名搜尋常常找不到店家，建議編輯這家店補上電話號碼。\n\n仍要用店名搜尋嗎？')) return;
     openNaverMap(shopMapQuery(it));
   }
 
@@ -2034,6 +2110,7 @@ Day2 12:00 outlet購物，預計逛一小時
       + row('fa-location-dot', '地址', it.location)
       + row('fa-clock', '營業時間', it.hours)
       + row('fa-calendar-xmark', '公休', it.closed)
+      + row('fa-phone', '電話', it.phone)
       + (it.budget ? row('fa-coins', '每人預算', `${symbol}${f(it.budget)}`) : '')
       + row('fa-tag', '類型', typeLabel)
       + row('fa-note-sticky', '備註', it.note);
@@ -2093,6 +2170,8 @@ Day2 12:00 outlet購物，預計逛一小時
       <input type="text" id="fl-area" value="${editing?escapeHtml(editing.area||''):''}" placeholder="同一區的店家會收在同一個區塊裡" style="${inputStyle}">
       <div class="input-label">地點／地址（填完整一點，導航才抓得準）</div>
       <input type="text" id="fl-location" value="${editing?escapeHtml(editing.location||''):''}" placeholder="例如：札幌市中央區南3條西4丁目" style="${inputStyle}">
+      <div class="input-label">電話（韓國用 NAVER 導航時，靠電話搜尋最準）</div>
+      <input type="text" id="fl-phone" value="${editing?escapeHtml(editing.phone||''):''}" placeholder="例如：051-123-4567" style="${inputStyle}">
       <div class="input-label">營業時間</div>
       <input type="text" id="fl-hours" value="${editing?escapeHtml(editing.hours||''):''}" placeholder="例如：11:00-21:00（最後點餐 20:30）" style="${inputStyle}">
       <div class="input-label">公休日</div>
@@ -2108,12 +2187,13 @@ Day2 12:00 outlet購物，預計逛一小時
       const type = document.getElementById('fl-type').value;
       const area = document.getElementById('fl-area').value.trim();
       const location = document.getElementById('fl-location').value.trim();
+      const phone = document.getElementById('fl-phone').value.trim();
       const hours = document.getElementById('fl-hours').value.trim();
       const closed = document.getElementById('fl-closed').value.trim();
       const budget = p(document.getElementById('fl-budget').value);
       const note = document.getElementById('fl-note').value.trim();
-      if (editing) { Object.assign(editing, {name, type, area, location, hours, closed, budget, note}); }
-      else { foodListData.push({ id: foodListItemSeq++, name, type, area, location, hours, closed, budget, note, tried:false }); }
+      if (editing) { Object.assign(editing, {name, type, area, location, phone, hours, closed, budget, note}); }
+      else { foodListData.push({ id: foodListItemSeq++, name, type, area, location, phone, hours, closed, budget, note, tried:false }); }
       saveFoodList(); renderFoodList(); closeGeneralEdit();
     });
   }
@@ -2930,6 +3010,7 @@ Day2 12:00 outlet購物，預計逛一小時
       .filter(f => !schema.headlineKeys.includes(f.key))
       .map(f => entry[f.key] ? `<div class="detail-row"><i class="fa-solid fa-circle" style="font-size:calc(5px * var(--font-scale)); color:var(--gold);"></i><span><b>${f.label}：</b>${escapeHtml(entry[f.key])}</span></div>` : '')
       .filter(Boolean).join('');
+    const detailHtml = (type === 'coupon' ? couponImageHtml(entry) : '') + detailRows;
 
     return `<div class="timeline-card" style="margin-bottom:14px; border-left:4px solid ${schema.color}; position:relative;" onclick="toggleDocDetail(${entry.id})">
       <div class="only-master" style="position:absolute; top:12px; right:12px; display:flex; gap:6px;">
@@ -2939,7 +3020,7 @@ Day2 12:00 outlet購物，預計逛一小時
       <div class="timeline-title" style="padding-right:60px;">${headline}</div>
       <div class="timeline-time" style="margin-top:4px;">${sub}</div>
       ${extra}
-      <div class="timeline-detail ${isExpanded?'active':''}">${detailRows || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}</div>
+      <div class="timeline-detail ${isExpanded?'active':''}">${detailHtml || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}</div>
     </div>`;
   }
 
@@ -2965,8 +3046,11 @@ Day2 12:00 outlet購物，預計逛一小時
     const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
     openMapSearch(docMapQuery(type, e, which));
   }
+  // NAVER 地圖用店名／地址常常查不到，用電話號碼搜尋幾乎一定找得到，所以有填電話就優先用電話
   function openDocNaver(type, id, which) {
     const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
+    const phone = (e.phone||'').trim();
+    if (phone) { openNaverMap(phone.replace(/[^0-9+\-]/g, '')); return; }
     openNaverMap(docMapQuery(type, e, which));
   }
   const NAV_BTN_STYLE = 'flex:1; min-width:120px; padding:9px 6px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;';
@@ -3008,10 +3092,17 @@ Day2 12:00 outlet購物，預計逛一小時
     if ((entry.url||'').trim()) {
       html += `<button onclick="event.stopPropagation(); openCouponLink(${entry.id})" style="width:100%; margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-up-right-from-square"></i> 開啟優惠連結</button>`;
     }
-    if (entry.imageUrl) {
-      html += `<img src="${escapeHtml(entry.imageUrl)}" alt="優惠圖片" style="width:100%; margin-top:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`;
+    if (entry.imageUrl) {   // 收合時只放縮圖，避免整張優惠券把版面撐開；大圖移到展開後才顯示
+      html += `<div style="display:flex; align-items:center; gap:9px; margin-top:9px; padding:7px 9px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px;">
+        <img src="${escapeHtml(entry.imageUrl)}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:9px; flex-shrink:0;" onerror="this.style.display='none'">
+        <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">附有優惠圖片，點卡片展開看大圖</span>
+      </div>`;
     }
     return html;
+  }
+  function couponImageHtml(entry) {
+    if (!entry.imageUrl) return '';
+    return `<img src="${escapeHtml(entry.imageUrl)}" alt="優惠圖片" style="width:100%; margin-bottom:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`;
   }
   // 圖片壓到長邊 700px 再轉存，避免整份資料同步時變得很肥
   function compressImageToDataUrl(file, maxEdge, quality) {
@@ -5428,10 +5519,6 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   // ===== 2. Firebase 雲端資料同步庫 =====
-  function generateRoomId() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  }
-
   // ===== 首頁／房間選擇：App開啟時的第一道畫面。只有明確建立或加入房間後才會進到主要功能，
   // 並記住「上次是在首頁還是在房間裡」，下次開啟時原樣恢復，不用每次都重新輸入房號 =====
   const RECENT_ROOMS_KEY = 'recent-rooms';
@@ -5720,7 +5807,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   function openCreateRoomForm() {
-    document.getElementById('cr-room-id').value = generateRoomId();
+    document.getElementById('cr-room-id').value = '';   // 不再隨機產生英數房號：加入房間是數字鍵盤，打不出英文
     document.getElementById('cr-room-id-status').innerText = '';
     document.getElementById('cr-title').value = '';
     let lastNick=''; try { lastNick = localStorage.getItem('creator-nickname')||''; } catch(e){}
@@ -5742,7 +5829,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const btn = document.getElementById('cr-submit-btn');
 
     if (!roomId) { alert('請輸入房號！'); return; }
-    if (roomId.toLowerCase() === '_trash') { alert('這個房號是系統保留字，請換一個。'); return; }
+    if (!/^[0-9]+$/.test(roomId)) { alert('房號只能使用數字（加入房間時是數字鍵盤，英文字母會打不出來）。'); return; }
     if (!title) { alert('請輸入旅程名稱！'); return; }
     if (!startDate) { alert('請選擇開始日期！'); return; }
 
@@ -5823,6 +5910,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const roomId = document.getElementById('jr-room-id').value.trim();
     const btn = document.getElementById('jr-submit-btn');
     if (!roomId) { alert('請輸入房號！'); return; }
+    if (!/^[0-9]+$/.test(roomId)) { alert('房號只能是數字，請重新確認。'); return; }
     if (btn) btn.disabled = true;
     try {
       const snapshot = await db.ref('rooms/' + roomId).once('value');
@@ -6132,6 +6220,262 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   // ===== 匯出整趟行程 Excel（總覽／每日行程／消費紀錄／成員分攤／行前準備，共5個工作表） =====
+  // ===== 離線行程手冊：把整趟資料輸出成一個獨立的 HTML 檔案。
+  // 檔案本身不連網、不吃 App，存在手機或雲端硬碟裡，沒網路或 App 壞掉時打開就能看，
+  // 也可以在瀏覽器直接列印／儲存成 PDF 或截圖保存 =====
+  function offlineBookSections() {
+    const esc = (s) => String(s === null || s === undefined ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const cur = getCountryInfo().currency;
+    const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
+    const rate = currentRateForCurrency(cur) || 1;
+    const out = [];
+
+    const kv = (pairs) => pairs
+      .filter(pr => pr[1] !== '' && pr[1] !== null && pr[1] !== undefined)
+      .map(pr => '<div class="kv"><span class="k">' + esc(pr[0]) + '</span><span class="v">' + esc(pr[1]) + '</span></div>')
+      .join('');
+    const item = (title, sub, pairs, extraHtml) =>
+      '<div class="item"><div class="ih"><b>' + esc(title) + '</b>' +
+      (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</div>' +
+      kv(pairs || []) + (extraHtml || '') + '</div>';
+    const sec = (title, inner) => inner ? '<section><h2>' + esc(title) + '</h2>' + inner + '</section>' : '';
+    const byKey = (k) => (a, b) => String(a[k]||'').localeCompare(String(b[k]||''));
+
+    // ① 憑證
+    let docs = '';
+    (travelDocs.flights||[]).slice().sort(byKey('date')).forEach(x => {
+      docs += item((x.label||'航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
+        [x.depCode||'', x.arrCode||''].filter(Boolean).join(' → '),
+        [['航空公司', x.airline], ['日期時間', [x.date, x.time].filter(Boolean).join(' ')],
+         ['登機門', x.gate], ['行李轉盤', x.baggage], ['訂位代號', x.bookingRef],
+         ['票價', x.price], ['備註', x.notes]]);
+    });
+    (travelDocs.hotels||[]).slice().sort(byKey('checkinDate')).forEach(x => {
+      docs += item(x.name||'住宿',
+        [x.checkinDate||'', x.checkoutDate||''].filter(Boolean).join(' → '),
+        [['地址', x.address], ['電話', x.phone],
+         ['入住', [x.checkinDate, x.checkinTime].filter(Boolean).join(' ')],
+         ['退房', [x.checkoutDate, x.checkoutTime].filter(Boolean).join(' ')],
+         ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
+    });
+    (travelDocs.cars||[]).slice().sort(byKey('pickupDate')).forEach(x => {
+      docs += item(x.company||'租車', x.carModel||'',
+        [['取車', [x.pickupDate, x.pickupTime, x.pickupLocation].filter(Boolean).join(' ')],
+         ['還車', [x.returnDate, x.returnTime, x.returnLocation].filter(Boolean).join(' ')],
+         ['電話', x.phone], ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
+    });
+    (travelDocs.passes||[]).slice().sort(byKey('startDate')).forEach(x => {
+      const ms = calcPassExpiry(x);
+      docs += item(x.name||'票券', x.durationHours ? x.durationHours + ' 小時方案' : '',
+        [['啟用', [x.startDate, x.startTime].filter(Boolean).join(' ')],
+         ['到期(當地時間)', ms ? formatKoreaDateTime(ms) : ''],
+         ['費用', x.price], ['計畫景點', x.plannedSpots],
+         ['憑證編號', x.bookingRef], ['備註', x.notes]]);
+    });
+    out.push(sec('重要憑證', docs));
+
+    // ② 優惠碼（離線時最需要看得到碼本身）
+    let coupons = '';
+    (travelDocs.coupons||[]).slice().sort(byKey('expiry')).forEach(x => {
+      const img = (x.imageUrl||'').indexOf('data:') === 0
+        ? '<img class="cimg" src="' + esc(x.imageUrl) + '" alt="">' : '';
+      coupons += item(x.name||'優惠碼', x.discount||'',
+        [['優惠碼', x.code], ['適用店家', x.store], ['有效期限', x.expiry],
+         ['使用方式', x.howTo], ['店家資訊', x.storeInfo], ['連結', x.url], ['備註', x.notes]], img);
+    });
+    out.push(sec('優惠碼', coupons));
+
+    // ③ 每日行程
+    let days = '';
+    (ITIN_DAYS||[]).forEach((d, i) => {
+      const list = (itinData[d.key]||[]).slice().sort(byKey('time'));
+      if (!list.length) return;
+      let rows = '';
+      list.forEach(it => {
+        const lines = [];
+        const loc = [it.place, it.address].filter(Boolean).join(' · ');
+        if (loc) lines.push(['地點', loc]);
+        const tr = [it.transport, it.transportTime].filter(Boolean).join(' · ');
+        if (tr) lines.push(['交通', tr]);
+        const hr = [it.hours ? '營業 ' + it.hours : '', it.closed ? '公休 ' + it.closed : ''].filter(Boolean).join('　');
+        if (hr) lines.push(['時間', hr]);
+        if (it.veg) lines.push(['素食', it.veg]);
+        if (it.recommend) lines.push(['推薦', it.recommend]);
+        if (it.price) lines.push(['預估花費', it.price]);
+        const rv = [it.reservationTime, it.confirmCode].filter(Boolean).join(' · ');
+        if (rv) lines.push(['預約', rv]);
+        if (it.ticketInfo) lines.push(['票券', it.ticketInfo]);
+        if (it.reminder) lines.push(['提醒', it.reminder]);
+        if (it.notes) lines.push(['備註', it.notes]);
+        rows += '<div class="tl"><div class="tlt">' + esc(it.time || '--:--') +
+          (it.endTime ? '<small>' + esc(it.endTime) + '</small>' : '') + '</div>' +
+          '<div class="tlb"><div class="tln"><b>' + esc(it.title || '') + '</b>' +
+          (it.category ? '<span class="chip">' + esc(it.category) + '</span>' : '') + '</div>' +
+          kv(lines) + '</div></div>';
+      });
+      days += '<div class="day"><h3>Day ' + (i+1) + '　' + esc(d.date) + '（週' + esc(d.wd) + '）</h3>' + rows + '</div>';
+    });
+    out.push(sec('每日行程', days));
+
+    // ④ 店家清單（依區域）
+    let shops = '';
+    if ((foodListData||[]).length) {
+      const groups = {}; const order = [];
+      foodListData.forEach(it => { const a = detectShopArea(it); if (!groups[a]) { groups[a] = []; order.push(a); } groups[a].push(it); });
+      order.sort((a, b) => (a === '未分區' ? 1 : 0) - (b === '未分區' ? 1 : 0));
+      order.forEach(area => {
+        shops += '<h3>' + esc(area) + '（' + groups[area].length + ' 間）</h3>';
+        groups[area].forEach(it => {
+          shops += item((it.tried ? '✓ ' : '') + (it.name||''), it.type||'',
+            [['地址', it.location], ['電話', it.phone], ['營業時間', it.hours], ['公休', it.closed],
+             ['每人預算', it.budget ? symbol + f(it.budget) : ''], ['備註', it.note]]);
+        });
+      });
+    }
+    out.push(sec('店家清單', shops));
+
+    // ⑤ 購物清單
+    let wish = '';
+    (wishlistData||[]).forEach(it => {
+      const qty = Number(it.qty) || 1;
+      const price = Number(it.price) || 0;
+      const total = price * qty;
+      const img = (it.imageUrl||'').indexOf('data:') === 0
+        ? '<img class="cimg" src="' + esc(it.imageUrl) + '" alt="">' : '';
+      wish += item((it.bought ? '✓ ' : '') + (it.name||''),
+        [it.buyer||'', it.forWhom||''].filter(Boolean).join(' → '),
+        [['數量', qty + ' 組'],
+         ['預估金額', price ? symbol + f(total) + (cur !== 'TWD' ? '（約 NT$ ' + f(Math.round(total / rate)) + '）' : '') : ''],
+         ['購買地點', it.store],
+         ['實際花費', Number(it.actualPrice) ? symbol + f(Number(it.actualPrice)) : ''],
+         ['狀態', it.bought ? '已買到' : '未購買'],
+         ['備註', it.note]], img);
+    });
+    out.push(sec('購物清單', wish));
+
+    // ⑥ 支出與分帳
+    let money = '';
+    try {
+      if ((expenseRecords||[]).length) {
+        const st = computeSettlement();
+        let people = '';
+        st.rows.forEach(r => {
+          people += '<div class="kv"><span class="k">' + esc(r.name) + '</span><span class="v">已付 NT$ ' + f(r.paid) +
+            '　應付 NT$ ' + f(r.share) + '　' + (r.balance >= 0 ? '應收回' : '應再付') + ' NT$ ' + f(Math.abs(r.balance)) + '</span></div>';
+        });
+        money += '<div class="item"><div class="ih"><b>本趟總支出</b><span class="sub">NT$ ' + f(st.totalTWD) + '</span></div>' + people + '</div>';
+        const pend = (st.transfers||[]).filter(t => !isSettled(t.from, t.to, t.amount));
+        if (pend.length) {
+          money += item('待結清轉帳', '', pend.map(t => [t.from + ' → ' + t.to, 'NT$ ' + f(t.amount)]));
+        }
+        let recs = '';
+        (expenseRecords||[]).slice().sort(byKey('date')).forEach(r => {
+          let payers = '';
+          try { payers = (allocateExpense(r).payers||[]).map(pp => pp.who).join('、'); } catch(e) {}
+          const rsym = CURRENCY_SYMBOL[r.currency] || ((r.currency||'') + ' ');
+          recs += '<div class="kv"><span class="k">' + esc([r.date, r.item].filter(Boolean).join(' ')) +
+            '</span><span class="v">' + esc(rsym + f(r.amount)) + (payers ? '　付款：' + esc(payers) : '') +
+            (isRecordFullySettled(r) ? '　(已結帳)' : '') + '</span></div>';
+        });
+        if (recs) money += '<div class="item"><div class="ih"><b>支出明細</b><span class="sub">' + (expenseRecords||[]).length + ' 筆</span></div>' + recs + '</div>';
+      }
+    } catch (e) { console.error('離線手冊分帳區塊失敗:', e); }
+    out.push(sec('支出與分帳', money));
+
+    // ⑦ 注意事項
+    const notes = (tripSettings.notes||[]).concat(tripSettings.warns||[]).filter(Boolean);
+    out.push(sec('注意事項', notes.length ? '<div class="item">' + notes.map(n => '<div class="kv"><span class="k">・</span><span class="v">' + esc(n) + '</span></div>').join('') + '</div>' : ''));
+
+    return out.filter(Boolean).join('');
+  }
+
+  function buildOfflineBookHtml() {
+    const esc = (s) => String(s === null || s === undefined ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const title = tripSettings.title || '我的旅程';
+    const dateLabel = tripSettings.sub || autoTripDateLabel() || '';
+    const dayCount = tripDayCount();
+    const exportedAt = new Date().toLocaleString('zh-TW');
+    const meta = [
+      ['國家', tripSettings.country || ''],
+      ['日期', dateLabel],
+      ['天數', dayCount ? dayCount + '天' + (dayCount > 1 ? (dayCount - 1) + '夜' : '') : ''],
+      ['旅伴', (travelers||[]).join('、')],
+      ['房號', syncRoomId || ''],
+      ['匯出時間', exportedAt]
+    ].filter(pr => pr[1])
+     .map(pr => '<div class="mkv"><span>' + esc(pr[0]) + '</span><b>' + esc(pr[1]) + '</b></div>').join('');
+
+    const css = [
+      '*{box-sizing:border-box;}',
+      'body{margin:0;background:#EEF1F4;color:#26364a;font-family:"PingFang TC","Noto Sans TC","Hiragino Sans",-apple-system,"Segoe UI",sans-serif;line-height:1.65;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
+      '.page{max-width:860px;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.08);}',
+      '.cover{background:linear-gradient(140deg,#16283f 0%,#1d3557 45%,#457b9d 100%);color:#fff;padding:44px 40px 38px;}',
+      '.cover .eyebrow{font-size:12px;letter-spacing:4px;opacity:.75;text-transform:uppercase;}',
+      '.cover h1{margin:8px 0 6px;font-size:34px;font-weight:800;letter-spacing:-.5px;}',
+      '.cover .dl{font-size:15px;opacity:.85;}',
+      '.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}',
+      '.mkv{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:7px 12px;font-size:13px;}',
+      '.mkv span{opacity:.75;margin-right:7px;}',
+      '.body{padding:12px 40px 46px;}',
+      'section{margin-top:30px;page-break-inside:auto;}',
+      'h2{font-size:19px;font-weight:800;color:#1d3557;margin:0 0 14px;padding-bottom:9px;border-bottom:2px solid #C5A07A;letter-spacing:.5px;}',
+      'h3{font-size:15px;font-weight:800;color:#1d3557;margin:20px 0 9px;padding-left:10px;border-left:4px solid #49b8d0;}',
+      '.item{border:1px solid #E4E9EF;border-radius:14px;padding:13px 16px;margin-bottom:11px;background:#FCFDFE;page-break-inside:avoid;}',
+      '.ih{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px;}',
+      '.ih b{font-size:15.5px;color:#16283f;}',
+      '.ih .sub{font-size:12.5px;color:#7b8794;}',
+      '.kv{display:flex;gap:10px;font-size:13px;padding:2px 0;align-items:flex-start;}',
+      '.kv .k{flex:0 0 82px;color:#8A93A0;}',
+      '.kv .v{flex:1;color:#2b3b4f;word-break:break-word;}',
+      '.day{margin-bottom:18px;page-break-inside:auto;}',
+      '.tl{display:flex;gap:13px;padding:10px 0;border-bottom:1px dashed #E4E9EF;page-break-inside:avoid;}',
+      '.tl:last-child{border-bottom:none;}',
+      '.tlt{flex:0 0 62px;font-weight:800;color:#C5A07A;font-size:14px;}',
+      '.tlt small{display:block;color:#A9B2BD;font-weight:600;font-size:11px;}',
+      '.tlb{flex:1;min-width:0;}',
+      '.tln{margin-bottom:3px;}',
+      '.tln b{font-size:14.5px;color:#16283f;}',
+      '.chip{display:inline-block;margin-left:7px;background:#EAF7FA;color:#19788c;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;}',
+      '.cimg{display:block;width:100%;max-width:330px;margin-top:9px;border-radius:10px;border:1px solid #E4E9EF;}',
+      '.bar{position:sticky;top:0;z-index:5;background:#16283f;color:#fff;padding:10px 40px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;}',
+      '.bar button{background:#C5A07A;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}',
+      '.foot{margin-top:34px;padding-top:14px;border-top:1px solid #E4E9EF;font-size:11.5px;color:#9AA4B0;text-align:center;}',
+      '@media print{body{background:#fff;}.page{box-shadow:none;max-width:none;}.bar{display:none;}.cover{padding:30px 0 24px;}.body{padding:0;}@page{margin:14mm;}}',
+      '@media (max-width:620px){.cover{padding:30px 20px 26px;}.cover h1{font-size:26px;}.body{padding:8px 18px 32px;}.bar{padding:10px 18px;}.kv{flex-direction:column;gap:0;}.kv .k{flex:none;font-size:12px;}}'
+    ].join('');
+
+    return '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<title>' + esc(title) + ' 離線行程手冊</title><style>' + css + '</style></head><body>' +
+      '<div class="page">' +
+      '<div class="bar"><span>離線版 · 不需網路即可閱讀</span><button onclick="window.print()">列印 / 存成 PDF</button></div>' +
+      '<div class="cover"><div class="eyebrow">TRAVEL HANDBOOK</div><h1>' + esc(title) + '</h1>' +
+      (dateLabel ? '<div class="dl">' + esc(dateLabel) + '</div>' : '') +
+      '<div class="meta">' + meta + '</div></div>' +
+      '<div class="body">' + offlineBookSections() +
+      '<div class="foot">此檔案由旅遊行程 App 於 ' + esc(exportedAt) + ' 匯出，內容為匯出當下的資料快照。</div>' +
+      '</div></div></body></html>';
+  }
+
+  function exportOfflineBook() {
+    try {
+      const html = buildOfflineBookHtml();
+      const blob = new Blob(['\ufeff', html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (tripSettings.title || '旅程') + '_離線手冊_' + todayOrTripDate() + '.html';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      alert('已產生離線行程手冊！\n\n這個檔案不需要網路也能打開，建議存到「檔案」App 或雲端硬碟備份。\n開啟後按右上角「列印 / 存成 PDF」即可轉成 PDF 或截圖保存。');
+    } catch (e) {
+      console.error('離線手冊匯出失敗:', e);
+      alert('匯出失敗：' + e.message);
+    }
+  }
+
   function exportToExcel() {
     if (typeof XLSX === 'undefined') { alert('匯出功能載入中，請確認網路連線後再試一次。'); return; }
     const wb = XLSX.utils.book_new();
