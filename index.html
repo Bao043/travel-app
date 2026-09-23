@@ -132,14 +132,17 @@
   @media (min-width: 700px) {
     .app-container { max-width: 700px; }
     #main-app-container { padding-bottom: calc(134px + env(safe-area-inset-bottom, 0px)); }
-    .hero-header { padding: max(24px, calc(12px + env(safe-area-inset-top, 0px))) 32px 32px; }
+    .hero-header { padding: max(44px, calc(22px + env(safe-area-inset-top, 0px))) 32px 32px; }
     .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
     .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
     .hero-inner { max-width: 620px; }
     .card { padding: 26px; }
-    .page-header { padding: 40px 12px 18px; }
+    .page-header { padding: max(44px, calc(22px + env(safe-area-inset-top, 0px))) 12px 18px; }
     /* 雙欄時要明確指定 display:grid，否則未啟用的面板會疊在一起 */
-    .panel.grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    .panel.grid-panel.active { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+    .grid-panel .card { min-width: 0; }
+    .grid-panel .bp-grid { min-width: 0; }
+    #reminder-btn { white-space: nowrap; }
     .full-width { grid-column: 1 / -1; }
     .bottom-nav { max-width: 640px; }
     .guide-overlay .guide-content { max-width: 460px; }
@@ -853,7 +856,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-20 15:10</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-24 10:30</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
