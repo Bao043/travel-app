@@ -219,18 +219,26 @@
   
   /* ===== 憑證卡：機票做成登機證、住宿與租車做成訂單票根 ===== */
   .tk { background:#fff; border-radius:22px; margin-bottom:14px; border:1px solid var(--line); box-shadow:0 8px 24px rgba(0,0,0,0.05); overflow:hidden; position:relative; cursor:pointer; }
-  .tk-top { display:flex; align-items:center; gap:9px; padding:12px 15px; color:#fff; }
-  .tk-ttl { flex:1; min-width:0; font-weight:800; font-size:calc(14.5px * var(--font-scale)); letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tk-no { flex-shrink:0; font-size:calc(12.5px * var(--font-scale)); font-weight:800; background:rgba(255,255,255,0.22); border-radius:9px; padding:3px 10px; letter-spacing:0.5px; }
-  .tk-act { position:absolute; top:11px; right:13px; display:flex; gap:6px; z-index:3; }
-  .tk-act button { background:rgba(255,255,255,0.26); border:none; width:26px; height:26px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(11px * var(--font-scale)); }
+  .tk-top { display:flex; align-items:flex-start; gap:9px; padding:13px 15px 12px; color:#fff; }
+  .tk-ttl { flex:1; min-width:0; font-weight:800; font-size:calc(14.5px * var(--font-scale)); letter-spacing:0.3px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .tk-no { flex-shrink:0; font-size:calc(12px * var(--font-scale)); font-weight:800; background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.25); border-radius:9px; padding:3px 10px; letter-spacing:0.5px; margin-top:1px; }
+  .tk-act { display:flex; gap:6px; flex-shrink:0; margin-top:-1px; }
+  .tk-act button { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.25); width:27px; height:27px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(11px * var(--font-scale)); }
+  /* 入住／退房、取車／還車這種對照資訊，用淺底小卡做出層次 */
+  .tk-seg { flex:1; min-width:0; background:#F8FAFC; border:1px solid var(--line); border-radius:14px; padding:10px 12px; }
+  .tk-seg .d { font-size:calc(16.5px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:3px; line-height:1.2; }
+  .tk-seg .t { font-size:calc(13px * var(--font-scale)); font-weight:800; color:var(--teal); margin-top:2px; }
+  .tk-pill { flex:0 0 auto; align-self:center; text-align:center; background:var(--note-bg); border:1px solid var(--note-border); color:#8A6A42; border-radius:999px; padding:4px 10px; font-size:calc(11px * var(--font-scale)); font-weight:800; }
+  .tk-addr { margin-top:11px; font-size:calc(12.5px * var(--font-scale)); color:var(--text-secondary); line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .tk-body { padding:16px 16px 14px; }
   .tk-route { display:flex; align-items:center; gap:8px; }
-  .tk-pt { flex:0 0 auto; min-width:76px; text-align:center; }
-  .tk-code { font-family:"SF Pro Display","PingFang TC",sans-serif; font-size:calc(25px * var(--font-scale)); font-weight:800; color:var(--navy); letter-spacing:1.5px; line-height:1.1; }
+  .tk-pt { flex:1 1 0; min-width:0; text-align:center; }
+  .tk-code { font-family:"SF Pro Display","PingFang TC",sans-serif; font-size:calc(25px * var(--font-scale)); font-weight:800; color:var(--navy); letter-spacing:1.5px; line-height:1.15; word-break:break-word; overflow-wrap:anywhere; }
+  .tk-code.md { font-size:calc(19px * var(--font-scale)); letter-spacing:0.5px; }
+  .tk-code.sm { font-size:calc(15px * var(--font-scale)); letter-spacing:0; }
   .tk-time { font-size:calc(15px * var(--font-scale)); font-weight:800; color:var(--teal); margin-top:3px; }
   .tk-sm { font-size:calc(10.5px * var(--font-scale)); color:var(--gray); letter-spacing:1px; font-weight:700; }
-  .tk-mid { flex:1; min-width:0; text-align:center; color:var(--coral); }
+  .tk-mid { flex:0 0 68px; text-align:center; color:var(--coral); }
   .tk-line { height:2px; margin:5px 0; background:repeating-linear-gradient(90deg, #CBD5E1 0 5px, transparent 5px 10px); }
   .tk-tear { position:relative; height:1px; border-top:2px dashed #E2E8F0; margin:14px 0 13px; }
   .tk-tear::before, .tk-tear::after { content:''; position:absolute; top:-11px; width:20px; height:20px; border-radius:50%; background:var(--bg); border:1px solid var(--line); }
@@ -245,6 +253,18 @@
   .sync-status-bar { display: flex; justify-content: space-between; align-items: center; background: #ECFDF5; border: 1.5px solid #A7F3D0; padding: 10px 16px; border-radius: 16px; font-size:calc(13px * var(--font-scale)); color: #065F46; margin-bottom: 15px; }
 
   body.sub-mode .only-master { display: none !important; }
+
+  /* ===== 個人記帳模式：整套換成暖橘色系，和一般旅程房間一眼區分；
+     旅程專屬的功能（總覽／準備／行程／分帳）在這個模式下隱藏 ===== */
+  body.solo-mode {
+    --navy: #5C3A24; --teal: #E08A3C; --coral: #E8734A; --gold: #C58A4A;
+    --bg: #FDF8F2; --text-general: #6B4A33; --text-secondary: #8A6A50;
+    --btn-orange: linear-gradient(135deg, #F3B169 0%, #E08A3C 100%);
+  }
+  body.solo-mode .hero-header { background: linear-gradient(140deg, #6B4226 0%, #A4682F 45%, #E0A35C 100%); }
+  body.solo-mode .nav-btn.active { color: #E08A3C; }
+  body.solo-mode .solo-hide { display: none !important; }
+  body:not(.solo-mode) .solo-only { display: none !important; }
   
   .role-toggle-badge {
     cursor: pointer; display: inline-flex; align-items: center; gap: 6px; 
@@ -524,7 +544,18 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <!-- 記帳支出面板 -->
   <section class="panel" id="p-expense">
-    <div class="page-header" style="padding-bottom:0;"><h1 class="clean-title">旅行支出</h1><p>Busan Trip Ledger</p></div>
+    <div class="page-header" style="padding-bottom:0;"><h1 class="clean-title" id="expense-page-title">旅行支出</h1><p id="expense-page-sub">Busan Trip Ledger</p></div>
+
+    <div class="solo-only" style="padding:0 12px;">
+      <div class="card" style="padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <i class="fa-solid fa-book-bookmark" style="color:var(--teal);"></i>
+          <b style="flex:1; min-width:0; color:var(--navy); font-size:calc(14.5px * var(--font-scale));">帳本</b>
+          <button onclick="openLedgerForm()" style="background:var(--navy); color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-plus"></i> 新增</button>
+        </div>
+        <div id="ledger-chip-row" style="display:flex; gap:7px; overflow-x:auto; padding-bottom:4px;"></div>
+      </div>
+    </div>
 
     <div class="final-res-card" style="margin:15px 12px;">
         <div class="krw" style="opacity:0.85;">總支出</div>
@@ -544,7 +575,7 @@ Day2 12:00 outlet購物，預計逛一小時
       </div>
 
       <!-- 分帳摘要：直接在支出頁給出「誰該付誰多少」的結論，不用先想到要去算帳頁找 -->
-      <div class="card" id="settle-summary-card" style="display:none;">
+      <div class="card solo-hide" id="settle-summary-card" style="display:none;">
         <div class="section-title"><i class="fa-solid fa-scale-balanced"></i> 分帳結算</div>
         <div id="settle-summary-body"></div>
         <button class="ghost-btn" style="margin-top:10px; font-size:calc(12.5px * var(--font-scale)); padding:9px;" onclick="goToSettlement()">查看完整分帳明細 <i class="fa-solid fa-arrow-right"></i></button>
@@ -593,7 +624,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div class="calc-tabs full-width">
         <button class="tab-btn-sub active" onclick="switchCalc('simple', this)">快速換算</button>
         <button class="tab-btn-sub" onclick="switchCalc('shop', this)">折扣試算</button>
-        <button class="tab-btn-sub" onclick="switchCalc('settle', this)">分帳結算</button>
+        <button class="tab-btn-sub solo-hide" onclick="switchCalc('settle', this)">分帳結算</button>
     </div>
     
     <div id="calc-simple-box" class="full-width">
@@ -642,9 +673,9 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <!-- 底部導覽列 -->
   <nav class="bottom-nav" id="bottom-nav">
-    <button class="nav-btn active" onclick="showP('p-overview',this)"><i class="fa-solid fa-house"></i><span>總覽</span></button>
-    <button class="nav-btn" onclick="showP('p-prep',this)"><i class="fa-solid fa-briefcase"></i><span>準備</span></button>
-    <button class="nav-btn" onclick="showP('p-itinerary',this)"><i class="fa-solid fa-calendar-days"></i><span>行程</span></button>
+    <button class="nav-btn active solo-hide" onclick="showP('p-overview',this)"><i class="fa-solid fa-house"></i><span>總覽</span></button>
+    <button class="nav-btn solo-hide" onclick="showP('p-prep',this)"><i class="fa-solid fa-briefcase"></i><span>準備</span></button>
+    <button class="nav-btn solo-hide" onclick="showP('p-itinerary',this)"><i class="fa-solid fa-calendar-days"></i><span>行程</span></button>
     <button class="nav-btn" onclick="showP('p-expense',this)"><i class="fa-solid fa-wallet"></i><span>支出</span></button>
     <button class="nav-btn" onclick="showP('p-calc',this)"><i class="fa-solid fa-calculator"></i><span>算帳</span></button>
   </nav>
@@ -755,6 +786,20 @@ Day2 12:00 outlet購物，預計逛一小時
       </span>
       <i class="fa-solid fa-arrow-right" style="color:#8AA7C2; font-size:calc(14px * var(--font-scale)); flex-shrink:0;"></i>
     </button>
+
+    <!-- 第三種入口：個人記帳。只輸入姓名、不用密碼，進去就是自己的帳本 -->
+    <button onclick="openSoloRoomForm()" style="width:100%; cursor:pointer; font-family:inherit; margin-top:12px;
+        display:flex; align-items:center; gap:14px; padding:16px 20px;
+        border-radius:999px; background:linear-gradient(135deg,#B9742C 0%,#E0A35C 100%);
+        box-shadow:0 10px 24px rgba(185,116,44,0.28), inset 0 1px 0 rgba(255,255,255,0.18); border:none;">
+      <i class="fa-solid fa-wallet" style="color:#fff; font-size:calc(20px * var(--font-scale)); flex-shrink:0;"></i>
+      <span style="width:1px; height:30px; background:rgba(255,255,255,0.3); flex-shrink:0;"></span>
+      <span style="flex:1; min-width:0; text-align:left;">
+        <span style="display:block; color:#fff; font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:1px;">個人記帳</span>
+        <span style="display:block; color:rgba(255,255,255,0.78); font-size:calc(10px * var(--font-scale)); font-weight:600; letter-spacing:1.6px; margin-top:1px;">MY LEDGER</span>
+      </span>
+      <i class="fa-solid fa-arrow-right" style="color:rgba(255,255,255,0.9); font-size:calc(14px * var(--font-scale)); flex-shrink:0;"></i>
+    </button>
   </div>
 
   <!-- 最近旅程過多時只有這一區內部捲動，整頁仍維持一屏 -->
@@ -807,12 +852,17 @@ Day2 12:00 outlet購物，預計逛一小時
   <div class="guide-content" style="max-height:85vh; overflow-y:auto; text-align:left;" onclick="event.stopPropagation()">
     <h3 style="margin-top:0; color:var(--navy);"><i class="fa-solid fa-user-shield"></i> 管理員後台</h3>
     <div class="calc-tabs" id="admin-panel-tabs" style="margin-bottom:14px;">
-      <button class="tab-btn-sub active" onclick="switchAdminPanelTab('rooms', this)">房間管理</button>
+      <button class="tab-btn-sub active" onclick="switchAdminPanelTab('rooms', this)">旅程房間</button>
+      <button class="tab-btn-sub" onclick="switchAdminPanelTab('solo', this)">個人記帳</button>
       <button class="tab-btn-sub" onclick="switchAdminPanelTab('trash', this)">垃圾桶</button>
     </div>
     <div id="admin-tab-rooms">
       <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:14px; line-height:1.6;">列出本裝置記得的房間。刪除會先移到垃圾桶，30 天內都可以復原。</p>
       <div id="admin-room-list"></div>
+    </div>
+    <div id="admin-tab-solo" style="display:none;">
+      <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:14px; line-height:1.6;">個人記帳空間（以姓名建立、沒有密碼）。刪除同樣會先進垃圾桶，30 天內可復原。</p>
+      <div id="admin-solo-list"></div>
     </div>
     <div id="admin-tab-trash" style="display:none;">
       <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:14px; line-height:1.6;">垃圾桶裡的房間會保留 30 天，超過會自動永久清空。</p>
@@ -865,6 +915,18 @@ Day2 12:00 outlet購物，預計逛一小時
   </div>
 </div>
 
+<!-- 個人記帳：只要輸入姓名就是一本自己的帳 -->
+<div class="guide-overlay" id="solo-room-overlay">
+  <div class="guide-content" style="text-align:left;" onclick="event.stopPropagation()">
+    <h3 style="margin-top:0; color:#8A5A2B;"><i class="fa-solid fa-wallet"></i> 個人記帳</h3>
+    <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.7;">只記自己的花費，不用設密碼、不用分帳。輸入你的名字就會進到專屬的記帳空間；下次用同一個名字就能回到同一本帳。</p>
+    <div class="input-label">你的名字</div>
+    <input type="text" id="solo-name" placeholder="例如：Will" maxlength="20" style="width:100%; border:2px solid #E7D6C2; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:16px;">
+    <button class="save-btn" id="solo-submit-btn" style="background:linear-gradient(135deg,#F3B169 0%,#E08A3C 100%);" onclick="submitSoloRoom()"><i class="fa-solid fa-check"></i> 進入我的記帳</button>
+    <button class="ghost-btn" style="margin-top:8px;" onclick="closeSoloRoomForm()">取消</button>
+  </div>
+</div>
+
 <!-- 加入房間 -->
 <div class="guide-overlay" id="join-room-overlay">
   <div class="guide-content" style="text-align:left;" onclick="event.stopPropagation()">
@@ -881,7 +943,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 09:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 14:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -2652,7 +2714,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const doneCount = todayItems.filter(it => it.done).length;
     progressEl.innerText = `${doneCount} / ${todayItems.length} 項`;
 
-    const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
+    const totalKrw = visibleExpenses().reduce((s,r)=>s+recordToKRW(r),0);
     spentEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
   }
 
@@ -3154,10 +3216,12 @@ Day2 12:00 outlet購物，預計逛一小時
       headTitle = `<i class="fa-solid fa-plane-departure"></i> ${escapeHtml(entry.label || '航班')}`;
       headRight = escapeHtml(entry.flightNo || '');
       faceKeys = ['airline','bookingRef','gate','baggage','price'];
+      // 機場欄位可能被填成「CTS北海道新千歲」這種長名稱，依字數自動縮字級並允許換行
+      const codeCls = (t) => { const n = (t||'').length; return n > 8 ? 'tk-code sm' : (n > 4 ? 'tk-code md' : 'tk-code'); };
       face = `<div class="tk-route">
           <div class="tk-pt">
-            <div class="tk-code">${escapeHtml(entry.depCode||'???')}</div>
-            <div class="tk-time">${escapeHtml(entry.time||'--:--')}</div>
+            <div class="${codeCls(entry.depCode)}">${escapeHtml(entry.depCode||'???')}</div>
+            <div class="tk-time">${entry.time ? escapeHtml(entry.time) : '<span style="color:var(--gray); font-weight:600;">待補</span>'}</div>
           </div>
           <div class="tk-mid">
             ${entry.airline ? `<div class="tk-sm">${escapeHtml(entry.airline)}</div>` : ''}
@@ -3165,8 +3229,8 @@ Day2 12:00 outlet購物，預計逛一小時
             <i class="fa-solid fa-plane" style="font-size:calc(14px * var(--font-scale));"></i>
           </div>
           <div class="tk-pt">
-            <div class="tk-code">${escapeHtml(entry.arrCode||'???')}</div>
-            <div class="tk-time">${escapeHtml(entry.arrTime||'--:--')}</div>
+            <div class="${codeCls(entry.arrCode)}">${escapeHtml(entry.arrCode||'???')}</div>
+            <div class="tk-time">${entry.arrTime ? escapeHtml(entry.arrTime) : '<span style="color:var(--gray); font-weight:600;">待補</span>'}</div>
           </div>
         </div>
         <div style="text-align:center; margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateChip(entry.date))}</div>`;
@@ -3178,23 +3242,20 @@ Day2 12:00 outlet購物，預計逛一小時
       const n = nightsBetween(entry.checkinDate, entry.checkoutDate);
       headRight = n ? `${n} 晚` : '';
       faceKeys = ['address','bookingRef','price','phone','checkinTime','checkoutTime'];
-      face = `<div style="display:flex; align-items:center; gap:8px;">
-          <div style="flex:1; min-width:0;">
+      face = `<div style="display:flex; align-items:stretch; gap:9px;">
+          <div class="tk-seg">
             <div class="tk-sm">CHECK-IN 入住</div>
-            <div style="font-size:calc(17px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:2px;">${escapeHtml(dateChip(entry.checkinDate))}</div>
-            <div class="tk-time">${escapeHtml(entry.checkinTime||'--:--')}</div>
+            <div class="d">${escapeHtml(dateChip(entry.checkinDate))}</div>
+            ${entry.checkinTime ? `<div class="t">${escapeHtml(entry.checkinTime)}</div>` : ''}
           </div>
-          <div style="flex:0 0 auto; text-align:center; color:var(--gold);">
-            ${n ? `<div style="font-size:calc(11px * var(--font-scale)); font-weight:800;">${n} 晚</div>` : ''}
-            <i class="fa-solid fa-arrow-right-long"></i>
-          </div>
-          <div style="flex:1; min-width:0; text-align:right;">
+          <div class="tk-pill">${n ? `${n} 晚` : '→'}</div>
+          <div class="tk-seg" style="text-align:right;">
             <div class="tk-sm">CHECK-OUT 退房</div>
-            <div style="font-size:calc(17px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:2px;">${escapeHtml(dateChip(entry.checkoutDate))}</div>
-            <div class="tk-time">${escapeHtml(entry.checkoutTime||'--:--')}</div>
+            <div class="d">${escapeHtml(dateChip(entry.checkoutDate))}</div>
+            ${entry.checkoutTime ? `<div class="t">${escapeHtml(entry.checkoutTime)}</div>` : ''}
           </div>
         </div>
-        ${entry.address ? `<div style="margin-top:11px; font-size:calc(12.5px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(entry.address)}</div>` : ''}`;
+        ${entry.address ? `<div class="tk-addr"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(entry.address)}</div>` : ''}`;
       grid = tkKv('BOOKING 訂單編號', entry.bookingRef) + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone);
       const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
       if (q) extra += `<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">${docNavBtn('hotel', entry.id, '', 'Google 地圖')}${isKoreaTrip() ? docNaverBtn('hotel', entry.id, '', 'NAVER 地圖') : ''}</div>`;
@@ -3253,14 +3314,13 @@ Day2 12:00 outlet購物，預計逛一小時
     const detailHtml = (type === 'coupon' ? couponImageHtml(entry) : '') + detailRows;
 
     return `<div class="tk" onclick="toggleDocDetail(${entry.id})">
-      <div class="tk-top" style="background:linear-gradient(135deg, ${schema.color} 0%, var(--navy) 130%);">
+      <div class="tk-top" style="background:linear-gradient(118deg, ${schema.color} 0%, ${schema.color}CC 55%, rgba(29,43,69,0.92) 160%);">
         <span class="tk-ttl">${headTitle}</span>
         ${headRight ? `<span class="tk-no">${headRight}</span>` : ''}
-        <span class="only-master" style="flex:0 0 62px;"></span>
-      </div>
-      <div class="tk-act only-master">
-        <button onclick="event.stopPropagation(); openDocForm('${type}', ${entry.id})" title="編輯"><i class="fa-solid fa-pen"></i></button>
-        <button onclick="event.stopPropagation(); deleteDocEntry('${type}', ${entry.id})" title="刪除"><i class="fa-solid fa-trash"></i></button>
+        <span class="tk-act only-master">
+          <button onclick="event.stopPropagation(); openDocForm('${type}', ${entry.id})" title="編輯"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="event.stopPropagation(); deleteDocEntry('${type}', ${entry.id})" title="刪除"><i class="fa-solid fa-trash"></i></button>
+        </span>
       </div>
       <div class="tk-body">
         ${face}
@@ -3477,6 +3537,131 @@ Day2 12:00 outlet購物，預計逛一小時
     const btn = document.getElementById('general-save-btn');
     if (btn) btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 開始辨識';
   }
+  // AI 回傳的格式很浮動：可能是陣列、可能包一層 {flights:[...]}、欄位名也可能是 check_in 這種寫法，
+  // 這裡統一攤平、對照別名、把日期時間轉成程式用的格式，大幅提高辨識成功率
+  function docAiToList(parsed, type) {
+    if (Array.isArray(parsed)) return parsed.filter(x => x && typeof x === 'object');
+    if (!parsed || typeof parsed !== 'object') return [];
+    const keys = DOC_TYPES[type].fields.map(f => f.key);
+    const hit = keys.some(k => Object.prototype.hasOwnProperty.call(parsed, k));
+    if (hit) return [parsed];
+    // 沒有直接命中就往下找一層（例如 {flights:[...]}、{data:{...}}）
+    for (const v of Object.values(parsed)) {
+      if (Array.isArray(v) && v.length && typeof v[0] === 'object') return v;
+      if (v && typeof v === 'object') {
+        const inner = docAiToList(v, type);
+        if (inner.length) return inner;
+      }
+    }
+    return [parsed];
+  }
+  const DOC_AI_ALIAS = {
+    label:['direction','leg','tripType','segment','type'],
+    airline:['carrier','airlineName','航空公司'],
+    flightNo:['flightNumber','flight_no','flight','flightCode'],
+    depCode:['departureAirport','from','origin','departure','depAirport','fromCode','originCode'],
+    arrCode:['arrivalAirport','to','destination','arrival','arrAirport','toCode','destinationCode'],
+    date:['departureDate','flightDate','depDate','date_of_flight'],
+    time:['departureTime','depTime','takeoff','startTime'],
+    arrTime:['arrivalTime','arrTime','landingTime','endTime'],
+    gate:['terminal','boardingGate'],
+    baggage:['baggageAllowance','luggage','checkedBaggage'],
+    bookingRef:['pnr','reservationCode','confirmationNumber','orderNumber','bookingNumber','bookingId','reservationNumber','confirmationCode','orderId'],
+    price:['amount','totalPrice','total','fare','totalAmount'],
+    name:['hotelName','propertyName','hotel','property'],
+    address:['hotelAddress','location','fullAddress'],
+    phone:['tel','telephone','contact','phoneNumber'],
+    checkinDate:['checkIn','check_in','checkInDate','checkinDay','arrivalDate'],
+    checkinTime:['checkInTime','check_in_time'],
+    checkoutDate:['checkOut','check_out','checkOutDate','departureDate2'],
+    checkoutTime:['checkOutTime','check_out_time'],
+    company:['rentalCompany','vendor','supplier','companyName'],
+    carModel:['car','vehicle','carType','model'],
+    pickupLocation:['pickUpLocation','pickup','pickUp','pickupPlace'],
+    pickupDate:['pickUpDate','pickup_date'],
+    pickupTime:['pickUpTime','pickup_time'],
+    returnLocation:['dropOffLocation','dropoff','returnPlace'],
+    returnDate:['dropOffDate','return_date'],
+    returnTime:['dropOffTime','return_time'],
+    notes:['note','remark','remarks','memo','description']
+  };
+  // AI 偶爾還是會把機場填成中文名，這裡再換算一次，卡片上才會是漂亮的三碼代碼
+  const AIRPORT_ALIAS = {
+    TPE:['桃園','台北','臺北','taoyuan'], TSA:['松山機場','台北松山'], KHH:['高雄','小港'], RMQ:['台中','臺中'],
+    PUS:['釜山','金海'], ICN:['仁川','首爾仁川'], GMP:['金浦'], CJU:['濟州'], TAE:['大邱'],
+    NRT:['成田'], HND:['羽田'], KIX:['關西','大阪'], ITM:['伊丹'], NGO:['名古屋','中部'],
+    CTS:['新千歲','千歲','札幌','北海道'], FUK:['福岡'], OKA:['沖繩','那霸'], SDJ:['仙台'],
+    HKD:['函館'], AKJ:['旭川'], HIJ:['廣島'], KOJ:['鹿兒島'], KMJ:['熊本'], NGS:['長崎'],
+    HKG:['香港'], SIN:['新加坡'], BKK:['曼谷','素萬那普'], DMK:['廊曼'], CNX:['清邁'], HKT:['普吉']
+  };
+  function toAirportCode(v) {
+    const s = String(v||'').trim(); if (!s) return '';
+    const m = s.match(/\b[A-Z]{3}\b/); if (m) return m[0];
+    for (const code of Object.keys(AIRPORT_ALIAS)) {
+      if (AIRPORT_ALIAS[code].some(k => s.toLowerCase().includes(k.toLowerCase()))) return code;
+    }
+    return s;
+  }
+  function normDate(v, fallbackYear) {
+    let s = String(v||'').trim(); if (!s) return '';
+    s = s.replace(/[年月]/g, '-').replace(/日/g, '').replace(/\./g, '-').replace(/\//g, '-').trim();
+    let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    m = s.match(/^(\d{1,2})-(\d{1,2})$/);
+    if (m) return `${fallbackYear}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+    m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    const d = new Date(s);
+    if (!isNaN(d.getTime()) && /\d/.test(s)) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    return '';
+  }
+  function normTime(v) {
+    let s = String(v||'').trim(); if (!s) return '';
+    const pm = /p\.?m\.?|下午|晚上/i.test(s), am = /a\.?m\.?|上午|早上/i.test(s);
+    let m = s.match(/(\d{1,2})\s*[:：]\s*(\d{2})/);
+    let h, mi;
+    if (m) { h = parseInt(m[1],10); mi = m[2]; }
+    else { const m2 = s.match(/^(\d{2})(\d{2})$/); if (!m2) return ''; h = parseInt(m2[1],10); mi = m2[2]; }
+    if (pm && h < 12) h += 12;
+    if (am && h === 12) h = 0;
+    if (h > 23 || h < 0) return '';
+    return `${String(h).padStart(2,'0')}:${mi}`;
+  }
+  function normalizeDocAiEntry(type, obj, year) {
+    const out = {};
+    if (!obj || typeof obj !== 'object') return out;
+    const lower = {};
+    Object.keys(obj).forEach(k => { lower[String(k).toLowerCase().replace(/[_\s-]/g,'')] = obj[k]; });
+    const pick = (key) => {
+      const cands = [key].concat(DOC_AI_ALIAS[key] || []);
+      for (const c of cands) {
+        const v = lower[String(c).toLowerCase().replace(/[_\s-]/g,'')];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+      }
+      return '';
+    };
+    DOC_TYPES[type].fields.forEach(f => {
+      let v = pick(f.key);
+      if (v === '' || v === null || v === undefined) return;
+      if (typeof v === 'object') v = JSON.stringify(v);
+      v = String(v).trim();
+      if (!v || /^(n\/a|unknown|未知|無|none|null)$/i.test(v)) return;
+      if (f.type === 'date') { v = normDate(v, year); if (!v) return; }
+      if (f.type === 'time') { v = normTime(v); if (!v) return; }
+      if (f.key === 'depCode' || f.key === 'arrCode') v = toAirportCode(v);
+      out[f.key] = v;
+    });
+    return out;
+  }
+  function docAiDraftLabel(type, d) {
+    if (type === 'flight') return `${d.label||'航班'} ${d.flightNo||''} ${d.depCode||'?'}→${d.arrCode||'?'} ${d.date||''} ${d.time||''}`.replace(/\s+/g,' ').trim();
+    if (type === 'hotel') return `${d.name||'住宿'} ${d.checkinDate||''}→${d.checkoutDate||''}`.trim();
+    if (type === 'car') return `${d.company||'租車'} ${d.pickupDate||''}→${d.returnDate||''}`.trim();
+    return d.name || d.label || '一筆資料';
+  }
+
   function handleDocAiFile(event) {
     const file = event.target.files[0]; event.target.value = '';
     if (!file) return;
@@ -3498,27 +3683,35 @@ Day2 12:00 outlet購物，預計逛一小時
 2. 只看到月日沒有年份時，年份用 ${year}。
 3. 不確定的欄位請回空字串，絕對不要編造訂單編號、價格或時間。
 4. 如果使用者只給航班編號與日期，請依你已知的定期班表填入航空公司、出發與抵達機場三碼代碼、起飛與抵達時間；沒把握就留空。
-5. 金額請連同幣別一起寫，例如「NT$ 6,800」或「₩ 120,000」。
+5. 機場欄位(depCode/arrCode)請一律輸出三碼 IATA 代碼。畫面上若寫的是城市或機場中文名（例如「台北(桃園)」「釜山」「北海道新千歲」），請自行換算成 TPE、PUS、CTS 這種三碼；不要把中文名放進去。
+6. 金額請連同幣別一起寫，例如「NT$ 6,800」或「₩ 120,000」。
+7. 【重要】如果這份訂單包含不只一段（例如來回機票的去程與回程、多段住宿、多張訂單），請回傳一個 JSON 陣列，陣列中每一段各一個物件；只有一段時才回傳單一物件。來回機票請分別把 label 填成「去程」與「回程」。
+8. 畫面上的欄位名稱可能是中文、英文或日文（例如 PNR／訂位代號、Check-in／入住、Pick-up／取車），請自行對應到下面的欄位。
 
-只回傳一個 JSON 物件，不要有任何其他文字或 markdown 標記：
+只回傳 JSON，不要有任何其他文字或 markdown 標記。單筆格式為：
 ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---` : ''}`;
     docAiStatus(`<div style="padding:14px; text-align:center; border:2px solid #2563EB; border-radius:12px; margin-bottom:8px;"><i class="fa-solid fa-spinner fa-spin" style="color:#2563EB;"></i> <span style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);">辨識中，請稍候...</span></div>`);
     try {
       const responseText = await callGeminiVision(prompt, docAiFile,
         (n) => docAiStatus(`<div style="padding:14px; text-align:center; border:2px solid #2563EB; border-radius:12px; margin-bottom:8px;"><i class="fa-solid fa-spinner fa-spin" style="color:#2563EB;"></i> AI 忙碌中，重試第 ${n} 次...</div>`),
         'doc:' + type);
-      const data = JSON.parse(extractJsonBlock(responseText));
-      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('AI 沒有回傳可用的欄位資料');
-      const prefill = {};
-      schema.fields.forEach(f => {
-        const v = data[f.key];
-        if (v === null || v === undefined || v === '') return;
-        prefill[f.key] = String(v).trim();
-      });
-      if (!Object.keys(prefill).length) throw new Error('這份內容裡沒有辨識到可用的資訊，可以換一張清楚一點的截圖再試');
+      const parsed = JSON.parse(extractJsonBlock(responseText));
+      const list = docAiToList(parsed, type);
+      const drafts = list.map(o => normalizeDocAiEntry(type, o, year)).filter(d => Object.keys(d).length);
+      if (!drafts.length) throw new Error('這份內容裡沒有辨識到可用的資訊，可以換一張清楚一點的截圖再試');
       docAiFile = null;
       closeGeneralEdit();
-      openDocForm(type, null, prefill);
+      if (drafts.length === 1) { openDocForm(type, null, drafts[0]); return; }
+      // 一張來回機票截圖通常會辨識出兩段，直接列出來讓使用者一次確認匯入
+      const listTxt = drafts.map((d, i) => `${i+1}. ${docAiDraftLabel(type, d)}`).join('\n');
+      if (!confirm(`辨識到 ${drafts.length} 筆${schema.label}：\n\n${listTxt}\n\n要全部匯入嗎？（匯入後可以再逐一編輯）`)) {
+        openDocForm(type, null, drafts[0]);
+        return;
+      }
+      const arr2 = travelDocs[type+'s'] || (travelDocs[type+'s'] = []);
+      drafts.forEach(d => arr2.push(Object.assign({ id: docItemSeq++ }, d)));
+      saveTravelDocs(); renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
+      alert(`已匯入 ${drafts.length} 筆${schema.label}，可以點卡片右上角的鉛筆再修改。`);
     } catch (err) {
       console.error('憑證 AI 匯入失敗:', err);
       docAiStatus(`<div style="padding:12px 14px; border:2px solid var(--warn-border); background:var(--warn-bg); border-radius:12px; margin-bottom:8px; font-size:calc(12px * var(--font-scale)); color:#943126; line-height:1.6;">辨識失敗：${escapeHtml(friendlyAiErrorMessage(err))}</div>`);
@@ -4900,7 +5093,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         if (existing.paidTotal !== undefined) existing.paidTotal = data.amount; // 逐項分配的紀錄，實付金額要跟著更新
       }
     } else {
-      expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: manualRate || currentRateForCurrency(qaCurrency) });
+      expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: manualRate || currentRateForCurrency(qaCurrency), ledgerId: isSoloMode() ? activeLedgerId() : undefined });
     }
     saveExpense(); editingExpenseId = null;
     const qab = document.getElementById('quick-add-box'); if (qab) { qab.style.display = 'none'; qab.innerHTML = ''; }
@@ -5290,6 +5483,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       payer: qaPayer, method: qaMethod, date: date, item: name,
       rateAtTime: currentRateForCurrency(rrCurrency), quantity: 1, location: location, coupon: '', taxRefund: '', note: note,
       items: items,
+      ledgerId: isSoloMode() ? activeLedgerId() : undefined,
       // 分帳用：有指定歸屬才寫入，並把「品項加總與實付金額的差額」當成折扣按比例分攤，
       // 這樣即使有滿額折扣，各人分到的金額加起來仍會等於實際付款
       splitMode: anyOwner ? 'items' : 'even',
@@ -5816,7 +6010,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   function renderExpenseSummary() {
     renderDashboard();
-    const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
+    const expList = visibleExpenses();   // 個人記帳模式下只看目前這本帳
+    const totalKrw = expList.reduce((s,r)=>s+recordToKRW(r),0);
     
     // 防禦性檢查
     const krwEl = document.getElementById('exp-total-krw');
@@ -5832,14 +6027,14 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return;
     // 沒有消費紀錄時也要更新分帳摘要再結束，否則那張卡片會留著上一個房間畫好的內容，
     // 造成「消費明細是空的、分帳卻有別房金額」
-    if (expenseRecords.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
+    if (expList.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
 
     const groupKeyOf = expBreakdownMode === 'member' ? (r => r.payer || '未指定')
       : expBreakdownMode === 'date' ? (r => r.date || '未填日期')
       : (r => r.category || '其他');
 
     const groups = {};
-    expenseRecords.forEach(r => {
+    expList.forEach(r => {
       const k = groupKeyOf(r);
       if (!groups[k]) groups[k] = { total: 0, records: [] };
       groups[k].total += recordToKRW(r);
@@ -6032,8 +6227,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       <div class="card" style="margin-bottom:10px; padding:16px; cursor:pointer;" onclick="enterRoom('${escapeHtml(r.roomId)}')">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="min-width:0;">
-            <div style="font-weight:700; color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}</div>
-            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">房號 ${escapeHtml(r.roomId)}${r.sub ? ' · ' + escapeHtml(r.sub) : ''}</div>
+            <div style="font-weight:700; color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}${isSoloRoom(r.roomId) ? `<span style="margin-left:7px; background:#FBEEDD; border:1px solid #E7CDB5; color:#8A5A2B; border-radius:7px; padding:1px 7px; font-size:calc(10px * var(--font-scale)); font-weight:800; vertical-align:middle;">個人記帳</span>` : ''}</div>
+            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${isSoloRoom(r.roomId) ? escapeHtml(soloDisplayName(r.roomId)) : `房號 ${escapeHtml(r.roomId)}`}${r.sub ? ' · ' + escapeHtml(r.sub) : ''}</div>
           </div>
           <button onclick="event.stopPropagation(); forgetRecentRoom('${escapeHtml(r.roomId)}')" style="background:#F1F5F9; border:none; width:28px; height:28px; border-radius:50%; color:var(--gray); cursor:pointer; flex-shrink:0;"><i class="fa-solid fa-xmark"></i></button>
         </div>
@@ -6120,14 +6315,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     if (tabsWrap) tabsWrap.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     document.getElementById('admin-tab-rooms').style.display = (tab === 'rooms') ? 'block' : 'none';
+    document.getElementById('admin-tab-solo').style.display = (tab === 'solo') ? 'block' : 'none';
     document.getElementById('admin-tab-trash').style.display = (tab === 'trash') ? 'block' : 'none';
     if (tab === 'trash') renderAdminTrashList();
+    if (tab === 'solo') renderAdminSoloList();
   }
   async function renderAdminRoomList() {
     const wrap = document.getElementById('admin-room-list'); if (!wrap) return;
     wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> 讀取中...</p>`;
-    const list = await fetchAllRoomsFromFirebase();
+    let list = await fetchAllRoomsFromFirebase();
     if (list === null) { wrap.innerHTML = `<p style="text-align:center; color:var(--warn); padding:20px; font-size:calc(13px * var(--font-scale));">讀取失敗，請確認網路連線後重新打開後台</p>`; return; }
+    list = list.filter(r => !isSoloRoom(r.roomId));   // 個人記帳在另一個分頁管理
     if (!list.length) { wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px; font-size:calc(13px * var(--font-scale));">目前沒有任何房間</p>`; return; }
     wrap.innerHTML = list.map(r => `
       <div class="card" style="margin-bottom:10px; padding:14px;">
@@ -6141,6 +6339,25 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       </div>
     `).join('');
   }
+  async function renderAdminSoloList() {
+    const wrap = document.getElementById('admin-solo-list'); if (!wrap) return;
+    wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> 讀取中...</p>`;
+    const list = await fetchAllRoomsFromFirebase();
+    if (list === null) { wrap.innerHTML = `<p style="text-align:center; color:var(--warn); padding:20px; font-size:calc(13px * var(--font-scale));">讀取失敗，請確認網路連線後重新打開後台</p>`; return; }
+    const solo = list.filter(r => isSoloRoom(r.roomId));
+    if (!solo.length) { wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px; font-size:calc(13px * var(--font-scale));">目前沒有個人記帳空間</p>`; return; }
+    wrap.innerHTML = solo.map(r => `
+      <div class="card" style="margin-bottom:10px; padding:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div style="min-width:0;">
+            <div style="font-weight:700; color:var(--navy); font-size:calc(14px * var(--font-scale));"><i class="fa-solid fa-wallet" style="color:#C58A4A;"></i> ${escapeHtml(soloDisplayName(r.roomId))}</div>
+            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:2px;">${escapeHtml(r.title || '個人記帳')}</div>
+          </div>
+          <button onclick="adminDeleteRoom('${escapeHtml(r.roomId)}')" style="flex-shrink:0; background:#FEF2F2; border:none; padding:8px 14px; border-radius:10px; color:var(--warn); font-weight:700; font-size:calc(12px * var(--font-scale)); cursor:pointer;"><i class="fa-solid fa-trash"></i> 刪除</button>
+        </div>
+      </div>`).join('');
+  }
+
   async function renderAdminTrashList() {
     const wrap = document.getElementById('admin-trash-list'); if (!wrap) return;
     wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> 讀取中...</p>`;
@@ -6210,6 +6427,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   function showHomeScreen() {
+    document.body.classList.remove('solo-mode');
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; } // 離開房間context，不要繼續在背景聽這個房的更新
     document.getElementById('main-app-container').style.display = 'none';
     document.getElementById('bottom-nav').style.display = 'none';
@@ -6283,13 +6501,148 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
     registerRoom(roomId, tripSettings.title);
     renderHeroSyncStatus();
-    fetchRates(); fetchWeather();
-    renderDayPills(); renderDashboard(); renderReminder(true);
+    applyRoomModeUI();
+    fetchRates();
+    if (!isSoloMode()) { fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true); }
     showMainApp();
-    showP('p-overview', document.querySelectorAll('.nav-btn')[0]);
+    if (isSoloMode()) { showP('p-expense', document.querySelectorAll('.nav-btn')[3]); }
+    else { showP('p-overview', document.querySelectorAll('.nav-btn')[0]); }
 
     const autoEnable = localStorage.getItem('sync-auto-enabled');
     if (autoEnable === 'true') { attachAutoSyncListener(roomId); }
+  }
+
+  // ===== 個人記帳模式 =====
+  // 用「姓名」當房間，不設密碼、永遠可編輯；裡面用「帳本」分段（例如 1/1 東京、1/10 大阪），
+  // 只保留記帳相關功能，旅程專屬的總覽／準備／行程／分帳都隱藏起來
+  function soloRoomIdOf(name) { return 'solo_' + String(name||'').trim().replace(/[.#$\[\]\/]/g, '_'); }
+  function isSoloRoom(id) { return String(id||'').indexOf('solo_') === 0; }
+  function isSoloMode() { return isSoloRoom(syncRoomId); }
+  function soloDisplayName(id) { return String(id||'').replace(/^solo_/, ''); }
+
+  function openSoloRoomForm() {
+    let last = ''; try { last = localStorage.getItem('solo-name') || ''; } catch(e) {}
+    const el = document.getElementById('solo-name'); if (el) el.value = last;
+    document.getElementById('solo-room-overlay').style.display = 'flex';
+  }
+  function closeSoloRoomForm() { document.getElementById('solo-room-overlay').style.display = 'none'; }
+  async function submitSoloRoom() {
+    const name = (document.getElementById('solo-name').value || '').trim();
+    if (!name) { alert('請輸入你的名字！'); return; }
+    const roomId = soloRoomIdOf(name);
+    const btn = document.getElementById('solo-submit-btn'); if (btn) btn.disabled = true;
+    try { localStorage.setItem('solo-name', name); } catch(e) {}
+    try {
+      const snapshot = await db.ref('rooms/' + roomId).once('value');
+      if (!snapshot.exists()) {
+        // 第一次使用這個名字：建立一本預設帳本
+        if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+        try { if (!localStorage.getItem('legacy-migration-room')) localStorage.setItem('legacy-migration-room', '__none__'); } catch(e) {}
+        resetRoomDataInMemory();
+        syncRoomId = roomId;
+        const savedKey = await loadSharedApiKey();
+        tripSettings = {
+          title: name + ' 的記帳', soloName: name, kind: 'solo',
+          country: '🇹🇼 台灣', startDate: todayOrTripDate(), endDate: todayOrTripDate(),
+          notes: [], warns: [], geminiApiKey: savedKey, createdAt: Date.now(),
+          ledgers: [{ id: 1, name: '日常' }], ledgerSeq: 2, activeLedger: 1
+        };
+        travelers = [name]; expenseRecords = []; prepData = {}; itinData = {};
+        localStorage.setItem('sync-room-id', roomId);
+        await saveTripSettings(); await saveExpense();
+        const payload = { tripSettings, prepData: {}, itinData: {}, expenseRecords: [], masterPin: '1234', travelDocs: {}, travelers, wishlistData: [], foodListData: [] };
+        await db.ref('rooms/' + roomId).set(JSON.parse(JSON.stringify(payload, (k, v) => v === undefined ? '' : v)));
+        await registerRoom(roomId, tripSettings.title, name);
+      }
+    } catch (error) {
+      alert('連線失敗，請確認網路後再試一次。\n\n' + error.message);
+      if (btn) btn.disabled = false; return;
+    }
+    if (btn) btn.disabled = false;
+    closeSoloRoomForm();
+    await enterRoom(roomId);
+  }
+
+  // 依目前房間型態切換整體介面（配色、底部分頁、旅程專屬區塊）
+  function applyRoomModeUI() {
+    const solo = isSoloMode();
+    document.body.classList.toggle('solo-mode', solo);
+    if (solo) { isMasterMode = true; document.body.classList.remove('sub-mode'); document.body.classList.add('master-mode'); }
+    const t = document.getElementById('expense-page-title');
+    const s = document.getElementById('expense-page-sub');
+    if (t) t.innerText = solo ? ((tripSettings && tripSettings.soloName) || soloDisplayName(syncRoomId)) + ' 的記帳' : '旅行支出';
+    if (s) s.innerText = solo ? 'My Ledger' : 'Trip Ledger';
+    if (solo) renderLedgerChips();
+  }
+
+  // ---- 帳本 ----
+  function soloLedgers() {
+    if (!tripSettings.ledgers || !tripSettings.ledgers.length) {
+      tripSettings.ledgers = [{ id: 1, name: '日常' }];
+      tripSettings.ledgerSeq = 2; tripSettings.activeLedger = 1;
+    }
+    return tripSettings.ledgers;
+  }
+  function activeLedgerId() {
+    const list = soloLedgers();
+    if (!list.find(l => l.id === tripSettings.activeLedger)) tripSettings.activeLedger = list[0].id;
+    return tripSettings.activeLedger;
+  }
+  function selectLedger(id) { tripSettings.activeLedger = id; saveTripSettings(); renderLedgerChips(); renderExpenseSummary(); }
+  function renderLedgerChips() {
+    const wrap = document.getElementById('ledger-chip-row'); if (!wrap) return;
+    const act = activeLedgerId();
+    wrap.innerHTML = soloLedgers().map(l => {
+      const on = l.id === act;
+      const cnt = expenseRecords.filter(r => ledgerOf(r) === l.id).length;
+      return `<div onclick="selectLedger(${l.id})" style="flex:0 0 auto; display:flex; align-items:center; gap:7px; background:${on?'var(--navy)':'#F5EDE3'}; color:${on?'#fff':'var(--navy)'}; border-radius:14px; padding:9px 13px; cursor:pointer; font-weight:800; font-size:calc(13px * var(--font-scale));">
+        <span>${escapeHtml(l.name)}</span>
+        <span style="font-size:calc(10.5px * var(--font-scale)); opacity:0.75; font-weight:700;">${cnt}</span>
+        ${on ? `<i class="fa-solid fa-pen" onclick="event.stopPropagation(); openLedgerForm(${l.id})" style="font-size:calc(10px * var(--font-scale)); opacity:0.85;"></i>` : ''}
+      </div>`;
+    }).join('');
+  }
+  function ledgerOf(r) {
+    const list = soloLedgers();
+    const id = Number(r.ledgerId);
+    return list.find(l => l.id === id) ? id : list[0].id;   // 沒標記的舊資料歸到第一本
+  }
+  function visibleExpenses() {
+    if (!isSoloMode()) return expenseRecords;
+    const act = activeLedgerId();
+    return expenseRecords.filter(r => ledgerOf(r) === act);
+  }
+  function openLedgerForm(editId) {
+    const list = soloLedgers();
+    const editing = editId ? list.find(l => l.id === editId) : null;
+    const st = 'width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;';
+    const fields = `
+      <div class="input-label">帳本名稱</div>
+      <input type="text" id="lg-name" value="${editing?escapeHtml(editing.name):''}" placeholder="例如：1/1 東京、2 月生活費" style="${st}">
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 10px; line-height:1.6;">每一本帳的支出、統計都是分開的，隨時可以在上面切換。</p>
+      ${editing && list.length > 1 ? `<button type="button" class="ghost-btn" style="border-color:var(--warn); color:var(--warn); font-size:calc(12.5px * var(--font-scale)); padding:9px;" onclick="deleteLedger(${editing.id})"><i class="fa-solid fa-trash"></i> 刪除這本帳（裡面的紀錄也會刪掉）</button>` : ''}`;
+    setupGeneralEdit(editing ? '編輯帳本' : '新增帳本', fields, () => {
+      const name = (document.getElementById('lg-name').value || '').trim();
+      if (!name) { alert('請輸入帳本名稱！'); return; }
+      if (editing) { editing.name = name; }
+      else {
+        const id = tripSettings.ledgerSeq || (Math.max.apply(null, list.map(l => l.id)) + 1);
+        tripSettings.ledgerSeq = id + 1;
+        list.push({ id, name });
+        tripSettings.activeLedger = id;
+      }
+      saveTripSettings(); renderLedgerChips(); renderExpenseSummary(); closeGeneralEdit();
+    });
+  }
+  function deleteLedger(id) {
+    const list = soloLedgers();
+    if (list.length <= 1) { alert('至少要保留一本帳。'); return; }
+    const cnt = expenseRecords.filter(r => ledgerOf(r) === id).length;
+    if (!confirm(`確定要刪除這本帳嗎？裡面的 ${cnt} 筆紀錄也會一起刪除，無法復原。`)) return;
+    expenseRecords = expenseRecords.filter(r => ledgerOf(r) !== id);
+    tripSettings.ledgers = list.filter(l => l.id !== id);
+    tripSettings.activeLedger = tripSettings.ledgers[0].id;
+    saveTripSettings(); saveExpense(); renderLedgerChips(); renderExpenseSummary(); closeGeneralEdit();
   }
 
   function openCreateRoomForm() {
@@ -6463,6 +6816,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderTripSettingsUI(); renderPrep(); renderDayTabs();
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
     renderExpenseSummary(); renderSettlement(); renderDayPills(); renderMembersSettingsList();
+    if (isSoloMode()) renderLedgerChips();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
     const listsTab = document.getElementById('prep-tab-lists'); if (listsTab && listsTab.style.display !== 'none') { renderWishlist(); renderFoodList(); }
     renderReminder(true);
@@ -7273,7 +7627,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderDashboard(); renderReminder();
 
     renderHeroSyncStatus();
+    applyRoomModeUI();
     showMainApp();
+    if (isSoloMode()) showP('p-expense', document.querySelectorAll('.nav-btn')[3]);
     const autoEnable = localStorage.getItem('sync-auto-enabled');
     if (autoEnable === 'true') {
       const checkEl = document.getElementById('sync-auto-check');
