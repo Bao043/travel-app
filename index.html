@@ -217,6 +217,31 @@
   .detail-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .detail-row i { color: var(--gold); width: 16px; text-align: center; }
   
+  /* ===== 憑證卡：機票做成登機證、住宿與租車做成訂單票根 ===== */
+  .tk { background:#fff; border-radius:22px; margin-bottom:14px; border:1px solid var(--line); box-shadow:0 8px 24px rgba(0,0,0,0.05); overflow:hidden; position:relative; cursor:pointer; }
+  .tk-top { display:flex; align-items:center; gap:9px; padding:12px 15px; color:#fff; }
+  .tk-ttl { flex:1; min-width:0; font-weight:800; font-size:calc(14.5px * var(--font-scale)); letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tk-no { flex-shrink:0; font-size:calc(12.5px * var(--font-scale)); font-weight:800; background:rgba(255,255,255,0.22); border-radius:9px; padding:3px 10px; letter-spacing:0.5px; }
+  .tk-act { position:absolute; top:11px; right:13px; display:flex; gap:6px; z-index:3; }
+  .tk-act button { background:rgba(255,255,255,0.26); border:none; width:26px; height:26px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(11px * var(--font-scale)); }
+  .tk-body { padding:16px 16px 14px; }
+  .tk-route { display:flex; align-items:center; gap:8px; }
+  .tk-pt { flex:0 0 auto; min-width:76px; text-align:center; }
+  .tk-code { font-family:"SF Pro Display","PingFang TC",sans-serif; font-size:calc(25px * var(--font-scale)); font-weight:800; color:var(--navy); letter-spacing:1.5px; line-height:1.1; }
+  .tk-time { font-size:calc(15px * var(--font-scale)); font-weight:800; color:var(--teal); margin-top:3px; }
+  .tk-sm { font-size:calc(10.5px * var(--font-scale)); color:var(--gray); letter-spacing:1px; font-weight:700; }
+  .tk-mid { flex:1; min-width:0; text-align:center; color:var(--coral); }
+  .tk-line { height:2px; margin:5px 0; background:repeating-linear-gradient(90deg, #CBD5E1 0 5px, transparent 5px 10px); }
+  .tk-tear { position:relative; height:1px; border-top:2px dashed #E2E8F0; margin:14px 0 13px; }
+  .tk-tear::before, .tk-tear::after { content:''; position:absolute; top:-11px; width:20px; height:20px; border-radius:50%; background:var(--bg); border:1px solid var(--line); }
+  .tk-tear::before { left:-27px; }
+  .tk-tear::after { right:-27px; }
+  .tk-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px 12px; }
+  .tk-kv .k { font-size:calc(10px * var(--font-scale)); color:var(--gray); letter-spacing:1px; font-weight:700; margin-bottom:1px; }
+  .tk-kv .v { font-size:calc(13.5px * var(--font-scale)); color:var(--navy); font-weight:700; word-break:break-word; }
+  .tk-leg { display:flex; gap:11px; align-items:flex-start; }
+  .tk-dot { flex:0 0 auto; width:11px; height:11px; border-radius:50%; margin-top:5px; box-shadow:0 0 0 3px rgba(0,0,0,0.05); }
+
   .sync-status-bar { display: flex; justify-content: space-between; align-items: center; background: #ECFDF5; border: 1.5px solid #A7F3D0; padding: 10px 16px; border-radius: 16px; font-size:calc(13px * var(--font-scale)); color: #065F46; margin-bottom: 15px; }
 
   body.sub-mode .only-master { display: none !important; }
@@ -856,7 +881,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-24 10:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 09:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1298,7 +1323,7 @@ Day2 12:00 outlet購物，預計逛一小時
   // 憑證資訊四大類的欄位定義（同一套通用渲染/表單邏輯依此產生UI，headlineKeys為卡片摘要列已顯示、不重複列在展開細節中的欄位）
   const DOC_TYPES = {
     flight: { label:'機票', icon:'fa-plane', color:'#2563EB',
-      headlineKeys: ['label','flightNo','depCode','arrCode','date','time'],
+      headlineKeys: ['label','flightNo','depCode','arrCode','date','time','arrTime'],
       fields: [
         { key:'label', label:'標籤 (如：去程／回程)', type:'text', placeholder:'去程' },
         { key:'airline', label:'航空公司', type:'text', placeholder:'台灣虎航' },
@@ -1307,6 +1332,7 @@ Day2 12:00 outlet購物，預計逛一小時
         { key:'arrCode', label:'抵達地代碼', type:'text', placeholder:'PUS' },
         { key:'date', label:'日期', type:'date' },
         { key:'time', label:'起飛時間', type:'time' },
+        { key:'arrTime', label:'抵達時間', type:'time' },
         { key:'gate', label:'登機門', type:'text', placeholder:'A3 / Gate 5' },
         { key:'baggage', label:'行李轉盤', type:'text', placeholder:'Carousel 4' },
         { key:'bookingRef', label:'訂位代號', type:'text' },
@@ -1735,6 +1761,8 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   function setupGeneralEdit(title, fieldsHtml, onSave) {
+    const sb = document.getElementById('general-save-btn');
+    if (sb) sb.innerHTML = '儲存修改';   // 上一個彈窗可能改過文字，這裡先還原
     document.getElementById('general-edit-title').innerText = title;
     document.getElementById('general-edit-fields').innerHTML = fieldsHtml;
     document.getElementById('general-save-btn').onclick = onSave;
@@ -3069,7 +3097,10 @@ Day2 12:00 outlet購物，預計逛一小時
     } else {
       html += arr.map(entry => renderDocCard(activeDocType, entry)).join('');
     }
-    html += `<button class="ghost-btn only-master" onclick="openDocForm('${activeDocType}', null)"><i class="fa-solid fa-plus"></i> 新增${schema.label}</button>`;
+    html += `<div class="only-master" style="display:flex; gap:8px;">
+      <button class="ghost-btn" style="flex:1;" onclick="openDocForm('${activeDocType}', null)"><i class="fa-solid fa-plus"></i> 新增${schema.label}</button>
+      <button class="ghost-btn" style="flex:1; border-color:#2563EB; color:#2563EB;" onclick="openDocAiImport('${activeDocType}')"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 匯入</button>
+    </div>`;
     wrap.innerHTML = html;
     if (activeDocType === 'pass') updatePassCountdowns();
   }
@@ -3079,28 +3110,105 @@ Day2 12:00 outlet購物，預計逛一小時
     renderDocList();
   }
 
+  function dowOf(dateStr) {
+    if (!dateStr) return '';
+    const p = String(dateStr).split('-'); if (p.length !== 3) return '';
+    const d = new Date(+p[0], +p[1]-1, +p[2]);
+    return isNaN(d.getTime()) ? '' : WD_CHARS[d.getDay()];
+  }
+  function dateChip(dateStr) {
+    if (!dateStr) return '未填日期';
+    const w = dowOf(dateStr);
+    return formatMDLabel(dateStr) + (w ? `（${w}）` : '');
+  }
+  function nightsBetween(a, b) {
+    if (!a || !b) return 0;
+    const pa = String(a).split('-'), pb = String(b).split('-');
+    if (pa.length !== 3 || pb.length !== 3) return 0;
+    const diff = Math.round((new Date(+pb[0], +pb[1]-1, +pb[2]) - new Date(+pa[0], +pa[1]-1, +pa[2])) / 86400000);
+    return diff > 0 ? diff : 0;
+  }
+  function tkKv(label, val) {
+    const v = (val === null || val === undefined) ? '' : String(val).trim();
+    return v ? `<div class="tk-kv"><div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(v)}</div></div>` : '';
+  }
+  function tkLeg(label, color, dateStr, timeStr, place) {
+    return `<div class="tk-leg">
+      <span class="tk-dot" style="background:${color};"></span>
+      <div style="flex:1; min-width:0;">
+        <div class="tk-sm">${escapeHtml(label)}</div>
+        <div style="font-size:calc(16px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:1px;">${escapeHtml(dateChip(dateStr))}${timeStr?`<span style="color:var(--teal); margin-left:7px;">${escapeHtml(timeStr)}</span>`:''}</div>
+        ${place ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:2px;"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(place)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // 每一種憑證都做成「票根」樣式：上方彩色票頭、中間是這張票最重要的資訊、
+  // 虛線撕線以下是訂單編號等次要欄位，其餘細節點開才顯示
   function renderDocCard(type, entry) {
     const schema = DOC_TYPES[type];
     const isExpanded = expandedDocIds.has(entry.id);
-    let headline = '', sub = '', extra = '';
+    let headTitle = '', headRight = '', face = '', grid = '', extra = '', faceKeys = [];
 
     if (type === 'flight') {
-      headline = `${escapeHtml(entry.label || '航班')}${entry.flightNo ? ' · '+escapeHtml(entry.flightNo) : ''}`;
-      sub = `${escapeHtml(entry.depCode||'?')} → ${escapeHtml(entry.arrCode||'?')} ・ ${entry.date?formatMDLabel(entry.date):'未填日期'} ${escapeHtml(entry.time||'')}`;
-    } else if (type === 'car') {
-      headline = escapeHtml(entry.company || '租車');
-      sub = `${entry.pickupDate?formatMDLabel(entry.pickupDate):'未填'} 取車 → ${entry.returnDate?formatMDLabel(entry.returnDate):'未填'} 還車`;
-    } else if (type === 'hotel') {
-      headline = escapeHtml(entry.name || '住宿');
-      sub = `${entry.checkinDate?formatMDLabel(entry.checkinDate):'未填'} → ${entry.checkoutDate?formatMDLabel(entry.checkoutDate):'未填'}`;
-    } else if (type === 'pass') {
-      headline = `${escapeHtml(entry.name || '票券')}${entry.durationHours ? ' · '+escapeHtml(String(entry.durationHours))+'小時方案' : ''}`;
-      const expiryMs = calcPassExpiry(entry);
-      sub = expiryMs ? `到期：${formatKoreaDateTime(expiryMs)} (韓國時間)` : '尚未設定啟用時間';
-      extra = `<div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:800; font-size:calc(16px * var(--font-scale)); color:var(--teal); margin-top:8px;">計算中...</div>`;
-    }
+      headTitle = `<i class="fa-solid fa-plane-departure"></i> ${escapeHtml(entry.label || '航班')}`;
+      headRight = escapeHtml(entry.flightNo || '');
+      faceKeys = ['airline','bookingRef','gate','baggage','price'];
+      face = `<div class="tk-route">
+          <div class="tk-pt">
+            <div class="tk-code">${escapeHtml(entry.depCode||'???')}</div>
+            <div class="tk-time">${escapeHtml(entry.time||'--:--')}</div>
+          </div>
+          <div class="tk-mid">
+            ${entry.airline ? `<div class="tk-sm">${escapeHtml(entry.airline)}</div>` : ''}
+            <div class="tk-line"></div>
+            <i class="fa-solid fa-plane" style="font-size:calc(14px * var(--font-scale));"></i>
+          </div>
+          <div class="tk-pt">
+            <div class="tk-code">${escapeHtml(entry.arrCode||'???')}</div>
+            <div class="tk-time">${escapeHtml(entry.arrTime||'--:--')}</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateChip(entry.date))}</div>`;
+      grid = tkKv('AIRLINE 航空公司', entry.airline) + tkKv('BOOKING 訂位代號', entry.bookingRef)
+           + tkKv('GATE 登機門', entry.gate) + tkKv('BAGGAGE 行李轉盤', entry.baggage) + tkKv('FARE 票價', entry.price);
 
-    if (type === 'car') {
+    } else if (type === 'hotel') {
+      headTitle = `<i class="fa-solid fa-hotel"></i> ${escapeHtml(entry.name || '住宿')}`;
+      const n = nightsBetween(entry.checkinDate, entry.checkoutDate);
+      headRight = n ? `${n} 晚` : '';
+      faceKeys = ['address','bookingRef','price','phone','checkinTime','checkoutTime'];
+      face = `<div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1; min-width:0;">
+            <div class="tk-sm">CHECK-IN 入住</div>
+            <div style="font-size:calc(17px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:2px;">${escapeHtml(dateChip(entry.checkinDate))}</div>
+            <div class="tk-time">${escapeHtml(entry.checkinTime||'--:--')}</div>
+          </div>
+          <div style="flex:0 0 auto; text-align:center; color:var(--gold);">
+            ${n ? `<div style="font-size:calc(11px * var(--font-scale)); font-weight:800;">${n} 晚</div>` : ''}
+            <i class="fa-solid fa-arrow-right-long"></i>
+          </div>
+          <div style="flex:1; min-width:0; text-align:right;">
+            <div class="tk-sm">CHECK-OUT 退房</div>
+            <div style="font-size:calc(17px * var(--font-scale)); font-weight:800; color:var(--navy); margin-top:2px;">${escapeHtml(dateChip(entry.checkoutDate))}</div>
+            <div class="tk-time">${escapeHtml(entry.checkoutTime||'--:--')}</div>
+          </div>
+        </div>
+        ${entry.address ? `<div style="margin-top:11px; font-size:calc(12.5px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(entry.address)}</div>` : ''}`;
+      grid = tkKv('BOOKING 訂單編號', entry.bookingRef) + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone);
+      const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
+      if (q) extra += `<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">${docNavBtn('hotel', entry.id, '', 'Google 地圖')}${isKoreaTrip() ? docNaverBtn('hotel', entry.id, '', 'NAVER 地圖') : ''}</div>`;
+
+    } else if (type === 'car') {
+      headTitle = `<i class="fa-solid fa-car"></i> ${escapeHtml(entry.company || '租車')}`;
+      headRight = escapeHtml(entry.carModel || '');
+      faceKeys = ['carModel','bookingRef','price','phone','pickupDate','pickupTime','pickupLocation','returnDate','returnTime','returnLocation'];
+      face = `<div style="display:flex; flex-direction:column; gap:12px;">
+          ${tkLeg('PICK-UP 取車', 'var(--teal)', entry.pickupDate, entry.pickupTime, entry.pickupLocation)}
+          ${tkLeg('RETURN 還車', 'var(--coral)', entry.returnDate, entry.returnTime, entry.returnLocation)}
+        </div>`;
+      grid = tkKv('CAR 車型', entry.carModel) + tkKv('BOOKING 訂單編號', entry.bookingRef)
+           + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone);
       const pick = [entry.company, entry.pickupLocation].filter(x => (x||'').trim()).join(' ');
       const retLoc = (entry.returnLocation||'').trim();
       const hasRet = retLoc && retLoc !== (entry.pickupLocation||'').trim();
@@ -3113,38 +3221,56 @@ Day2 12:00 outlet購物，預計逛一小時
         btns += docNavBtn('car', entry.id, 'return', '還車點導航');
         if (isKoreaTrip()) btns += docNaverBtn('car', entry.id, 'return', '還車點 NAVER');
       }
-      if (btns) extra += `<div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">${btns}</div>`;
-    } else if (type === 'hotel') {
-      const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
-      if (q) extra += `<div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">${docNavBtn('hotel', entry.id, '', 'Google 地圖')}${isKoreaTrip() ? docNaverBtn('hotel', entry.id, '', 'NAVER 地圖') : ''}</div>`;
+      if (btns) extra += `<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">${btns}</div>`;
+
+    } else if (type === 'pass') {
+      headTitle = `<i class="fa-solid fa-ticket"></i> ${escapeHtml(entry.name || '票券')}`;
+      headRight = entry.durationHours ? escapeHtml(String(entry.durationHours)) + ' 小時' : '';
+      faceKeys = ['price'];
+      const expiryMs = calcPassExpiry(entry);
+      face = `<div style="text-align:center;">
+          <div class="tk-sm">EXPIRES IN 剩餘時間</div>
+          <div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-weight:800; font-size:calc(22px * var(--font-scale)); color:var(--teal); margin:4px 0 6px;">計算中...</div>
+          <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray);">${expiryMs ? `啟用 ${escapeHtml(dateChip(entry.startDate))} ${escapeHtml(entry.startTime||'')}　到期 ${escapeHtml(formatKoreaDateTime(expiryMs))}` : '尚未設定啟用時間與方案時數'}</div>
+        </div>`;
+      grid = tkKv('PRICE 費用', entry.price);
+
+    } else if (type === 'coupon') {
+      headTitle = `<i class="fa-solid fa-tags"></i> ${escapeHtml(entry.name || '優惠碼')}`;
+      headRight = entry.expiry ? escapeHtml(formatMDLabel(entry.expiry)) + ' 到期' : '';
+      faceKeys = ['discount','store'];
+      face = `${entry.discount ? `<div style="font-size:calc(15px * var(--font-scale)); font-weight:800; color:var(--navy);">${escapeHtml(entry.discount)}</div>` : ''}
+        ${entry.store ? `<div style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray); margin-top:3px;"><i class="fa-solid fa-shop" style="color:var(--gold);"></i> ${escapeHtml(entry.store)}</div>` : ''}
+        ${couponExpired(entry) ? `<div style="display:inline-block; margin-top:7px; background:var(--warn-bg); border:1px solid var(--warn-border); color:var(--warn); border-radius:8px; padding:2px 9px; font-size:calc(11px * var(--font-scale)); font-weight:800;">已過期</div>` : ''}
+        ${couponExtraHtml(entry)}`;
     }
 
-    if (type === 'coupon') {
-      headline = escapeHtml(entry.name || '優惠碼');
-      const expTxt = entry.expiry ? `${formatMDLabel(entry.expiry)} 到期` : '未填期限';
-      sub = `${entry.discount ? escapeHtml(entry.discount) + ' ・ ' : ''}${expTxt}${couponExpired(entry) ? '（已過期）' : ''}`;
-      extra = couponExtraHtml(entry);
-    }
-
+    const shown = schema.headlineKeys.concat(faceKeys);
     const detailRows = schema.fields
-      .filter(f => !schema.headlineKeys.includes(f.key))
+      .filter(f => !shown.includes(f.key))
       .map(f => entry[f.key] ? `<div class="detail-row"><i class="fa-solid fa-circle" style="font-size:calc(5px * var(--font-scale)); color:var(--gold);"></i><span><b>${f.label}：</b>${escapeHtml(entry[f.key])}</span></div>` : '')
       .filter(Boolean).join('');
     const detailHtml = (type === 'coupon' ? couponImageHtml(entry) : '') + detailRows;
 
-    return `<div class="timeline-card" style="margin-bottom:14px; border-left:4px solid ${schema.color}; position:relative;" onclick="toggleDocDetail(${entry.id})">
-      <div class="only-master" style="position:absolute; top:12px; right:12px; display:flex; gap:6px;">
-        <button onclick="event.stopPropagation(); openDocForm('${type}', ${entry.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-        <button onclick="event.stopPropagation(); deleteDocEntry('${type}', ${entry.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+    return `<div class="tk" onclick="toggleDocDetail(${entry.id})">
+      <div class="tk-top" style="background:linear-gradient(135deg, ${schema.color} 0%, var(--navy) 130%);">
+        <span class="tk-ttl">${headTitle}</span>
+        ${headRight ? `<span class="tk-no">${headRight}</span>` : ''}
+        <span class="only-master" style="flex:0 0 62px;"></span>
       </div>
-      <div class="timeline-title" style="padding-right:60px;">${headline}</div>
-      <div class="timeline-time" style="margin-top:4px;">${sub}</div>
-      ${extra}
-      <div class="timeline-detail ${isExpanded?'active':''}">${detailHtml || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}</div>
+      <div class="tk-act only-master">
+        <button onclick="event.stopPropagation(); openDocForm('${type}', ${entry.id})" title="編輯"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="event.stopPropagation(); deleteDocEntry('${type}', ${entry.id})" title="刪除"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="tk-body">
+        ${face}
+        ${grid ? `<div class="tk-tear"></div><div class="tk-grid">${grid}</div>` : ''}
+        ${extra}
+        <div class="timeline-detail ${isExpanded?'active':''}">${detailHtml || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}</div>
+      </div>
     </div>`;
   }
 
-  // 用店家名稱＋地點直接開 Google 地圖搜尋，不用自己複製貼上
   function openMapSearch(query) {
     const q = (query||'').trim();
     if (!q) { alert('沒有可用的地點資訊，請先填寫店家名稱或地址'); return; }
@@ -3317,14 +3443,97 @@ Day2 12:00 outlet購物，預計逛一小時
     } catch(e) { alert('圖片處理失敗：' + e.message); }
   }
 
-  function openDocForm(type, editId) {
+  // ===== 憑證 AI 匯入：機票可以只打「IT234 10/11」，住宿與租車可以直接丟訂單截圖或貼確認信內容。
+  // 辨識完不會直接存檔，而是把結果填進新增表單讓使用者確認後再儲存 =====
+  let docAiFile = null;
+  const DOC_AI_SCHEMA = {
+    flight: '{"label":"去程或回程","airline":"航空公司","flightNo":"航班編號","depCode":"出發機場三碼代碼","arrCode":"抵達機場三碼代碼","date":"出發日期 YYYY-MM-DD","time":"起飛時間 HH:MM","arrTime":"抵達時間 HH:MM","gate":"航廈或登機門","baggage":"行李額度或轉盤","bookingRef":"訂位代號","price":"票價","notes":"其他備註"}',
+    hotel: '{"name":"飯店名稱","address":"完整地址","phone":"電話","checkinDate":"入住日期 YYYY-MM-DD","checkinTime":"入住時間 HH:MM","checkoutDate":"退房日期 YYYY-MM-DD","checkoutTime":"退房時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"房型、早餐、取消政策等備註"}',
+    car: '{"company":"租車公司","carModel":"車型","pickupLocation":"取車地點","phone":"店家電話","pickupDate":"取車日期 YYYY-MM-DD","pickupTime":"取車時間 HH:MM","returnLocation":"還車地點","returnDate":"還車日期 YYYY-MM-DD","returnTime":"還車時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"保險、駕照需求等備註"}',
+    pass: '{"name":"票券名稱","durationHours":方案時數數字,"startDate":"啟用日期 YYYY-MM-DD","startTime":"啟用時間 HH:MM","price":"費用","plannedSpots":"可用景點","bookingRef":"憑證或訂單編號","notes":"備註"}',
+    coupon: '{"name":"優惠名稱","code":"優惠碼","discount":"折扣內容","store":"適用店家","url":"活動連結","expiry":"有效期限 YYYY-MM-DD","howTo":"使用方式","storeInfo":"店家資訊","notes":"使用限制"}'
+  };
+  const DOC_AI_TIP = {
+    flight: '可以只輸入「IT234 10/11」，AI 會補上航空公司、機場代碼與起降時間；也可以貼訂位確認信內容或選機票截圖。',
+    hotel: '貼上 Agoda／Booking／飯店官網的訂房確認信內容，或直接選訂單截圖。',
+    car: '貼上租車確認信內容，或直接選訂單截圖。',
+    pass: '貼上票券說明或選截圖。',
+    coupon: '貼上優惠活動內容或選截圖。'
+  };
+  function openDocAiImport(type) {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey) { alert('這個功能需要先在「雲端同步與安全設定」填入 Gemini API 金鑰。'); return; }
+    docAiFile = null;
+    const schema = DOC_TYPES[type];
+    const fields = `
+      <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 12px; line-height:1.7;">${DOC_AI_TIP[type]||''}</p>
+      <textarea id="dai-text" placeholder="在這裡貼上訂單內容／航班編號+日期（也可以只丟截圖）" style="width:100%; height:100px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:10px; font-family:sans-serif;"></textarea>
+      <button type="button" class="ghost-btn" style="font-size:calc(12.5px * var(--font-scale)); padding:10px; margin-bottom:8px;" onclick="document.getElementById('dai-file').click()"><i class="fa-solid fa-image"></i> 選擇訂單截圖／照片</button>
+      <input type="file" id="dai-file" accept="image/*" style="display:none;" onchange="handleDocAiFile(event)">
+      <div id="dai-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E40AF; text-align:center; margin-bottom:8px;"></div>
+      <div id="dai-status"></div>
+      <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:4px 0 0; line-height:1.6;">※ 辨識完會先填進表單讓你確認，確認無誤再儲存；AI 看不懂的欄位會留空。</p>`;
+    setupGeneralEdit(`AI 匯入${schema.label}`, fields, () => runDocAiImport(type));
+    const btn = document.getElementById('general-save-btn');
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 開始辨識';
+  }
+  function handleDocAiFile(event) {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file) return;
+    docAiFile = file;
+    const el = document.getElementById('dai-filename');
+    if (el) el.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}`;
+  }
+  function docAiStatus(html) { const el = document.getElementById('dai-status'); if (el) el.innerHTML = html; }
+  async function runDocAiImport(type) {
+    const textEl = document.getElementById('dai-text');
+    const raw = textEl ? textEl.value.trim() : '';
+    if (!raw && !docAiFile) { alert('請先貼上訂單內容，或選一張截圖！'); return; }
+    const year = (tripSettings && tripSettings.startDate) ? tripSettings.startDate.split('-')[0] : String(new Date().getFullYear());
+    const schema = DOC_TYPES[type];
+    const prompt = `你是旅遊訂單整理助理。請從${docAiFile ? '這張截圖' : '以下內容'}中擷取「${schema.label}」資訊，整理成結構化資料。
+
+規則：
+1. 日期一律輸出 YYYY-MM-DD，時間一律輸出 24 小時制 HH:MM。
+2. 只看到月日沒有年份時，年份用 ${year}。
+3. 不確定的欄位請回空字串，絕對不要編造訂單編號、價格或時間。
+4. 如果使用者只給航班編號與日期，請依你已知的定期班表填入航空公司、出發與抵達機場三碼代碼、起飛與抵達時間；沒把握就留空。
+5. 金額請連同幣別一起寫，例如「NT$ 6,800」或「₩ 120,000」。
+
+只回傳一個 JSON 物件，不要有任何其他文字或 markdown 標記：
+${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---` : ''}`;
+    docAiStatus(`<div style="padding:14px; text-align:center; border:2px solid #2563EB; border-radius:12px; margin-bottom:8px;"><i class="fa-solid fa-spinner fa-spin" style="color:#2563EB;"></i> <span style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);">辨識中，請稍候...</span></div>`);
+    try {
+      const responseText = await callGeminiVision(prompt, docAiFile,
+        (n) => docAiStatus(`<div style="padding:14px; text-align:center; border:2px solid #2563EB; border-radius:12px; margin-bottom:8px;"><i class="fa-solid fa-spinner fa-spin" style="color:#2563EB;"></i> AI 忙碌中，重試第 ${n} 次...</div>`),
+        'doc:' + type);
+      const data = JSON.parse(extractJsonBlock(responseText));
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('AI 沒有回傳可用的欄位資料');
+      const prefill = {};
+      schema.fields.forEach(f => {
+        const v = data[f.key];
+        if (v === null || v === undefined || v === '') return;
+        prefill[f.key] = String(v).trim();
+      });
+      if (!Object.keys(prefill).length) throw new Error('這份內容裡沒有辨識到可用的資訊，可以換一張清楚一點的截圖再試');
+      docAiFile = null;
+      closeGeneralEdit();
+      openDocForm(type, null, prefill);
+    } catch (err) {
+      console.error('憑證 AI 匯入失敗:', err);
+      docAiStatus(`<div style="padding:12px 14px; border:2px solid var(--warn-border); background:var(--warn-bg); border-radius:12px; margin-bottom:8px; font-size:calc(12px * var(--font-scale)); color:#943126; line-height:1.6;">辨識失敗：${escapeHtml(friendlyAiErrorMessage(err))}</div>`);
+    }
+  }
+
+  function openDocForm(type, editId, prefill) {
     const schema = DOC_TYPES[type];
     const arr = travelDocs[type+'s'] || [];
     const editing = editId ? arr.find(e => e.id === editId) : null;
+    const base = editing || prefill || {};   // prefill 是 AI 辨識後帶進來的草稿
     const hasImageField = schema.fields.some(f => f.type === 'image');
-    if (hasImageField) imgEditorInit(imagesOf(editing));
+    if (hasImageField) imgEditorInit(imagesOf(editing || prefill));
     const fieldsHtml = schema.fields.map(f => {
-      const val = editing ? (editing[f.key] || '') : '';
+      const val = base[f.key] || '';
       const id = `docf-${f.key}`;
       if (f.type === 'textarea') {
         return `<div class="input-label">${f.label}</div><textarea id="${id}" placeholder="${f.placeholder||''}" style="width:100%; min-height:60px; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">${escapeHtml(val)}</textarea>`;
@@ -3336,7 +3545,7 @@ Day2 12:00 outlet購物，預計逛一小時
     }).join('');
 
     if (hasImageField) setTimeout(imgEditorRender, 30);   // 等彈窗的 DOM 出現後再畫縮圖列
-    setupGeneralEdit(`${editing ? '編輯' : '新增'}${schema.label}`, fieldsHtml, () => {
+    setupGeneralEdit(`${editing ? '編輯' : (prefill ? 'AI 辨識結果 · 確認' : '新增')}${schema.label}`, fieldsHtml, () => {
       const entry = editing || { id: docItemSeq++ };
       schema.fields.forEach(f => {
         if (f.type === 'image') { entry.images = imgEditorValue(); entry[f.key] = entry.images[0] || ''; return; }
@@ -3650,6 +3859,96 @@ Day2 12:00 outlet購物，預計逛一小時
     }
   }
 
+  // ===== 行程 × 憑證整合：排行程時直接點已經建好的住宿／租車／機票，
+  // 自動填好時間、名稱、地點、地址與訂單編號；日期不同會問要不要順便跳到那一天 =====
+  function itinDocPickRows() {
+    const rows = [];
+    (travelDocs.hotels||[]).forEach(h => {
+      const nm = h.name || '住宿';
+      if (h.checkinDate || h.checkinTime) rows.push({ kind:'hotel', id:h.id, which:'in', label:`入住 ${nm}`, when:`${dateChip(h.checkinDate)} ${h.checkinTime||''}`.trim(), icon:'fa-hotel', color:'#C5A07A' });
+      if (h.checkoutDate || h.checkoutTime) rows.push({ kind:'hotel', id:h.id, which:'out', label:`退房 ${nm}`, when:`${dateChip(h.checkoutDate)} ${h.checkoutTime||''}`.trim(), icon:'fa-hotel', color:'#C5A07A' });
+    });
+    (travelDocs.cars||[]).forEach(c => {
+      const nm = c.company || '租車';
+      if (c.pickupDate || c.pickupTime) rows.push({ kind:'car', id:c.id, which:'pickup', label:`取車 ${nm}`, when:`${dateChip(c.pickupDate)} ${c.pickupTime||''}`.trim(), icon:'fa-car', color:'#059669' });
+      if (c.returnDate || c.returnTime) rows.push({ kind:'car', id:c.id, which:'return', label:`還車 ${nm}`, when:`${dateChip(c.returnDate)} ${c.returnTime||''}`.trim(), icon:'fa-car', color:'#059669' });
+    });
+    (travelDocs.flights||[]).forEach(fl => {
+      rows.push({ kind:'flight', id:fl.id, which:'dep', label:`搭機 ${fl.depCode||''}→${fl.arrCode||''}${fl.flightNo?' '+fl.flightNo:''}`, when:`${dateChip(fl.date)} ${fl.time||''}`.trim(), icon:'fa-plane', color:'#2563EB' });
+    });
+    return rows;
+  }
+  function itinDocPickHtml() {
+    const rows = itinDocPickRows();
+    if (!rows.length) return `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); line-height:1.6; padding:4px 2px;">目前還沒有住宿／租車／機票資料。可以到「準備 → 憑證資訊」新增或用 AI 匯入，之後就能在這裡一鍵帶進行程。</div>`;
+    return `<div style="display:flex; flex-direction:column; gap:7px;">` + rows.map(r => `
+      <button type="button" onclick="applyDocToItinForm('${r.kind}',${r.id},'${r.which}')" style="display:flex; align-items:center; gap:9px; width:100%; text-align:left; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:9px 11px; cursor:pointer; font-family:inherit;">
+        <i class="fa-solid ${r.icon}" style="color:${r.color}; flex-shrink:0;"></i>
+        <span style="flex:1; min-width:0; font-size:calc(12.5px * var(--font-scale)); font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(r.label)}</span>
+        <span style="flex-shrink:0; font-size:calc(11px * var(--font-scale)); color:var(--gray);">${escapeHtml(r.when)}</span>
+      </button>`).join('') + `</div>`;
+  }
+  function toggleItinDocPick() {
+    const el = document.getElementById('af-doc-pick'); const chev = document.getElementById('af-doc-chevron');
+    if (!el) return;
+    const opening = el.style.display === 'none';
+    el.style.display = opening ? 'block' : 'none';
+    if (chev) chev.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+  function applyDocToItinForm(kind, id, which) {
+    const e = (travelDocs[kind+'s']||[]).find(x => x.id === id); if (!e) return;
+    let time = '', title = '', place = '', address = '', cat = '', dateStr = '', notes = [];
+    if (kind === 'hotel') {
+      const nm = e.name || '住宿';
+      if (which === 'in') { time = e.checkinTime || '15:00'; title = `入住 ${nm}`; dateStr = e.checkinDate; }
+      else { time = e.checkoutTime || '11:00'; title = `退房 ${nm}`; dateStr = e.checkoutDate; }
+      place = nm; address = e.address || ''; cat = '住宿';
+      if (e.bookingRef) notes.push(`訂單編號 ${e.bookingRef}`);
+      if (e.phone) notes.push(`電話 ${e.phone}`);
+    } else if (kind === 'car') {
+      const nm = e.company || '租車';
+      if (which === 'pickup') { time = e.pickupTime || ''; title = `取車 ${nm}`; dateStr = e.pickupDate; place = e.pickupLocation || nm; }
+      else { time = e.returnTime || ''; title = `還車 ${nm}`; dateStr = e.returnDate; place = e.returnLocation || nm; }
+      cat = '交通';
+      if (e.carModel) notes.push(`車型 ${e.carModel}`);
+      if (e.bookingRef) notes.push(`訂單編號 ${e.bookingRef}`);
+      if (e.phone) notes.push(`電話 ${e.phone}`);
+    } else {
+      time = e.time || ''; dateStr = e.date; cat = '交通';
+      title = `搭機 ${e.depCode||''}→${e.arrCode||''}${e.flightNo?' '+e.flightNo:''}`.trim();
+      place = e.depCode || '';
+      if (e.airline) notes.push(e.airline);
+      if (e.gate) notes.push(`登機門／航廈 ${e.gate}`);
+      if (e.bookingRef) notes.push(`訂位代號 ${e.bookingRef}`);
+      if (e.arrTime) notes.push(`預計抵達 ${e.arrTime}`);
+    }
+
+    // 憑證日期跟目前編輯的那天不同時，直接問要不要跳過去，省得自己再切一次
+    if (dateStr && dateStr !== activeDay && ITIN_DAYS.find(d => d.key === dateStr)) {
+      if (confirm(`這筆憑證的日期是 ${dateChip(dateStr)}，目前在編輯 ${dateChip(activeDay)}。\n\n要切換到 ${dateChip(dateStr)} 再帶入嗎？`)) {
+        delete formState[activeDay];
+        activeDay = dateStr;
+        formState[activeDay] = 'new';
+        renderDayTabs(); renderDayContent();
+        setTimeout(() => applyDocToItinForm(kind, id, which), 80);
+        return;
+      }
+    }
+
+    const set = (elId, v) => { const el = document.getElementById(elId); if (el && v) el.value = v; };
+    set('af-time', time); set('af-title', title); set('af-place', place); set('af-address', address);
+    const noteEl = document.getElementById('af-notes');
+    if (noteEl && notes.length && !noteEl.value.trim()) noteEl.value = notes.join('　');
+    if (cat && ITIN_CATS.includes(cat)) {
+      afItinCat = cat;
+      renderChipRow('af-cat-row', ITIN_CATS.map(c => `${ITIN_CAT_ICON[c]} ${c}`), ITIN_CATS.indexOf(afItinCat), (i) => { afItinCat = ITIN_CATS[i]; });
+    }
+    const more = document.getElementById('af-more-details');
+    if (more && more.style.display === 'none') toggleAfMoreDetails();   // 地點／地址在收合區裡，順便打開讓使用者看到
+    const box = document.getElementById('af-doc-pick');
+    if (box) box.innerHTML = `<div style="padding:10px 12px; background:#ECFDF5; border:1.5px solid #A7F3D0; border-radius:12px; font-size:calc(12px * var(--font-scale)); color:#065F46; line-height:1.6;"><i class="fa-solid fa-circle-check"></i> 已帶入「${escapeHtml(title)}」，可以再自行修改後儲存。</div>`;
+  }
+
   function renderAddForm(editId) {
     const editing = editId ? (itinData[activeDay]||[]).find(i=>i.id===editId) : null;
     const extraFieldsHtml = ITIN_EXTRA_FIELDS.map(f => `
@@ -3673,6 +3972,8 @@ Day2 12:00 outlet購物，預計逛一小時
         <input type="text" id="af-title" placeholder="行程名稱" value="${editing?escapeHtml(editing.title):''}" style="padding:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
         <div class="input-label">分類</div>
         <div class="chip-row" id="af-cat-row" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        <button type="button" onclick="toggleItinDocPick()" style="width:100%; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; color:#1E40AF; font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fa-solid fa-chevron-down" id="af-doc-chevron"></i> 從住宿／租車／機票帶入</button>
+        <div id="af-doc-pick" style="display:none;">${itinDocPickHtml()}</div>
         <div class="input-label">費用預估</div>
         <input type="text" id="af-price" placeholder="費用預估" value="${editing?escapeHtml(editing.price):''}" style="padding:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
 
