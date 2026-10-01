@@ -257,13 +257,18 @@
   /* ===== 個人記帳模式：整套換成暖橘色系，和一般旅程房間一眼區分；
      旅程專屬的功能（總覽／準備／行程／分帳）在這個模式下隱藏 ===== */
   body.solo-mode {
-    --navy: #5C3A24; --teal: #E08A3C; --coral: #E8734A; --gold: #C58A4A;
-    --bg: #FDF8F2; --text-general: #6B4A33; --text-secondary: #8A6A50;
-    --btn-orange: linear-gradient(135deg, #F3B169 0%, #E08A3C 100%);
+    --navy: #233A31; --teal: #2E8268; --coral: #C2703D; --gold: #B08A4F;
+    --bg: #F4F6F3; --text-general: #3E5349; --text-secondary: #687C72;
+    --btn-orange: linear-gradient(135deg, #3FA183 0%, #2E8268 100%);
   }
-  body.solo-mode .hero-header { background: linear-gradient(140deg, #6B4226 0%, #A4682F 45%, #E0A35C 100%); }
-  body.solo-mode .nav-btn.active { color: #E08A3C; }
+  body.solo-mode .hero-header { background: linear-gradient(140deg, #1F3129 0%, #2E5A48 45%, #4E8F72 100%); }
+  body.solo-mode .nav-btn.active { color: #2E8268; }
+  body.solo-mode .final-res-card { background: #233A31; }
+  body.solo-mode .tab-btn-sub.active { color: #233A31; }
   body.solo-mode .solo-hide { display: none !important; }
+  #solo-topbar { display:flex; align-items:center; gap:10px; padding:max(16px, calc(8px + env(safe-area-inset-top, 0px))) 16px 12px; background:linear-gradient(140deg,#1F3129 0%,#2E5A48 100%); margin:0 -16px 6px; }
+  #solo-topbar #solo-topbar-name { flex:1; min-width:0; color:#fff; font-weight:800; font-size:calc(15px * var(--font-scale)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #solo-topbar button { flex-shrink:0; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.22); color:#fff; border-radius:12px; padding:7px 13px; font-size:calc(12.5px * var(--font-scale)); font-weight:700; cursor:pointer; font-family:inherit; }
   body:not(.solo-mode) .solo-only { display: none !important; }
   
   .role-toggle-badge {
@@ -330,6 +335,12 @@
 <body class="mobile-view sub-mode">
 
 <div class="app-container" id="main-app-container">
+  <!-- 個人記帳模式沒有總覽頁，所以在最上面放一條列，方便回首頁與開設定 -->
+  <div class="solo-only" id="solo-topbar">
+    <button onclick="goToHomeScreen()" title="返回首頁"><i class="fa-solid fa-chevron-left"></i> 首頁</button>
+    <span id="solo-topbar-name">我的記帳</span>
+    <button onclick="openSettingsModal()" title="設定"><i class="fa-solid fa-gear"></i></button>
+  </div>
   <!-- 總覽頁面板 -->
   <section class="panel active grid-panel" id="p-overview">
     <div class="hero-header full-width">
@@ -628,6 +639,19 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>
     
     <div id="calc-simple-box" class="full-width">
+        <div class="card solo-only" style="padding:14px 16px;">
+          <div class="input-label" style="margin-bottom:8px;">要換算哪一種幣別</div>
+          <select id="solo-calc-cur" onchange="setSoloCalcCurrency(this.value)" style="width:100%; padding:11px 12px; border-radius:12px; border:2px solid var(--line); background:#fff; font-family:inherit; font-weight:700; color:var(--navy); outline:none;">
+            <option value="JPY">🇯🇵 日圓 JPY</option>
+            <option value="KRW">🇰🇷 韓元 KRW</option>
+            <option value="USD">🇺🇸 美元 USD</option>
+            <option value="EUR">🇪🇺 歐元 EUR</option>
+            <option value="THB">🇹🇭 泰銖 THB</option>
+            <option value="SGD">🇸🇬 新幣 SGD</option>
+            <option value="HKD">🇭🇰 港幣 HKD</option>
+            <option value="TWD">🇹🇼 台幣 TWD</option>
+          </select>
+        </div>
         <div class="card">
             <div class="input-label" id="simp-local-label">韓元 KRW (₩)</div>
             <div class="input-field"><span class="pre" id="simp-local-symbol">₩</span><input type="text" id="simp-krw" inputmode="decimal" placeholder="0" oninput="runSimp('krw')"></div>
@@ -790,8 +814,8 @@ Day2 12:00 outlet購物，預計逛一小時
     <!-- 第三種入口：個人記帳。只輸入姓名、不用密碼，進去就是自己的帳本 -->
     <button onclick="openSoloRoomForm()" style="width:100%; cursor:pointer; font-family:inherit; margin-top:12px;
         display:flex; align-items:center; gap:14px; padding:16px 20px;
-        border-radius:999px; background:linear-gradient(135deg,#B9742C 0%,#E0A35C 100%);
-        box-shadow:0 10px 24px rgba(185,116,44,0.28), inset 0 1px 0 rgba(255,255,255,0.18); border:none;">
+        border-radius:999px; background:linear-gradient(135deg,#27624E 0%,#4E8F72 100%);
+        box-shadow:0 10px 24px rgba(39,98,78,0.28), inset 0 1px 0 rgba(255,255,255,0.18); border:none;">
       <i class="fa-solid fa-wallet" style="color:#fff; font-size:calc(20px * var(--font-scale)); flex-shrink:0;"></i>
       <span style="width:1px; height:30px; background:rgba(255,255,255,0.3); flex-shrink:0;"></span>
       <span style="flex:1; min-width:0; text-align:left;">
@@ -918,11 +942,11 @@ Day2 12:00 outlet購物，預計逛一小時
 <!-- 個人記帳：只要輸入姓名就是一本自己的帳 -->
 <div class="guide-overlay" id="solo-room-overlay">
   <div class="guide-content" style="text-align:left;" onclick="event.stopPropagation()">
-    <h3 style="margin-top:0; color:#8A5A2B;"><i class="fa-solid fa-wallet"></i> 個人記帳</h3>
+    <h3 style="margin-top:0; color:#27624E;"><i class="fa-solid fa-wallet"></i> 個人記帳</h3>
     <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.7;">只記自己的花費，不用設密碼、不用分帳。輸入你的名字就會進到專屬的記帳空間；下次用同一個名字就能回到同一本帳。</p>
     <div class="input-label">你的名字</div>
-    <input type="text" id="solo-name" placeholder="例如：Will" maxlength="20" style="width:100%; border:2px solid #E7D6C2; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:16px;">
-    <button class="save-btn" id="solo-submit-btn" style="background:linear-gradient(135deg,#F3B169 0%,#E08A3C 100%);" onclick="submitSoloRoom()"><i class="fa-solid fa-check"></i> 進入我的記帳</button>
+    <input type="text" id="solo-name" placeholder="例如：Will" maxlength="20" style="width:100%; border:2px solid #CFE0D6; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:16px;">
+    <button class="save-btn" id="solo-submit-btn" style="background:linear-gradient(135deg,#3FA183 0%,#2E8268 100%);" onclick="submitSoloRoom()"><i class="fa-solid fa-check"></i> 進入我的記帳</button>
     <button class="ghost-btn" style="margin-top:8px;" onclick="closeSoloRoomForm()">取消</button>
   </div>
 </div>
@@ -943,7 +967,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 14:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 17:05</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1888,11 +1912,25 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   // 算帳頁兩個功能原本都寫死用韓元，這裡統一依旅程國家換成對應幣別（符號、名稱、匯率都會跟著換），
   // 匯率方向也統一改成「1外幣≈多少台幣」，比較符合平常看匯率的習慣
+  // 旅程房間用旅程國家的幣別；個人記帳沒有綁定國家，讓使用者自己選要換算哪一種
+  let soloCalcCurrency = 'JPY';
+  try { soloCalcCurrency = localStorage.getItem('solo-calc-currency') || 'JPY'; } catch(e) {}
+  function calcCur() { return isSoloMode() ? soloCalcCurrency : getCountryInfo().currency; }
+  function setSoloCalcCurrency(cur) {
+    soloCalcCurrency = cur;
+    try { localStorage.setItem('solo-calc-currency', cur); } catch(e) {}
+    refreshCalcCurrencyUI(); renderShopItems(); renderShopDiscounts(); runShop();
+  }
   function refreshCalcCurrencyUI() {
-    const cur = getCountryInfo().currency;
+    const sel = document.getElementById('solo-calc-cur');
+    if (sel && sel.value !== soloCalcCurrency) sel.value = soloCalcCurrency;
+    const cur = calcCur();
     const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
-    const labelEl = document.getElementById('simp-local-label'); if (labelEl) labelEl.innerText = `當地幣別 ${cur} (${symbol})`;
+    const labelEl = document.getElementById('simp-local-label'); if (labelEl) labelEl.innerText = `${cur} (${symbol})`;
     const symbolEl = document.getElementById('simp-local-symbol'); if (symbolEl) symbolEl.innerText = symbol;
+    // NT$、HK$ 這種較長的符號會蓋到輸入的數字，所以依符號長度動態留白
+    const inputEl = document.getElementById('simp-krw');
+    if (inputEl) inputEl.style.paddingLeft = (26 + String(symbol).length * 13) + 'px';
     runSimp('krw');
     const rateMsgEl = document.getElementById('rate-msg');
     if (rateMsgEl) {
@@ -1902,7 +1940,7 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   function runSimp(src) {
-    const rate = currentRateForCurrency(getCountryInfo().currency);
+    const rate = currentRateForCurrency(calcCur());
     const kI = document.getElementById('simp-krw'); const tI = document.getElementById('simp-twd'); let v = p(src==='krw'?kI.value:tI.value);
     if(src==='krw') { kI.value = f(v); tI.value = f(v / rate); } else { tI.value = f(v); kI.value = f(v * rate); }
   }
@@ -1916,7 +1954,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function renderShopItems() {
     const wrap = document.getElementById('shop-items-list'); if (!wrap) return;
-    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
+    const symbol = CURRENCY_SYMBOL[calcCur()] || (calcCur() + ' ');
     wrap.innerHTML = shopItems.map(it => `
       <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
         <input type="text" value="${escapeHtml(it.name)}" placeholder="品項名稱(選填)" oninput="updateShopItem(${it._sid},'name',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
@@ -1933,7 +1971,7 @@ Day2 12:00 outlet購物，預計逛一小時
   // 用折數輸入（例如輸入6代表6折）比較不會算錯；金額折抵維持原樣，兩種都可以疊加多筆依序套用
   function renderShopDiscounts() {
     const wrap = document.getElementById('shop-discounts-list'); if (!wrap) return;
-    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
+    const symbol = CURRENCY_SYMBOL[calcCur()] || (calcCur() + ' ');
     if (!shopDiscounts.length) { wrap.innerHTML = `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 8px;">尚無折扣，可新增會員價、優惠券、滿額折扣等，會依序疊加計算</p>`; return; }
     wrap.innerHTML = shopDiscounts.map(d => {
       const pct = d.value ? Math.round((1 - d.value/10) * 100) : 0;
@@ -1969,7 +2007,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   // 依序套用每一筆折扣（前一筆算完的金額，是下一筆的起點），回傳每一步的中間結果，供畫面顯示明細
   function computeShopSteps() {
-    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
+    const symbol = CURRENCY_SYMBOL[calcCur()] || (calcCur() + ' ');
     const subtotal = shopItems.reduce((s,it)=>s+(it.price||0), 0);
     let running = subtotal;
     const steps = shopDiscounts.map(d => {
@@ -1986,8 +2024,8 @@ Day2 12:00 outlet購物，預計逛一小時
     const tax = p(document.getElementById('shop-tax').value);
     const taxAmt = afterDiscounts * (tax/100);
     const finalK = afterDiscounts - taxAmt;
-    const rate = currentRateForCurrency(getCountryInfo().currency);
-    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
+    const rate = currentRateForCurrency(calcCur());
+    const symbol = CURRENCY_SYMBOL[calcCur()] || (calcCur() + ' ');
 
     const subEl = document.getElementById('shop-subtotal'); if (subEl) subEl.innerText = `${symbol} ${f(subtotal)}`;
     const stepsWrap = document.getElementById('shop-steps-breakdown');
@@ -2005,7 +2043,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const taxAmt = afterDiscounts * (tax/100);
     const finalK = afterDiscounts - taxAmt;
     if (finalK <= 0) { alert('請先輸入商品金額！'); return; }
-    const currency = getCountryInfo().currency;
+    const currency = calcCur();
     const symbol = CURRENCY_SYMBOL[currency] || (currency + ' ');
     const itemsForExpense = shopItems.filter(it => it.price > 0).map(it => ({ nameOriginal: it.name || '購物項目', nameZh: '', price: it.price, quantity: 1 }));
     const discountNote = shopDiscounts.map(d => d.label || (d.type==='percent' ? `打${d.value||10}折` : `折抵${symbol}${f(d.value||0)}`)).join('、');
@@ -6227,7 +6265,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       <div class="card" style="margin-bottom:10px; padding:16px; cursor:pointer;" onclick="enterRoom('${escapeHtml(r.roomId)}')">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="min-width:0;">
-            <div style="font-weight:700; color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}${isSoloRoom(r.roomId) ? `<span style="margin-left:7px; background:#FBEEDD; border:1px solid #E7CDB5; color:#8A5A2B; border-radius:7px; padding:1px 7px; font-size:calc(10px * var(--font-scale)); font-weight:800; vertical-align:middle;">個人記帳</span>` : ''}</div>
+            <div style="font-weight:700; color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}${isSoloRoom(r.roomId) ? `<span style="margin-left:7px; background:#E8F3EE; border:1px solid #BFDED0; color:#27624E; border-radius:7px; padding:1px 7px; font-size:calc(10px * var(--font-scale)); font-weight:800; vertical-align:middle;">個人記帳</span>` : ''}</div>
             <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${isSoloRoom(r.roomId) ? escapeHtml(soloDisplayName(r.roomId)) : `房號 ${escapeHtml(r.roomId)}`}${r.sub ? ' · ' + escapeHtml(r.sub) : ''}</div>
           </div>
           <button onclick="event.stopPropagation(); forgetRecentRoom('${escapeHtml(r.roomId)}')" style="background:#F1F5F9; border:none; width:28px; height:28px; border-radius:50%; color:var(--gray); cursor:pointer; flex-shrink:0;"><i class="fa-solid fa-xmark"></i></button>
@@ -6350,7 +6388,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       <div class="card" style="margin-bottom:10px; padding:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="min-width:0;">
-            <div style="font-weight:700; color:var(--navy); font-size:calc(14px * var(--font-scale));"><i class="fa-solid fa-wallet" style="color:#C58A4A;"></i> ${escapeHtml(soloDisplayName(r.roomId))}</div>
+            <div style="font-weight:700; color:var(--navy); font-size:calc(14px * var(--font-scale));"><i class="fa-solid fa-wallet" style="color:#2E8268;"></i> ${escapeHtml(soloDisplayName(r.roomId))}</div>
             <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:2px;">${escapeHtml(r.title || '個人記帳')}</div>
           </div>
           <button onclick="adminDeleteRoom('${escapeHtml(r.roomId)}')" style="flex-shrink:0; background:#FEF2F2; border:none; padding:8px 14px; border-radius:10px; color:var(--warn); font-weight:700; font-size:calc(12px * var(--font-scale)); cursor:pointer;"><i class="fa-solid fa-trash"></i> 刪除</button>
@@ -6568,6 +6606,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const solo = isSoloMode();
     document.body.classList.toggle('solo-mode', solo);
     if (solo) { isMasterMode = true; document.body.classList.remove('sub-mode'); document.body.classList.add('master-mode'); }
+    const nameEl = document.getElementById('solo-topbar-name');
+    if (nameEl && solo) nameEl.innerText = ((tripSettings && tripSettings.soloName) || soloDisplayName(syncRoomId)) + ' 的記帳';
     const t = document.getElementById('expense-page-title');
     const s = document.getElementById('expense-page-sub');
     if (t) t.innerText = solo ? ((tripSettings && tripSettings.soloName) || soloDisplayName(syncRoomId)) + ' 的記帳' : '旅行支出';
@@ -6595,7 +6635,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     wrap.innerHTML = soloLedgers().map(l => {
       const on = l.id === act;
       const cnt = expenseRecords.filter(r => ledgerOf(r) === l.id).length;
-      return `<div onclick="selectLedger(${l.id})" style="flex:0 0 auto; display:flex; align-items:center; gap:7px; background:${on?'var(--navy)':'#F5EDE3'}; color:${on?'#fff':'var(--navy)'}; border-radius:14px; padding:9px 13px; cursor:pointer; font-weight:800; font-size:calc(13px * var(--font-scale));">
+      return `<div onclick="selectLedger(${l.id})" style="flex:0 0 auto; display:flex; align-items:center; gap:7px; background:${on?'var(--navy)':'#E6EDE8'}; color:${on?'#fff':'var(--navy)'}; border-radius:14px; padding:9px 13px; cursor:pointer; font-weight:800; font-size:calc(13px * var(--font-scale));">
         <span>${escapeHtml(l.name)}</span>
         <span style="font-size:calc(10.5px * var(--font-scale)); opacity:0.75; font-weight:700;">${cnt}</span>
         ${on ? `<i class="fa-solid fa-pen" onclick="event.stopPropagation(); openLedgerForm(${l.id})" style="font-size:calc(10px * var(--font-scale)); opacity:0.85;"></i>` : ''}
