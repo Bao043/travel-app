@@ -237,6 +237,7 @@
   .tk-code.md { font-size:calc(19px * var(--font-scale)); letter-spacing:0.5px; }
   .tk-code.sm { font-size:calc(15px * var(--font-scale)); letter-spacing:0; }
   .tk-time { font-size:calc(15px * var(--font-scale)); font-weight:800; color:var(--teal); margin-top:3px; }
+  .tk-term { display:inline-block; margin-top:4px; background:#F1F5F9; border:1px solid var(--line); color:var(--text-secondary); border-radius:7px; padding:1px 8px; font-size:calc(10.5px * var(--font-scale)); font-weight:700; }
   .tk-sm { font-size:calc(10.5px * var(--font-scale)); color:var(--gray); letter-spacing:1px; font-weight:700; }
   .tk-mid { flex:0 0 68px; text-align:center; color:var(--coral); }
   .tk-line { height:2px; margin:5px 0; background:repeating-linear-gradient(90deg, #CBD5E1 0 5px, transparent 5px 10px); }
@@ -967,7 +968,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 17:05</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 19:15</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1409,18 +1410,22 @@ Day2 12:00 outlet購物，預計逛一小時
   // 憑證資訊四大類的欄位定義（同一套通用渲染/表單邏輯依此產生UI，headlineKeys為卡片摘要列已顯示、不重複列在展開細節中的欄位）
   const DOC_TYPES = {
     flight: { label:'機票', icon:'fa-plane', color:'#2563EB',
-      headlineKeys: ['label','flightNo','depCode','arrCode','date','time','arrTime'],
+      headlineKeys: ['label','flightNo','depCode','arrCode','date','time','arrTime','depTerminal','arrTerminal'],
       fields: [
         { key:'label', label:'標籤 (如：去程／回程)', type:'text', placeholder:'去程' },
         { key:'airline', label:'航空公司', type:'text', placeholder:'台灣虎航' },
         { key:'flightNo', label:'航班編號', type:'text', placeholder:'IT606' },
         { key:'depCode', label:'出發地代碼', type:'text', placeholder:'TPE' },
+        { key:'depTerminal', label:'出發航廈', type:'text', placeholder:'例如：第1航廈 / T1' },
         { key:'arrCode', label:'抵達地代碼', type:'text', placeholder:'PUS' },
+        { key:'arrTerminal', label:'抵達航廈', type:'text', placeholder:'例如：第2航廈 / T2' },
         { key:'date', label:'日期', type:'date' },
         { key:'time', label:'起飛時間', type:'time' },
         { key:'arrTime', label:'抵達時間', type:'time' },
         { key:'gate', label:'登機門', type:'text', placeholder:'A3 / Gate 5' },
-        { key:'baggage', label:'行李轉盤', type:'text', placeholder:'Carousel 4' },
+        { key:'checkedKg', label:'托運行李 (kg)', type:'text', placeholder:'例如：20kg、共50kg' },
+        { key:'carryKg', label:'手提行李 (kg)', type:'text', placeholder:'例如：10kg、一人7kg' },
+        { key:'baggage', label:'行李轉盤（抵達後查）', type:'text', placeholder:'Carousel 4' },
         { key:'bookingRef', label:'訂位代號', type:'text' },
         { key:'price', label:'票價', type:'text' },
         { key:'notes', label:'備註', type:'textarea' }
@@ -3253,12 +3258,13 @@ Day2 12:00 outlet購物，預計逛一小時
     if (type === 'flight') {
       headTitle = `<i class="fa-solid fa-plane-departure"></i> ${escapeHtml(entry.label || '航班')}`;
       headRight = escapeHtml(entry.flightNo || '');
-      faceKeys = ['airline','bookingRef','gate','baggage','price'];
+      faceKeys = ['airline','bookingRef','gate','baggage','price','checkedKg','carryKg'];
       // 機場欄位可能被填成「CTS北海道新千歲」這種長名稱，依字數自動縮字級並允許換行
       const codeCls = (t) => { const n = (t||'').length; return n > 8 ? 'tk-code sm' : (n > 4 ? 'tk-code md' : 'tk-code'); };
       face = `<div class="tk-route">
           <div class="tk-pt">
             <div class="${codeCls(entry.depCode)}">${escapeHtml(entry.depCode||'???')}</div>
+            ${entry.depTerminal ? `<div class="tk-term">${escapeHtml(entry.depTerminal)}</div>` : ''}
             <div class="tk-time">${entry.time ? escapeHtml(entry.time) : '<span style="color:var(--gray); font-weight:600;">待補</span>'}</div>
           </div>
           <div class="tk-mid">
@@ -3268,12 +3274,14 @@ Day2 12:00 outlet購物，預計逛一小時
           </div>
           <div class="tk-pt">
             <div class="${codeCls(entry.arrCode)}">${escapeHtml(entry.arrCode||'???')}</div>
+            ${entry.arrTerminal ? `<div class="tk-term">${escapeHtml(entry.arrTerminal)}</div>` : ''}
             <div class="tk-time">${entry.arrTime ? escapeHtml(entry.arrTime) : '<span style="color:var(--gray); font-weight:600;">待補</span>'}</div>
           </div>
         </div>
         <div style="text-align:center; margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateChip(entry.date))}</div>`;
       grid = tkKv('AIRLINE 航空公司', entry.airline) + tkKv('BOOKING 訂位代號', entry.bookingRef)
-           + tkKv('GATE 登機門', entry.gate) + tkKv('BAGGAGE 行李轉盤', entry.baggage) + tkKv('FARE 票價', entry.price);
+           + tkKv('BAGGAGE 行李額度', [entry.checkedKg ? '托運 ' + entry.checkedKg : '', entry.carryKg ? '手提 ' + entry.carryKg : ''].filter(Boolean).join('　'))
+           + tkKv('GATE 登機門', entry.gate) + tkKv('CAROUSEL 行李轉盤', entry.baggage) + tkKv('FARE 票價', entry.price);
 
     } else if (type === 'hotel') {
       headTitle = `<i class="fa-solid fa-hotel"></i> ${escapeHtml(entry.name || '住宿')}`;
@@ -3545,7 +3553,7 @@ Day2 12:00 outlet購物，預計逛一小時
   // 辨識完不會直接存檔，而是把結果填進新增表單讓使用者確認後再儲存 =====
   let docAiFile = null;
   const DOC_AI_SCHEMA = {
-    flight: '{"label":"去程或回程","airline":"航空公司","flightNo":"航班編號","depCode":"出發機場三碼代碼","arrCode":"抵達機場三碼代碼","date":"出發日期 YYYY-MM-DD","time":"起飛時間 HH:MM","arrTime":"抵達時間 HH:MM","gate":"航廈或登機門","baggage":"行李額度或轉盤","bookingRef":"訂位代號","price":"票價","notes":"其他備註"}',
+    flight: '{"label":"去程或回程","airline":"航空公司","flightNo":"航班編號","depCode":"出發機場三碼代碼","depTerminal":"出發航廈，例如 第1航廈 或 T1","arrCode":"抵達機場三碼代碼","arrTerminal":"抵達航廈","date":"出發日期 YYYY-MM-DD","time":"起飛時間 HH:MM","arrTime":"抵達時間 HH:MM","checkedKg":"托運行李額度，含單位，例如 20kg 或 共50kg","carryKg":"手提行李額度，含單位，例如 10kg 或 一人7kg","gate":"登機門（當天才公布，查不到就留空）","baggage":"行李轉盤","bookingRef":"訂位代號","price":"票價","notes":"其他備註"}',
     hotel: '{"name":"飯店名稱","address":"完整地址","phone":"電話","checkinDate":"入住日期 YYYY-MM-DD","checkinTime":"入住時間 HH:MM","checkoutDate":"退房日期 YYYY-MM-DD","checkoutTime":"退房時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"房型、早餐、取消政策等備註"}',
     car: '{"company":"租車公司","carModel":"車型","pickupLocation":"取車地點","phone":"店家電話","pickupDate":"取車日期 YYYY-MM-DD","pickupTime":"取車時間 HH:MM","returnLocation":"還車地點","returnDate":"還車日期 YYYY-MM-DD","returnTime":"還車時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"保險、駕照需求等備註"}',
     pass: '{"name":"票券名稱","durationHours":方案時數數字,"startDate":"啟用日期 YYYY-MM-DD","startTime":"啟用時間 HH:MM","price":"費用","plannedSpots":"可用景點","bookingRef":"憑證或訂單編號","notes":"備註"}',
@@ -3602,8 +3610,12 @@ Day2 12:00 outlet購物，預計逛一小時
     date:['departureDate','flightDate','depDate','date_of_flight'],
     time:['departureTime','depTime','takeoff','startTime'],
     arrTime:['arrivalTime','arrTime','landingTime','endTime'],
-    gate:['terminal','boardingGate'],
-    baggage:['baggageAllowance','luggage','checkedBaggage'],
+    gate:['boardingGate','gateNumber'],
+    depTerminal:['departureTerminal','terminal','depTerm','originTerminal','出發航廈'],
+    arrTerminal:['arrivalTerminal','arrTerm','destinationTerminal','抵達航廈'],
+    baggage:['carousel','baggageClaim','行李轉盤'],
+    checkedKg:['checkedBaggage','baggageAllowance','checked','checkInBaggage','holdBaggage','luggage','托運','托運行李'],
+    carryKg:['carryOn','carryOnBaggage','handBaggage','cabinBaggage','handCarry','手提','手提行李'],
     bookingRef:['pnr','reservationCode','confirmationNumber','orderNumber','bookingNumber','bookingId','reservationNumber','confirmationCode','orderId'],
     price:['amount','totalPrice','total','fare','totalAmount'],
     name:['hotelName','propertyName','hotel','property'],
@@ -3720,7 +3732,9 @@ Day2 12:00 outlet購物，預計逛一小時
 1. 日期一律輸出 YYYY-MM-DD，時間一律輸出 24 小時制 HH:MM。
 2. 只看到月日沒有年份時，年份用 ${year}。
 3. 不確定的欄位請回空字串，絕對不要編造訂單編號、價格或時間。
-4. 如果使用者只給航班編號與日期，請依你已知的定期班表填入航空公司、出發與抵達機場三碼代碼、起飛與抵達時間；沒把握就留空。
+4. 如果使用者只給航班編號與日期，請依你已知的定期班表填入航空公司、出發與抵達機場三碼代碼、起飛與抵達時間，以及該航線固定使用的出發／抵達航廈（例如桃園第1航廈、成田第2航廈）；沒把握就留空。
+4-1. 航廈(depTerminal/arrTerminal)與登機門(gate)是不同的東西：航廈請填「第1航廈」或「T1」這種；登機門通常要起飛當天才公布，查不到就留空，不要用航廈去填登機門。
+4-2. 行李額度請分成托運(checkedKg)與手提(carryOn 寫進 carryKg)兩欄，並保留單位與人數說明（例如「20kg」「共50kg」「一人10kg」）。訂單上若去程與回程額度不同，請各自填在該段。查不到就留空，不要用票價或轉盤號碼代替。
 5. 機場欄位(depCode/arrCode)請一律輸出三碼 IATA 代碼。畫面上若寫的是城市或機場中文名（例如「台北(桃園)」「釜山」「北海道新千歲」），請自行換算成 TPE、PUS、CTS 這種三碼；不要把中文名放進去。
 6. 金額請連同幣別一起寫，例如「NT$ 6,800」或「₩ 120,000」。
 7. 【重要】如果這份訂單包含不只一段（例如來回機票的去程與回程、多段住宿、多張訂單），請回傳一個 JSON 陣列，陣列中每一段各一個物件；只有一段時才回傳單一物件。來回機票請分別把 label 填成「去程」與「回程」。
@@ -4149,7 +4163,11 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       title = `搭機 ${e.depCode||''}→${e.arrCode||''}${e.flightNo?' '+e.flightNo:''}`.trim();
       place = e.depCode || '';
       if (e.airline) notes.push(e.airline);
-      if (e.gate) notes.push(`登機門／航廈 ${e.gate}`);
+      if (e.depTerminal) notes.push(`出發航廈 ${e.depTerminal}`);
+      if (e.arrTerminal) notes.push(`抵達航廈 ${e.arrTerminal}`);
+      if (e.checkedKg) notes.push(`托運 ${e.checkedKg}`);
+      if (e.carryKg) notes.push(`手提 ${e.carryKg}`);
+      if (e.gate) notes.push(`登機門 ${e.gate}`);
       if (e.bookingRef) notes.push(`訂位代號 ${e.bookingRef}`);
       if (e.arrTime) notes.push(`預計抵達 ${e.arrTime}`);
     }
@@ -7144,6 +7162,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       s1 += item((x.label||'航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
         [x.depCode||'', x.arrCode||''].filter(Boolean).join(' → '),
         [['航空公司', x.airline], ['日期時間', [x.date, x.time].filter(Boolean).join(' ')],
+         ['抵達時間', x.arrTime],
+         ['出發航廈', x.depTerminal], ['抵達航廈', x.arrTerminal],
+         ['托運行李', x.checkedKg], ['手提行李', x.carryKg],
          ['登機門', x.gate], ['行李轉盤', x.baggage], ['訂位代號', x.bookingRef],
          ['票價', x.price], ['備註', x.notes]]);
     });
@@ -7459,12 +7480,12 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     XLSX.utils.book_append_sheet(wb, wsOverview, '總覽');
 
     if ((travelDocs.flights||[]).length) {
-      const flightRows = [['標籤','航空公司','航班編號','出發地','抵達地','日期','時間','登機門','行李轉盤','訂位代號','票價','備註']];
+      const flightRows = [['標籤','航空公司','航班編號','出發地','出發航廈','抵達地','抵達航廈','日期','起飛','抵達','托運行李','手提行李','登機門','行李轉盤','訂位代號','票價','備註']];
       travelDocs.flights.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(f => {
-        flightRows.push([f.label||'', f.airline||'', f.flightNo||'', f.depCode||'', f.arrCode||'', f.date||'', f.time||'', f.gate||'', f.baggage||'', f.bookingRef||'', f.price||'', f.notes||'']);
+        flightRows.push([f.label||'', f.airline||'', f.flightNo||'', f.depCode||'', f.depTerminal||'', f.arrCode||'', f.arrTerminal||'', f.date||'', f.time||'', f.arrTime||'', f.checkedKg||'', f.carryKg||'', f.gate||'', f.baggage||'', f.bookingRef||'', f.price||'', f.notes||'']);
       });
       const wsFlight = XLSX.utils.aoa_to_sheet(flightRows);
-      wsFlight['!cols'] = [{wch:8},{wch:12},{wch:10},{wch:8},{wch:8},{wch:12},{wch:8},{wch:12},{wch:12},{wch:12},{wch:10},{wch:24}];
+      wsFlight['!cols'] = [{wch:8},{wch:12},{wch:10},{wch:8},{wch:12},{wch:8},{wch:12},{wch:12},{wch:8},{wch:8},{wch:12},{wch:12},{wch:10},{wch:12},{wch:12},{wch:10},{wch:24}];
       XLSX.utils.book_append_sheet(wb, wsFlight, '機票');
     }
 
