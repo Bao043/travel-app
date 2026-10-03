@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- 當日路線圖：Leaflet + OpenStreetMap，免金鑰 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- 房號 QR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- 加到主畫面時的 App 圖示。直接內嵌成 data URI，這樣不用額外上傳圖檔到 GitHub；
      若 iOS 沒吃這種寫法，改成上傳 icon.png 再把 href 換成 "icon.png" 即可 -->
 <link rel="apple-touch-icon" href="icon.png">
@@ -116,6 +121,21 @@
   .final-res-card .krw { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
   /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
+  #now-bar { position: fixed; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; bottom: calc(104px + env(safe-area-inset-bottom, 0px)); background: rgba(255,255,255,0.97); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.14); padding: 10px 13px; z-index: 1400; cursor: pointer; }
+  body.tablet-view #now-bar { max-width: 640px; }
+  @media (min-width: 700px) { #now-bar { max-width: 640px; } }
+  @media (min-width: 1100px) { #now-bar { max-width: 720px; } }
+  .nb-row { display: flex; align-items: center; gap: 11px; }
+  .nb-l { flex: 0 0 auto; text-align: center; border-right: 1px solid var(--line); padding-right: 11px; }
+  .nb-l b { display: block; font-size: calc(18px * var(--font-scale)); font-weight: 800; color: var(--navy); line-height: 1.1; }
+  .nb-l span { font-size: calc(9px * var(--font-scale)); color: var(--gray); letter-spacing: 1px; }
+  .nb-m { flex: 1; min-width: 0; }
+  .nb-m b { display: block; font-size: calc(13.5px * var(--font-scale)); color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nb-m span { font-size: calc(11px * var(--font-scale)); color: var(--gray); }
+  .nb-r { flex: 0 0 auto; text-align: right; }
+  .nb-r b { display: block; font-size: calc(13px * var(--font-scale)); color: var(--teal); font-weight: 800; }
+  .nb-r span { font-size: calc(9px * var(--font-scale)); color: var(--gray); }
+
   .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
     #main-app-container {
     min-height: 100vh;
@@ -351,6 +371,7 @@
             <i class="fa-solid fa-user-shield"></i> <span id="display-role-text">一般使用者模式</span>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <button class="only-master" onclick="event.stopPropagation(); openRoomQr()" title="房號 QR Code" style="background: rgba(255,255,255,0.22); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); flex-shrink:0;"><i class="fa-solid fa-qrcode" style="font-size:calc(15px * var(--font-scale));"></i></button>
             <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.24); border-radius:14px; padding:7px 12px; color:#fff; cursor:pointer; white-space:nowrap;"></div>
             <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.22); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); flex-shrink:0;"><i class="fa-solid fa-gear" style="font-size:calc(15px * var(--font-scale));"></i></button>
           </div>
@@ -464,6 +485,8 @@
 
     <!-- 打包清單：既有分類打包項目 -->
     <div id="prep-tab-checklist" style="display:none;">
+      <div id="baggage-summary"></div>
+      <div id="auto-todo"></div>
       <div id="prep-categories"></div>
       <button class="ghost-btn only-master" onclick="addCategory()" style="margin-top:4px;"><i class="fa-solid fa-plus"></i> 新增分類</button>
     </div>
@@ -570,14 +593,30 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>
 
     <div class="final-res-card" style="margin:15px 12px;">
-        <div class="krw" style="opacity:0.85;">總支出</div>
+        <div class="krw" style="opacity:0.85;" id="exp-total-label">總支出</div>
         <div class="twd" id="exp-total-twd">NT$ 0</div>
         <div class="krw" id="exp-total-krw">≈ ₩ 0</div>
     </div>
 
     <div style="padding:0 12px;">
+      <div class="card" id="budget-card" style="display:none; padding:15px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
+          <span style="font-size:calc(12.5px * var(--font-scale)); color:var(--text-secondary);">今日預算 <b id="budget-limit" style="color:var(--navy);"></b></span>
+          <b id="budget-used" style="color:var(--navy); font-size:calc(14px * var(--font-scale));"></b>
+        </div>
+        <div style="height:9px; border-radius:99px; background:#EEF2F6; overflow:hidden; margin:9px 0 6px;"><i id="budget-bar" style="display:block; height:100%; width:0%; background:linear-gradient(90deg,#49B8D0,#2E9BB5);"></i></div>
+        <div style="display:flex; justify-content:space-between; gap:8px;">
+          <span id="budget-left" style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);"></span>
+          <button class="only-master" onclick="openBudgetEdit()" style="background:none; border:none; color:var(--teal); font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; padding:0;"><i class="fa-solid fa-pen"></i> 調整</button>
+        </div>
+      </div>
+      <button class="ghost-btn only-master" id="budget-setup-btn" onclick="openBudgetEdit()" style="display:none; font-size:calc(12.5px * var(--font-scale)); padding:10px; margin-bottom:14px;"><i class="fa-solid fa-wallet"></i> 設定每日預算</button>
+    </div>
+
+    <div style="padding:0 12px;">
       <div class="card">
         <div class="section-title"><i class="fa-solid fa-chart-pie"></i> 消費明細</div>
+        <div id="exp-member-filter" class="solo-hide" style="display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;"></div>
         <div class="calc-tabs" id="exp-breakdown-tabs" style="margin-bottom:14px;">
           <button class="tab-btn-sub active" onclick="switchExpBreakdown('category', this)">類別</button>
           <button class="tab-btn-sub" onclick="switchExpBreakdown('member', this)">成員</button>
@@ -695,6 +734,9 @@ Day2 12:00 outlet購物，預計逛一小時
       <div id="settle-content"></div>
     </div>
   </section>
+
+  <!-- 旅行期間常駐：現在這站與下一站 -->
+  <div id="now-bar" class="solo-hide" style="display:none;"></div>
 
   <!-- 底部導覽列 -->
   <nav class="bottom-nav" id="bottom-nav">
@@ -968,7 +1010,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-01 19:15</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-02 11:30</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1390,6 +1432,7 @@ Day2 12:00 outlet購物，預計逛一小時
     { key: 'place', label: '地點/店家', icon: 'fa-shop' },
     { key: 'nameOriginal', label: '原文店名', icon: 'fa-language', placeholder: '當地語言店名，給店員看或導航用' },
     { key: 'area', label: '區域', icon: 'fa-map-pin', placeholder: '例如：西面、海雲台、機張、新千歲' },
+    { key: 'coords', label: '座標（地圖用，可留空）', icon: 'fa-crosshairs', placeholder: '按「本日地點定位」會自動填入' },
     { key: 'address', label: '地址', icon: 'fa-location-dot' },
     { key: 'mapLink', label: '地圖連結', icon: 'fa-map', placeholder: 'Google Map 或 Naver Map 連結' },
     { key: 'transport', label: '交通方式', icon: 'fa-route', placeholder: '地鐵、步行、計程車...' },
@@ -1785,6 +1828,43 @@ Day2 12:00 outlet購物，預計逛一小時
     return fn(msg);
   }
   function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+  // ===== 房號 QR：旅伴掃一下就進同一間房，不用口頭報房號 =====
+  function roomShareUrl() {
+    const base = location.origin + location.pathname;
+    return base + '?room=' + encodeURIComponent(syncRoomId || '');
+  }
+  function openRoomQr() {
+    if (!syncRoomId) { alert('目前沒有所在的房間。'); return; }
+    const url = roomShareUrl();
+    const fields = `
+      <div style="text-align:center;">
+        <div id="qr-box" style="display:inline-block; padding:12px; background:#fff; border:1px solid var(--line); border-radius:16px;"></div>
+        <div style="margin-top:12px; font-size:calc(19px * var(--font-scale)); font-weight:800; color:var(--navy); letter-spacing:2px;">${escapeHtml(syncRoomId)}</div>
+        <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:4px; line-height:1.6;">旅伴用手機相機掃這個 QR，<br>或直接把下面的連結傳給他</div>
+        <div style="margin-top:12px; display:flex; gap:7px;">
+          <button type="button" class="ghost-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="copyRoomLink()"><i class="fa-solid fa-link"></i> 複製邀請連結</button>
+          <button type="button" class="ghost-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="shareRoomLink()"><i class="fa-solid fa-share-nodes"></i> 分享</button>
+        </div>
+      </div>`;
+    setupGeneralEdit('邀請旅伴加入', fields, () => closeGeneralEdit());
+    const btn = document.getElementById('general-save-btn'); if (btn) btn.innerHTML = '完成';
+    setTimeout(() => {
+      const box = document.getElementById('qr-box'); if (!box) return;
+      if (typeof QRCode === 'undefined') { box.innerHTML = `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); padding:20px;">QR 元件載入失敗，<br>請改用下方的複製連結</div>`; return; }
+      box.innerHTML = '';
+      new QRCode(box, { text: url, width: 180, height: 180, colorDark: '#1D2B45', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }, 60);
+  }
+  async function copyRoomLink() {
+    try { await navigator.clipboard.writeText(roomShareUrl()); alert('邀請連結已複製，貼給旅伴就可以了。'); }
+    catch(e) { alert('複製失敗，請手動選取網址列的連結。'); }
+  }
+  async function shareRoomLink() {
+    const data = { title: (tripSettings.title||'旅程') + ' 邀請', text: `加入「${tripSettings.title||'旅程'}」，房號 ${syncRoomId}`, url: roomShareUrl() };
+    if (navigator.share) { try { await navigator.share(data); return; } catch(e) { return; } }
+    copyRoomLink();
+  }
 
   function openSettingsModal() {
     document.getElementById('setting-trip-title').value = tripSettings.title || '';
@@ -2744,6 +2824,57 @@ Day2 12:00 outlet購物，預計逛一小時
     else if (days === 0) { numEl.innerText = '今天'; labelEl.innerText = '出發!'; }
     else if (days >= -4) { numEl.innerText = '旅行中'; labelEl.innerText = '玩得開心!'; }
     else { numEl.innerText = '✓'; labelEl.innerText = '旅程結束'; }
+  }
+
+  // ===== 底部常駐膠囊：旅行期間顯示「現在這站 / 下一站」，出發前顯示倒數 =====
+  function renderNowBar() {
+    const bar = document.getElementById('now-bar'); if (!bar) return;
+    if (isSoloMode() || !tripSettings || !tripSettings.startDate) { bar.style.display = 'none'; return; }
+    const todayKey = todayOrTripDate();
+    const inTrip = ITIN_DAYS.some(d => d.key === todayKey);
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const clock = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+    if (!inTrip) {   // 還沒出發（或已結束）：顯示倒數與第一天的第一項
+      const p = tripSettings.startDate.split('-');
+      const left = Math.round((new Date(+p[0], +p[1]-1, +p[2]) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+      if (left < 0) { bar.style.display = 'none'; return; }
+      const first = (itinData[ITIN_DAYS[0].key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''))[0];
+      bar.style.display = 'block';
+      bar.onclick = () => goToItinerary(ITIN_DAYS[0].key);
+      bar.innerHTML = `<div class="nb-row">
+        <div class="nb-l"><b>${left === 0 ? '今天' : left}</b><span>${left === 0 ? 'GO' : 'DAYS'}</span></div>
+        <div class="nb-m"><b>${left === 0 ? '今天出發，玩得開心！' : `距離出發還有 ${left} 天`}</b><span>${first ? `第一站 ${escapeHtml(first.time||'')} ${escapeHtml(first.title||'')}` : '還沒排第一天的行程'}</span></div>
+        <div class="nb-r"><b><i class="fa-solid fa-chevron-right"></i></b><span>行程</span></div>
+      </div>`;
+      return;
+    }
+
+    const items = (itinData[todayKey]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    if (!items.length) { bar.style.display = 'none'; return; }
+    let current = null, next = null;
+    items.forEach(it => {
+      const s = hhmmToMin(it.time); if (s === null) return;
+      const e = hhmmToMin(it.endTime);
+      if (s <= nowMin && (e === null ? nowMin - s <= 90 : nowMin <= e)) current = current || it;
+      if (s > nowMin && !next) next = it;
+    });
+    if (!current) {   // 不在任何一段中間：顯示剛結束的那一項
+      const past = items.filter(it => { const s = hhmmToMin(it.time); return s !== null && s <= nowMin; });
+      current = past.length ? past[past.length-1] : null;
+    }
+    bar.style.display = 'block';
+    bar.onclick = () => goToItinerary(todayKey);
+    const midTitle = current ? `${current.done ? '✓ ' : ''}${escapeHtml(current.title||'')}` : '今天還沒開始的行程';
+    const midSub = current
+      ? (current.endTime ? `現在這站 · 到 ${escapeHtml(current.endTime)}` : (next ? '現在這站' : '今天最後一站'))
+      : (next ? `第一站 ${escapeHtml(next.time||'')}` : '今天沒有排行程');
+    bar.innerHTML = `<div class="nb-row">
+      <div class="nb-l"><b>${clock}</b><span>NOW</span></div>
+      <div class="nb-m"><b>${midTitle}</b><span>${midSub}</span></div>
+      <div class="nb-r">${next ? `<b>${escapeHtml(next.time||'')}</b><span>${escapeHtml((next.title||'').slice(0,8))}</span>` : `<b><i class="fa-solid fa-flag-checkered"></i></b><span>今日完成</span>`}</div>
+    </div>`;
   }
 
   // ===== 旅程即時總覽 Dashboard：今日行程完成度與目前總花費，隨行程/記帳資料異動即時更新 =====
@@ -3866,7 +3997,81 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   }
   function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','盥洗與保養':'<i class="fa-solid fa-pump-soap"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與配件':'<i class="fa-solid fa-shirt"></i>','隨身與其他':'<i class="fa-solid fa-bag-shopping"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
 
+  // ===== 行李額度：直接把機票上的托運／手提公斤數放在打包清單最上面 =====
+  function renderBaggageSummary() {
+    const wrap = document.getElementById('baggage-summary'); if (!wrap) return;
+    const fl = (travelDocs.flights||[]).filter(f => (f.checkedKg||'').trim() || (f.carryKg||'').trim());
+    if (!fl.length) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<div class="card" style="padding:14px 16px;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:9px;">
+        <i class="fa-solid fa-suitcase-rolling" style="color:var(--gold);"></i>
+        <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">行李額度</b>
+      </div>
+      ${fl.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(f => `
+        <div style="display:flex; gap:9px; align-items:baseline; padding:4px 0; font-size:calc(12.5px * var(--font-scale));">
+          <b style="flex:0 0 auto; color:var(--navy);">${escapeHtml(f.label||'航班')}${f.flightNo?' '+escapeHtml(f.flightNo):''}</b>
+          <span style="flex:1; min-width:0; color:var(--text-secondary);">${[f.checkedKg?'托運 '+escapeHtml(f.checkedKg):'', f.carryKg?'手提 '+escapeHtml(f.carryKg):''].filter(Boolean).join('　')}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ===== 自動待辦：依機票與租車日期算出來的提醒，不用自己記 =====
+  function autoTodoList() {
+    const out = [];
+    const today = todayOrTripDate();
+    const dayDiff = (d) => {
+      if (!d) return null;
+      const p = String(d).split('-'); if (p.length !== 3) return null;
+      const t = new Date(); t.setHours(0,0,0,0);
+      return Math.round((new Date(+p[0], +p[1]-1, +p[2]) - t) / 86400000);
+    };
+    const flights = (travelDocs.flights||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    flights.forEach(f => {
+      const dd = dayDiff(f.date);
+      if (dd === null) return;
+      if (dd >= 0 && dd <= 1) out.push({ icon:'fa-plane-circle-check', text:`${f.label||'航班'} ${f.flightNo||''} 線上報到已開放`, sub:`起飛前 24 小時 · ${dateChip(f.date)} ${f.time||''}`, hot:true });
+      if (dd >= 0 && dd <= 2) out.push({ icon:'fa-passport', text:'確認護照、簽證與登機證', sub:`出發 ${dateChip(f.date)}`, hot:dd === 0 });
+    });
+    const last = flights[flights.length-1];
+    if (last) {
+      const dd = dayDiff(last.date);
+      if (dd !== null && dd >= 0 && dd <= 2) {
+        out.push({ icon:'fa-receipt', text:'回國前：辦理退稅、領免稅品', sub:`回程 ${dateChip(last.date)} ${last.time||''}`, hot:dd <= 1 });
+        if ((last.checkedKg||'').trim()) out.push({ icon:'fa-weight-hanging', text:`回程托運上限 ${last.checkedKg}，先秤一下行李`, sub:'買太多的話考慮寄送或加購', hot:false });
+      }
+    }
+    (travelDocs.cars||[]).forEach(c => {
+      const dd = dayDiff(c.returnDate);
+      if (dd !== null && dd >= 0 && dd <= 1) out.push({ icon:'fa-gas-pump', text:`還車前加滿油：${c.company||'租車'}`, sub:`${dateChip(c.returnDate)} ${c.returnTime||''} · ${c.returnLocation||c.pickupLocation||''}`, hot:dd === 0 });
+    });
+    (travelDocs.hotels||[]).forEach(h => {
+      const dd = dayDiff(h.checkoutDate);
+      if (dd !== null && dd === 0) out.push({ icon:'fa-door-open', text:`今天要退房：${h.name||'住宿'}`, sub:`退房時間 ${h.checkoutTime||'11:00'}`, hot:true });
+    });
+    return out;
+  }
+  function renderAutoTodo() {
+    const wrap = document.getElementById('auto-todo'); if (!wrap) return;
+    const list = autoTodoList();
+    if (!list.length) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<div class="card" style="padding:14px 16px; background:linear-gradient(135deg,#EAF7FA 0%,#DCF0F5 100%); border-color:#BFE3EC;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:9px;">
+        <i class="fa-solid fa-bell" style="color:#0E7A8F;"></i>
+        <b style="flex:1; min-width:0; color:#0E7A8F; font-size:calc(14.5px * var(--font-scale));">現在該做的事</b>
+        <span style="font-size:calc(11px * var(--font-scale)); color:#0F6674;">依機票／租車日期自動產生</span>
+      </div>
+      ${list.map(t => `<div style="display:flex; gap:10px; padding:7px 0; border-bottom:1px solid rgba(14,122,143,0.12);">
+        <i class="fa-solid ${t.icon}" style="color:${t.hot?'var(--coral)':'#0E7A8F'}; margin-top:3px; width:16px; text-align:center;"></i>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:calc(13px * var(--font-scale)); font-weight:700; color:#0F6674;">${escapeHtml(t.text)}</div>
+          <div style="font-size:calc(11px * var(--font-scale)); color:#4E8C9B; margin-top:1px;">${escapeHtml(t.sub)}</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+
   function renderPrep() {
+    renderBaggageSummary(); renderAutoTodo();
     const wrap = document.getElementById('prep-categories'); if (!wrap) return;
     wrap.innerHTML = Object.keys(prepData).map(cat => {
       const itemsHtml = prepData[cat].map(it => `
@@ -3921,17 +4126,121 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   async function saveItin() { 
     try { 
       await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData)); 
-      updateDayPillStatuses(); 
+      updateDayPillStatuses(); renderNowBar(); 
       await autoUploadIfEnabled();
     } catch(e) {} 
   }
 
+  // ===== 時間工具：把 "08:30" 轉成分鐘、把 "約25分鐘 / 1小時" 轉成分鐘 =====
+  function hhmmToMin(t) {
+    const m = String(t||'').match(/^(\d{1,2}):(\d{2})$/); if (!m) return null;
+    return parseInt(m[1],10) * 60 + parseInt(m[2],10);
+  }
+  function minToHHMM(n) {
+    if (n === null || n === undefined || isNaN(n)) return '';
+    const v = ((Math.round(n) % 1440) + 1440) % 1440;
+    return String(Math.floor(v/60)).padStart(2,'0') + ':' + String(v%60).padStart(2,'0');
+  }
+  function parseDurationMin(s) {
+    const t = String(s||''); if (!t.trim()) return 0;
+    let total = 0, hit = false;
+    const h = t.match(/(\d+(?:\.\d+)?)\s*(小時|hr|hour|h)/i); if (h) { total += parseFloat(h[1]) * 60; hit = true; }
+    const m = t.match(/(\d+)\s*(分|min)/i); if (m) { total += parseInt(m[1],10); hit = true; }
+    if (!hit) { const n = t.match(/(\d+)/); if (n) total = parseInt(n[1],10); }
+    return Math.round(total);
+  }
+  // 解析營業時間字串（11:00-21:00 / 11:00～21:00 / 10:00 - 18:00 皆可）
+  function parseOpenHours(s) {
+    const m = String(s||'').match(/(\d{1,2}):(\d{2})\s*[-–~～至]\s*(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return { open: parseInt(m[1],10)*60 + parseInt(m[2],10), close: parseInt(m[3],10)*60 + parseInt(m[4],10) };
+  }
+  // 解析公休日（每週三公休 / 週二、三公休 / 每月第2個週一）
+  function closedWeekdays(s) {
+    const t = String(s||''); if (!t) return [];
+    if (/無休|全年無休|不公休/.test(t)) return [];
+    const map = { '日':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6 };
+    const out = [];
+    const seg = t.match(/[週周礼拝]?[日一二三四五六](?:[、,・]\s*[日一二三四五六])*/g) || [];
+    seg.forEach(g => { (g.match(/[日一二三四五六]/g)||[]).forEach(c => { if (map[c] !== undefined && out.indexOf(map[c]) < 0) out.push(map[c]); }); });
+    return out;
+  }
+  function dayKeyWeekday(dayKey) {
+    const p = String(dayKey||'').split('-'); if (p.length !== 3) return -1;
+    const d = new Date(+p[0], +p[1]-1, +p[2]);
+    return isNaN(d.getTime()) ? -1 : d.getDay();
+  }
+
+  // ===== 行程衝突檢查：營業時間、公休日、趕不趕得上 =====
+  function itinIssues(items, dayKey) {
+    const wd = dayKeyWeekday(dayKey);
+    const out = {};
+    const add = (id, level, text) => { (out[id] = out[id] || []).push({ level, text }); };
+    items.forEach((it, i) => {
+      const start = hhmmToMin(it.time);
+      // 1) 公休日
+      const cl = closedWeekdays(it.closed);
+      if (wd >= 0 && cl.indexOf(wd) >= 0) add(it.id, 'bad', `這天是週${WD_CHARS[wd]}，${it.place || it.title || '這家店'}公休（${it.closed}）`);
+      // 2) 營業時間
+      const oh = parseOpenHours(it.hours);
+      if (oh && start !== null) {
+        if (start < oh.open) add(it.id, 'warn', `比營業時間早：${it.hours}，你排 ${it.time}`);
+        else if (start >= oh.close) add(it.id, 'bad', `已打烊：${it.hours}，你排 ${it.time}`);
+        else if (oh.close - start < 30) add(it.id, 'warn', `只剩 ${oh.close - start} 分鐘就打烊（${it.hours}）`);
+      }
+      // 3) 上一站結束 + 交通時間 是否趕得上
+      if (i > 0 && start !== null) {
+        const prev = items[i-1];
+        const prevEnd = hhmmToMin(prev.endTime) !== null ? hhmmToMin(prev.endTime) : hhmmToMin(prev.time);
+        const move = parseDurationMin(it.transportTime);
+        if (prevEnd !== null && move > 0 && prevEnd + move > start) {
+          const need = prevEnd + move;
+          add(it.id, 'warn', `可能趕不上：上一站 ${minToHHMM(prevEnd)} 結束、移動 ${move} 分鐘，最快 ${minToHHMM(need)} 才會到`);
+        } else if (prevEnd !== null && start < prevEnd) {
+          add(it.id, 'warn', `時間重疊：上一站排到 ${minToHHMM(prevEnd)}`);
+        }
+      }
+    });
+    return out;
+  }
+  function issueHtml(list) {
+    if (!list || !list.length) return '';
+    return list.map(x => `<div style="display:flex; gap:7px; margin-top:7px; padding:8px 10px; border-radius:11px; font-size:calc(11.5px * var(--font-scale)); line-height:1.6; background:${x.level==='bad'?'var(--warn-bg)':'#FFFBEB'}; border:1px solid ${x.level==='bad'?'var(--warn-border)':'#FDE68A'}; color:${x.level==='bad'?'#943126':'#92400E'};">
+      <i class="fa-solid ${x.level==='bad'?'fa-circle-exclamation':'fa-triangle-exclamation'}" style="margin-top:2px;"></i><span>${escapeHtml(x.text)}</span></div>`).join('');
+  }
+
   function renderDayTabs() {
     const wrap = document.getElementById('itin-day-tabs'); if(!wrap) return;
-    wrap.innerHTML = ITIN_DAYS.map(d => `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px;">週${d.wd}</span></div>`).join('');
+    wrap.innerHTML = ITIN_DAYS.map(d => {
+      const tp = dayTempCache[d.key];
+      return `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px;">週${d.wd}</span>${tp?`<span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px; color:${d.key===activeDay?'#9FE6F5':'var(--teal)'}; font-weight:700;">${tp}</span>`:''}</div>`;
+    }).join('');
     wrap.querySelectorAll('.day-tab').forEach(tab => { if(tab.classList.contains('active')) { tab.style.background = 'var(--navy)'; tab.style.color = '#fff'; } });
   }
   function selectDay(key) { activeDay = key; renderDayTabs(); renderDayContent(); }
+
+  // 每日高低溫：抓一次整段旅程的日預報，填到日期條上
+  let dayTempCache = {};
+  async function fetchTripDailyTemps() {
+    try {
+      if (!ITIN_DAYS.length) return;
+      const info = getCountryInfo();
+      let lat = info.lat, lon = info.lon;
+      const first = resolveDayCity(ITIN_DAYS[0].key);
+      const local = first.city ? localCityCoords(first.city) : null;
+      if (local) { lat = local.lat; lon = local.lon; }
+      const start = ITIN_DAYS[0].key, end = ITIN_DAYS[ITIN_DAYS.length-1].key;
+      const today = todayOrTripDate();
+      const s = start < today ? today : start;
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&start_date=${s}&end_date=${end}&timezone=auto`);
+      const data = await res.json();
+      if (!data.daily || !data.daily.time) return;
+      data.daily.time.forEach((d, i) => {
+        dayTempCache[d] = `${Math.round(data.daily.temperature_2m_min[i])}°/${Math.round(data.daily.temperature_2m_max[i])}°`;
+      });
+      renderDayTabs();
+    } catch(e) {}
+  }
   function openDayCityEdit(dayKey) {
     const target = dayKey || activeDay;
     const current = (tripSettings.dayCities && tripSettings.dayCities[target]) || '';
@@ -3970,15 +4279,140 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     if (diffDays > 15) { renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・出發前幾天才會有預報</span>`); return; }
 
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&daily=temperature_2m_max,temperature_2m_min,weather_code&start_date=${dayKey}&end_date=${dayKey}&timezone=auto`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&daily=temperature_2m_max,temperature_2m_min,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&start_date=${dayKey}&end_date=${dayKey}&timezone=auto`);
       const data = await res.json();
       const maxT = Math.round(data.daily.temperature_2m_max[0]);
       const minT = Math.round(data.daily.temperature_2m_min[0]);
       const desc = weatherText(data.daily.weather_code[0]);
+      renderHourly(dayKey, data);
       renderTo(`<i class="fa-solid fa-cloud-sun"></i> ${escapeHtml(usedName)} ${minT}-${maxT}°C ${escapeHtml(desc)}　<span style="color:var(--gray); font-weight:600;">${escapeHtml(clothingAdvice(maxT, minT))}</span>`);
     } catch(e) {
       renderTo(`<span style="color:var(--gray);">天氣暫時無法取得</span>`);
     }
+  }
+
+  // ===== 當日路線總圖：Leaflet + OpenStreetMap（免金鑰）=====
+  let dayMap = null, dayMapLayers = [];
+  function itemCoords(it) {
+    const m = String(it.coords||'').match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    return m ? { lat: parseFloat(m[1]), lon: parseFloat(m[2]) } : null;
+  }
+  function mappableItems(dayKey) {
+    return (itinData[dayKey]||[]).slice()
+      .sort((a,b) => (a.time||'').localeCompare(b.time||''))
+      .map((it, i) => ({ it, no: i+1, pos: itemCoords(it) }))
+      .filter(x => x.pos);
+  }
+  function renderDayMap() {
+    const box = document.getElementById('day-map'); if (!box) return;
+    const list = mappableItems(activeDay);
+    const hint = document.getElementById('day-map-hint');
+    if (!list.length) {
+      box.style.display = 'none';
+      if (hint) hint.innerHTML = `尚未有可顯示的地點。按「本日地點定位」讓系統依地址或店名自動查座標，之後就會畫出整天的路線圖。`;
+      return;
+    }
+    box.style.display = 'block';
+    if (hint) hint.innerHTML = `共 ${list.length} 個地點${list.length < (itinData[activeDay]||[]).length ? `（另有 ${(itinData[activeDay]||[]).length - list.length} 項尚未定位）` : ''}`;
+    if (typeof L === 'undefined') { box.innerHTML = '<div style="padding:16px; text-align:center; color:var(--gray); font-size:calc(12px * var(--font-scale));">地圖元件載入中，請確認網路連線</div>'; return; }
+    if (!dayMap) {
+      dayMap = L.map(box, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(dayMap);
+    }
+    dayMapLayers.forEach(l => dayMap.removeLayer(l)); dayMapLayers = [];
+    const pts = [];
+    list.forEach(x => {
+      const done = !!x.it.done;
+      const color = done ? '#98A2B3' : (x.no === list.findIndex(y => !y.it.done) + 1 ? '#49B8D0' : '#FF8A84');
+      const icon = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 28],
+        html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:${color};color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);">${x.no}</span></div>` });
+      const mk = L.marker([x.pos.lat, x.pos.lon], { icon }).addTo(dayMap);
+      const q = encodeURIComponent([x.it.place, x.it.address, x.it.title].filter(Boolean)[0] || '');
+      mk.bindPopup(`<div style="font-family:inherit; min-width:150px;">
+        <b style="font-size:14px; color:#1D2B45;">${escapeHtml(x.it.title||'')}</b>
+        <div style="font-size:12px; color:#98A2B3; margin:3px 0 7px;">${escapeHtml(x.it.time||'')}${x.it.place?' · '+escapeHtml(x.it.place):''}</div>
+        <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="display:inline-block; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; text-decoration:none;">Google 導航</a>
+        ${isKoreaTrip() ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" style="display:inline-block; margin-left:5px; background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; text-decoration:none;">NAVER</a>` : ''}
+      </div>`);
+      dayMapLayers.push(mk);
+      pts.push([x.pos.lat, x.pos.lon]);
+    });
+    if (pts.length > 1) {
+      const line = L.polyline(pts, { color: '#49B8D0', weight: 3, dashArray: '8 7', opacity: .9 }).addTo(dayMap);
+      dayMapLayers.push(line);
+    }
+    const b = L.latLngBounds(pts);
+    dayMap.fitBounds(b.pad(0.25), { maxZoom: 15 });
+    setTimeout(() => { try { dayMap.invalidateSize(); } catch(e) {} }, 120);
+  }
+  // 用 OpenStreetMap 的 Nominatim 查座標（免金鑰）；一次只查一筆、間隔 1.1 秒，符合它的使用規範
+  async function geocodeOne(q) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    } catch(e) {}
+    return null;
+  }
+  async function locateDaySpots() {
+    const items = (itinData[activeDay]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const todo = items.filter(it => !itemCoords(it) && [it.place, it.address, it.title].some(v => (v||'').trim()));
+    if (!todo.length) { alert('這天的地點都已經定位好了。'); return; }
+    const btn = document.getElementById('locate-btn');
+    let okCount = 0;
+    for (let i = 0; i < todo.length; i++) {
+      const it = todo[i];
+      if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 定位中 ${i+1}/${todo.length}`;
+      const city = resolveDayCity(activeDay).city || getCountryInfo().cityLabel;
+      const q = [it.address, it.place, it.title].filter(v => (v||'').trim())[0] + ' ' + (it.address ? '' : city);
+      const r = await geocodeOne(q.trim());
+      if (r) { it.coords = `${r.lat.toFixed(6)},${r.lon.toFixed(6)}`; okCount++; }
+      if (i < todo.length - 1) await sleep(1100);
+    }
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> 本日地點定位`;
+    saveItin(); renderDayContent();
+    alert(okCount ? `已定位 ${okCount} / ${todo.length} 個地點。查不到的可以在編輯裡補上完整地址再試一次。` : '這些地點查不到座標，建議在編輯裡補上完整地址（含城市）再試一次。');
+  }
+
+  // 逐時天氣條：只顯示有行程的時段（早上 7 點到晚上 10 點），並在高降雨機率時提醒
+  function weatherIcon(code) {
+    if (code === 0) return 'fa-sun';
+    if ([1,2,3].includes(code)) return 'fa-cloud-sun';
+    if ([45,48].includes(code)) return 'fa-smog';
+    if ([71,73,75,77,85,86].includes(code)) return 'fa-snowflake';
+    if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) return 'fa-cloud-rain';
+    if ([95,96,99].includes(code)) return 'fa-cloud-bolt';
+    return 'fa-cloud';
+  }
+  function renderHourly(dayKey, data) {
+    const slot = document.getElementById('day-hours-slot'); if (!slot) return;
+    if (!data || !data.hourly || !data.hourly.time) { slot.innerHTML = ''; return; }
+    const nowH = (dayKey === todayOrTripDate()) ? new Date().getHours() : -1;
+    const rows = [];
+    data.hourly.time.forEach((t, i) => {
+      const h = parseInt(String(t).slice(11,13), 10);
+      if (h < 7 || h > 22 || h % 2) return;
+      rows.push({ h, temp: Math.round(data.hourly.temperature_2m[i]), code: data.hourly.weather_code[i], pop: data.hourly.precipitation_probability ? data.hourly.precipitation_probability[i] : null });
+    });
+    if (!rows.length) { slot.innerHTML = ''; return; }
+    const strip = rows.map(r => `<div style="flex:0 0 auto; text-align:center; min-width:46px;">
+        <div style="font-size:calc(10.5px * var(--font-scale)); color:${r.h===nowH?'var(--teal)':'var(--gray)'}; font-weight:${r.h===nowH?'800':'600'};">${r.h===nowH?'現在':String(r.h).padStart(2,'0')+':00'}</div>
+        <i class="fa-solid ${weatherIcon(r.code)}" style="display:block; margin:5px 0 3px; color:var(--gold); font-size:calc(14px * var(--font-scale));"></i>
+        <div style="font-size:calc(12.5px * var(--font-scale)); font-weight:800; color:var(--navy);">${r.temp}°</div>
+        ${(r.pop !== null && r.pop >= 30) ? `<div style="font-size:calc(9.5px * var(--font-scale)); color:#2563EB; font-weight:700;">${r.pop}%</div>` : ''}
+      </div>`).join('');
+    // 這天有排行程的時段若降雨機率偏高就提醒
+    const items = (itinData[dayKey]||[]);
+    let alertHtml = '';
+    const wet = rows.filter(r => r.pop !== null && r.pop >= 60);
+    if (wet.length) {
+      const span = `${String(wet[0].h).padStart(2,'0')}:00` + (wet.length > 1 ? `–${String(wet[wet.length-1].h).padStart(2,'0')}:00` : '');
+      const hit = items.filter(it => { const m = hhmmToMin(it.time); return m !== null && m >= wet[0].h*60 && m <= wet[wet.length-1].h*60 + 59; });
+      alertHtml = `<div style="display:flex; gap:7px; margin-top:10px; padding:9px 11px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:11px; font-size:calc(11.5px * var(--font-scale)); color:#92400E; line-height:1.6;">
+        <i class="fa-solid fa-umbrella" style="margin-top:2px;"></i>
+        <span>${span} 降雨機率 ${Math.max.apply(null, wet.map(w=>w.pop))}%${hit.length?`，這段排了「${escapeHtml(hit[0].title||'')}」${hit.length>1?` 等 ${hit.length} 項`:''}`:''}，記得帶傘。</span></div>`;
+    }
+    slot.innerHTML = `<div style="display:flex; gap:12px; overflow-x:auto; padding-bottom:3px;">${strip}</div>${alertHtml}`;
   }
 
   function renderDayContent() {
@@ -3991,8 +4425,19 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
         <button class="edit-pill only-master" onclick="openDayCityEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
       </div>
       <div id="day-weather-slot" style="font-size:calc(12.5px * var(--font-scale)); color:var(--teal); font-weight:700; margin-top:8px;"></div>
+      <div id="day-hours-slot" style="margin-top:10px;"></div>
+    </div>
+    <div class="card" style="padding:14px 14px 12px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+        <i class="fa-solid fa-route" style="color:var(--teal);"></i>
+        <b style="flex:1; min-width:0; color:var(--navy); font-size:calc(14.5px * var(--font-scale));">當日路線</b>
+        <button id="locate-btn" class="only-master" onclick="locateDaySpots()" style="flex-shrink:0; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:7px 12px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-location-crosshairs"></i> 本日地點定位</button>
+      </div>
+      <div id="day-map" style="display:none; height:230px; border-radius:16px; overflow:hidden; border:1px solid var(--line); z-index:0;"></div>
+      <div id="day-map-hint" style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:9px; line-height:1.6;"></div>
     </div>`;
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+    const dayIssues = itinIssues(items, activeDay);   // 營業時間／公休／趕不上，排好就自動檢查
     if (items.length===0) { html += `<div class="card" style="text-align:center; padding:25px; color:var(--gray);">暫無行程</div>`; }
     else {
       html += items.map((it, idx) => {
@@ -4001,9 +4446,10 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
         const metaBits = [];
         if (it.price) metaBits.push(`<span><i class="fa-solid fa-coins" style="color:var(--gold);"></i> ${escapeHtml(it.price)}</span>`);
         if (it.transport) metaBits.push(`<span><i class="fa-solid fa-route" style="color:var(--gold);"></i> ${escapeHtml(it.transport)}</span>`);
+        if (it.coords) metaBits.push(`<span title="已定位，會顯示在當日路線圖"><i class="fa-solid fa-map-pin" style="color:var(--teal);"></i> 已定位</span>`);
         const companionNames = Array.isArray(it.companions) ? it.companions.filter(n => travelers.includes(n)) : [];
 
-        const extraRows = ITIN_EXTRA_FIELDS.map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
+        const extraRows = ITIN_EXTRA_FIELDS.filter(f => f.key !== 'coords').map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
         const companionsRow = companionNames.length ? `<div class="detail-row"><i class="fa-solid fa-user-group"></i><span><b>同行人：</b>${escapeHtml(companionNames.join('、'))}</span></div>` : '';
         const notesRow = it.notes ? `<div class="detail-row"><i class="fa-solid fa-message"></i><span><b>備註：</b>${escapeHtml(it.notes)}</span></div>` : '';
         const hasNext = idx < items.length - 1;
@@ -4014,6 +4460,7 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
           <button id="copy-name-btn-${it.id}" onclick="copyItinName(${it.id}, event)" style="flex:1; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); padding:8px 4px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;"><i class="fa-solid fa-copy"></i> 複製名稱</button>
         </div>`;
         const allDetailRows = actionRow + extraRows + companionsRow + notesRow;
+        const myIssues = issueHtml(dayIssues[it.id]);
 
         return `<div class="timeline-node">
           <div class="timeline-dot" style="${it.done ? 'background:var(--gold);' : ''}"></div>
@@ -4028,6 +4475,7 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
                 <div class="timeline-time">${escapeHtml(it.time)}${it.endTime ? ' – '+escapeHtml(it.endTime) : ''}</div>
                 <div class="timeline-title" style="${it.done?'text-decoration:line-through; opacity:0.6;':''}">${catIcon?catIcon+' ':''}${escapeHtml(it.title)}</div>
                 ${metaBits.length ? `<div style="display:flex; gap:12px; margin-top:5px; font-size:calc(12px * var(--font-scale)); color:var(--gray);">${metaBits.join('')}</div>` : ''}
+                ${myIssues}
               </div>
             </div>
             <div class="timeline-detail ${isDetailActive ? 'active' : ''}">
@@ -4042,7 +4490,9 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       else if (formState[activeDay] === undefined) { html += `<button class="ghost-btn only-master" onclick="openAddForm()"><i class="fa-solid fa-plus"></i> 新增行程項目</button>`; }
     }
     wrap.innerHTML = html;
+    dayMap = null;   // 內容重畫後舊的地圖容器已失效，下次重新建立
     renderDayWeather(activeDay, resolved.candidates && resolved.candidates.length ? resolved.candidates : [getCountryInfo().cityLabel]);
+    renderDayMap();
     if (isMasterMode && formState[activeDay] !== undefined) {
       const editId = formState[activeDay]==='new' ? null : formState[activeDay];
       const editing = editId ? (itinData[activeDay]||[]).find(i=>i.id===editId) : null;
@@ -6050,6 +6500,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
 
+  // 篩選到某個成員時，統計金額改用「他分攤到的部分」
+  function expMemberShareKRW(r) {
+    if (!expMemberFilter) return recordToKRW(r);
+    try {
+      const res = allocateExpense(r);
+      const rounded = roundToTarget(res.byPerson, res.paidTotal);
+      const share = rounded[expMemberFilter] || 0;
+      const rate = (r.currency === 'TWD') ? 1 : (r.rateAtTime || currentRateForCurrency(r.currency) || 1);
+      return Math.round((r.currency === 'TWD' ? share : share / rate) * rateTWD);
+    } catch(e) { return recordToKRW(r); }
+  }
   function recordToKRW(r) {
     if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
     // TWD 記錄的 rateAtTime 語意固定是「1」（代表換成TWD不用另外查匯率），不是「兌韓元的匯率」，
@@ -6064,10 +6525,59 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     return rate ? Math.round((r.amount||0) / rate) : Math.round((r.amount||0) / rateTWD);
   }
 
+  // 支出頁的成員篩選：選了誰就只看「他要分攤」的部分
+  let expMemberFilter = '';
+  function setExpMember(name) { expMemberFilter = (expMemberFilter === name) ? '' : name; renderExpenseSummary(); }
+  function renderExpMemberRow() {
+    const wrap = document.getElementById('exp-member-filter'); if (!wrap) return;
+    if (isSoloMode() || (travelers||[]).length < 2) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'flex';
+    const chip = (label, val, idx) => {
+      const on = expMemberFilter === val;
+      const av = val ? `<span style="width:19px; height:19px; border-radius:50%; background:${AVATAR_COLORS[idx % AVATAR_COLORS.length]}; color:#fff; font-size:calc(10px * var(--font-scale)); display:flex; align-items:center; justify-content:center; font-weight:800;">${escapeHtml(val.slice(0,1).toUpperCase())}</span>` : '';
+      return `<div onclick="setExpMember('${escapeHtml(val)}')" style="flex:0 0 auto; display:flex; align-items:center; gap:6px; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:999px; padding:6px 13px; font-size:calc(12.5px * var(--font-scale)); font-weight:800; cursor:pointer;">${av}${escapeHtml(label)}</div>`;
+    };
+    wrap.innerHTML = chip('全部', '', 0) + travelers.map((t, i) => chip(t, t, i)).join('');
+  }
+  // 每日預算
+  function openBudgetEdit() {
+    const cur = (tripSettings && tripSettings.dailyBudget) ? tripSettings.dailyBudget : '';
+    const fields = `<div class="input-label">每日預算（新台幣）</div>
+      <input type="number" inputmode="decimal" id="bg-val" value="${cur}" placeholder="例如：3000" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:10px;">
+      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0; line-height:1.6;">設定後，支出頁會顯示「今天已花多少、還剩多少」。留空或填 0 就不顯示。</p>`;
+    setupGeneralEdit('每日預算', fields, () => {
+      const v = p(document.getElementById('bg-val').value);
+      tripSettings.dailyBudget = v > 0 ? Math.round(v) : 0;
+      saveTripSettings(); renderExpenseSummary(); closeGeneralEdit();
+    });
+  }
+  function renderBudget(list) {
+    const card = document.getElementById('budget-card');
+    const setup = document.getElementById('budget-setup-btn');
+    if (!card || !setup) return;
+    const limit = Number(tripSettings && tripSettings.dailyBudget) || 0;
+    if (!limit) { card.style.display = 'none'; setup.style.display = isMasterMode ? 'flex' : 'none'; return; }
+    setup.style.display = 'none'; card.style.display = 'block';
+    const today = todayOrTripDate();
+    const used = list.filter(r => (r.date||'') === today).reduce((s, r) => s + recordToTWD(r), 0);
+    const pct = Math.min(100, Math.round(used / limit * 100));
+    document.getElementById('budget-limit').innerText = 'NT$ ' + f(limit);
+    document.getElementById('budget-used').innerText = '已花 NT$ ' + f(used);
+    const bar = document.getElementById('budget-bar');
+    bar.style.width = pct + '%';
+    bar.style.background = used > limit ? 'linear-gradient(90deg,#FFAD99,#FF5A5F)' : 'linear-gradient(90deg,#49B8D0,#2E9BB5)';
+    document.getElementById('budget-left').innerText = used > limit
+      ? `超出 NT$ ${f(used - limit)}`
+      : `還可以花 NT$ ${f(limit - used)}`;
+  }
+
   function renderExpenseSummary() {
     renderDashboard();
+    renderExpMemberRow();
     const expList = visibleExpenses();   // 個人記帳模式下只看目前這本帳
-    const totalKrw = expList.reduce((s,r)=>s+recordToKRW(r),0);
+    const totalKrw = expList.reduce((s,r)=>s+expMemberShareKRW(r),0);
+    const totalLabel = document.getElementById('exp-total-label');
+    if (totalLabel) totalLabel.innerText = expMemberFilter ? `${expMemberFilter} 的花費` : '總支出';
     
     // 防禦性檢查
     const krwEl = document.getElementById('exp-total-krw');
@@ -6083,17 +6593,26 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return;
     // 沒有消費紀錄時也要更新分帳摘要再結束，否則那張卡片會留著上一個房間畫好的內容，
     // 造成「消費明細是空的、分帳卻有別房金額」
+    renderBudget(expList);
     if (expList.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
 
     const groupKeyOf = expBreakdownMode === 'member' ? (r => r.payer || '未指定')
       : expBreakdownMode === 'date' ? (r => r.date || '未填日期')
       : (r => r.category || '其他');
 
+    // 選了成員就只留「他有分攤到」的紀錄
+    const shownList = !expMemberFilter ? expList : expList.filter(r => {
+      try {
+        const res = allocateExpense(r);
+        const rounded = roundToTarget(res.byPerson, res.paidTotal);
+        return (rounded[expMemberFilter] || 0) > 0;
+      } catch(e) { return r.payer === expMemberFilter; }
+    });
     const groups = {};
-    expList.forEach(r => {
+    shownList.forEach(r => {
       const k = groupKeyOf(r);
       if (!groups[k]) groups[k] = { total: 0, records: [] };
-      groups[k].total += recordToKRW(r);
+      groups[k].total += expMemberShareKRW(r);
       groups[k].records.push(r);
     });
 
@@ -6484,6 +7003,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   function showHomeScreen() {
     document.body.classList.remove('solo-mode');
+    const nb = document.getElementById('now-bar'); if (nb) nb.style.display = 'none';
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; } // 離開房間context，不要繼續在背景聽這個房的更新
     document.getElementById('main-app-container').style.display = 'none';
     document.getElementById('bottom-nav').style.display = 'none';
@@ -6559,7 +7079,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderHeroSyncStatus();
     applyRoomModeUI();
     fetchRates();
-    if (!isSoloMode()) { fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true); }
+    if (!isSoloMode()) { fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true); fetchTripDailyTemps(); }
+    renderNowBar();
     showMainApp();
     if (isSoloMode()) { showP('p-expense', document.querySelectorAll('.nav-btn')[3]); }
     else { showP('p-overview', document.querySelectorAll('.nav-btn')[0]); }
@@ -6876,6 +7397,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderExpenseSummary(); renderSettlement(); renderDayPills(); renderMembersSettingsList();
     if (isSoloMode()) renderLedgerChips();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
+    renderBaggageSummary(); renderAutoTodo(); renderNowBar();
     const listsTab = document.getElementById('prep-tab-lists'); if (listsTab && listsTab.style.display !== 'none') { renderWishlist(); renderFoodList(); }
     renderReminder(true);
   }
@@ -7647,11 +8169,28 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     // 即時同步預設開啟（只有第一次、還沒有任何設定時才套用；使用者自己關掉的話尊重其選擇）
     try { if (localStorage.getItem('sync-auto-enabled') === null) localStorage.setItem('sync-auto-enabled', 'true'); } catch(e) {}
     updateKoreaTime(); setInterval(updateKoreaTime, 30000);
+    setInterval(renderNowBar, 60000);   // 每分鐘更新「現在這站」
     setInterval(updatePassCountdowns, 1000);
 
     // 決定開啟App後要直接顯示首頁，還是恢復上次在的房間：
     // 既有使用者（已經有房號、但這是升級後第一次載入、還沒有 app-screen 紀錄）視同他們原本就在房間裡，不要突然被丟回首頁；
     // 全新使用者、或上次是自己按「返回首頁」離開的，才會看到首頁
+    // 從邀請連結進來（?room=xxx）：直接帶他進那間房
+    try {
+      const qs = new URLSearchParams(location.search);
+      const invited = (qs.get('room') || '').trim();
+      if (invited) {
+        history.replaceState(null, '', location.pathname);
+        const snap = await db.ref('rooms/' + invited).once('value');
+        if (snap.exists()) {
+          await maybeShowOnboarding();
+          await enterRoom(invited);
+          return;
+        }
+        alert('這個邀請連結找不到對應的房間，請跟對方確認房號。');
+      }
+    } catch(e) { console.error('邀請連結處理失敗:', e); }
+
     const savedRoom = localStorage.getItem('sync-room-id');
     const savedScreen = localStorage.getItem('app-screen');
     // 只有「這台裝置上次關掉前正停在某個房間」才會自動回到那個房間；
@@ -7686,6 +8225,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
     fetchRates(); fetchWeather(); renderDayPills();
     renderDashboard(); renderReminder();
+    fetchTripDailyTemps(); renderNowBar();
 
     renderHeroSyncStatus();
     applyRoomModeUI();
