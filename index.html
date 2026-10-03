@@ -1010,7 +1010,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-02 11:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-03 16:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1981,6 +1981,9 @@ Day2 12:00 outlet購物，預計逛一小時
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
     document.getElementById(id).classList.add('active'); if(b) b.classList.add('active');
+    if (id === 'p-prep') { renderBaggageSummary(); renderAutoTodo(); }
+    if (id === 'p-itinerary') { renderDayTabs(); renderDayContent(); }
+    if (id === 'p-expense') { renderExpenseSummary(); }
     window.scrollTo({top: 0});
   }
 
@@ -4001,7 +4004,19 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   function renderBaggageSummary() {
     const wrap = document.getElementById('baggage-summary'); if (!wrap) return;
     const fl = (travelDocs.flights||[]).filter(f => (f.checkedKg||'').trim() || (f.carryKg||'').trim());
-    if (!fl.length) { wrap.innerHTML = ''; return; }
+    if (!fl.length) {
+      const hasFlight = (travelDocs.flights||[]).length > 0;
+      wrap.innerHTML = `<div class="card only-master" style="padding:13px 16px; background:#F8FAFC;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <i class="fa-solid fa-suitcase-rolling" style="color:var(--gold); margin-top:3px;"></i>
+          <div style="flex:1; min-width:0; font-size:calc(12px * var(--font-scale)); color:var(--text-secondary); line-height:1.65;">
+            ${hasFlight ? '到「憑證資訊 → 機票」填上托運／手提公斤數，這裡就會列出去程與回程的額度，收行李時不用再翻機票。' : '還沒有機票資料。到「憑證資訊 → 機票」新增或用 AI 匯入後，行李額度會顯示在這裡。'}
+          </div>
+          <button onclick="goToPrepDocs('flight')" style="flex-shrink:0; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:6px 11px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;">前往</button>
+        </div>
+      </div>`;
+      return;
+    }
     wrap.innerHTML = `<div class="card" style="padding:14px 16px;">
       <div style="display:flex; align-items:center; gap:9px; margin-bottom:9px;">
         <i class="fa-solid fa-suitcase-rolling" style="color:var(--gold);"></i>
@@ -4026,6 +4041,19 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       return Math.round((new Date(+p[0], +p[1]-1, +p[2]) - t) / 86400000);
     };
     const flights = (travelDocs.flights||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const depDiff = tripSettings && tripSettings.startDate ? dayDiff(tripSettings.startDate) : null;
+    // 離出發還久的時候也要有東西可看，不然這區會整塊空白
+    if (depDiff !== null && depDiff > 2) {
+      out.push({ icon:'fa-calendar-day', text:`距離出發還有 ${depDiff} 天`, sub:`${dateChip(tripSettings.startDate)} 出發 · 以下提醒會隨日期自動更新`, hot:false });
+      if (depDiff > 7) out.push({ icon:'fa-passport', text:'確認護照效期（需超過 6 個月）', sub:'現在發現還來得及辦理', hot:false });
+      if (depDiff <= 30) out.push({ icon:'fa-money-bill-transfer', text:'留意匯率，分批換匯', sub:'總覽頁可以看即時匯率', hot:false });
+      if (depDiff <= 14) out.push({ icon:'fa-sim-card', text:'網卡／eSIM 與轉接頭準備', sub:'下面打包清單的 3C 分類可以一起勾', hot:false });
+      const firstF = flights[0];
+      if (firstF && firstF.date) {
+        const ci = dayDiff(firstF.date);
+        if (ci !== null && ci > 1) out.push({ icon:'fa-plane-circle-check', text:`線上報到 ${dateChip(firstF.date)} 前一天開放`, sub:`${firstF.label||'去程'} ${firstF.flightNo||''} ${firstF.time||''}`, hot:false });
+      }
+    }
     flights.forEach(f => {
       const dd = dayDiff(f.date);
       if (dd === null) return;
@@ -4275,8 +4303,17 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     const target = new Date(+p[0], +p[1]-1, +p[2]);
     const today = new Date(); today.setHours(0,0,0,0);
     const diffDays = Math.round((target - today) / 86400000);
-    if (diffDays < 0) { renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・這天已過</span>`); return; }
-    if (diffDays > 15) { renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・出發前幾天才會有預報</span>`); return; }
+    const hourSlot = document.getElementById('day-hours-slot');
+    if (diffDays < 0) {
+      renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・這天已過</span>`);
+      if (hourSlot) hourSlot.innerHTML = '';
+      return;
+    }
+    if (diffDays > 15) {
+      renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・還有 ${diffDays} 天，氣象預報尚未開放</span>`);
+      if (hourSlot) hourSlot.innerHTML = `<div style="display:flex; gap:8px; padding:9px 11px; background:#F8FAFC; border:1px solid var(--line); border-radius:11px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); line-height:1.6;"><i class="fa-solid fa-clock-rotate-left" style="margin-top:2px;"></i><span>逐時天氣、降雨提醒與日期條上的高低溫，會在出發前 16 天內自動出現（目前還有 ${diffDays} 天）。</span></div>`;
+      return;
+    }
 
     try {
       const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&daily=temperature_2m_max,temperature_2m_min,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&start_date=${dayKey}&end_date=${dayKey}&timezone=auto`);
@@ -4309,7 +4346,7 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     const hint = document.getElementById('day-map-hint');
     if (!list.length) {
       box.style.display = 'none';
-      if (hint) hint.innerHTML = `尚未有可顯示的地點。按「本日地點定位」讓系統依地址或店名自動查座標，之後就會畫出整天的路線圖。`;
+      if (hint) hint.innerHTML = `這天還沒有定位過的地點。<b style="color:var(--navy);">按上面的「本日地點定位」</b>，系統會依每個行程的地點或地址自動查座標，接著就會把當天所有點依時間編號畫在地圖上、連成一條路線，還能直接開導航。<br><span style="color:var(--gray);">※ 行程有填「地點／店家」或「地址」才查得到。</span>`;
       return;
     }
     box.style.display = 'block';
