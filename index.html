@@ -1010,7 +1010,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-03 16:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 10:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4206,6 +4206,9 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     const add = (id, level, text) => { (out[id] = out[id] || []).push({ level, text }); };
     items.forEach((it, i) => {
       const start = hhmmToMin(it.time);
+      // 0) 結束時間早於開始時間（多半是輸入或匯入時填反了）
+      const endM = hhmmToMin(it.endTime);
+      if (start !== null && endM !== null && endM < start) add(it.id, 'bad', `時間填反了：開始 ${it.time}、結束 ${it.endTime}`);
       // 1) 公休日
       const cl = closedWeekdays(it.closed);
       if (wd >= 0 && cl.indexOf(wd) >= 0) add(it.id, 'bad', `這天是週${WD_CHARS[wd]}，${it.place || it.title || '這家店'}公休（${it.closed}）`);
@@ -4223,9 +4226,9 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
         const move = parseDurationMin(it.transportTime);
         if (prevEnd !== null && move > 0 && prevEnd + move > start) {
           const need = prevEnd + move;
-          add(it.id, 'warn', `可能趕不上：上一站 ${minToHHMM(prevEnd)} 結束、移動 ${move} 分鐘，最快 ${minToHHMM(need)} 才會到`);
+          add(it.id, 'warn', `銜接太緊：上一項「${prev.title||''}」${minToHHMM(prevEnd)} 結束，而這一項填的通勤時間是 ${move} 分鐘，最快 ${minToHHMM(need)} 才到得了，但開始時間排在 ${it.time}`);
         } else if (prevEnd !== null && start < prevEnd) {
-          add(it.id, 'warn', `時間重疊：上一站排到 ${minToHHMM(prevEnd)}`);
+          add(it.id, 'warn', `時間重疊：上一項「${prev.title||''}」排到 ${minToHHMM(prevEnd)}，這一項卻從 ${it.time} 開始`);
         }
       }
     });
@@ -4378,37 +4381,84 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       const line = L.polyline(pts, { color: '#49B8D0', weight: 3, dashArray: '8 7', opacity: .9 }).addTo(dayMap);
       dayMapLayers.push(line);
     }
+    // 同一天若同時有國內與國外的點（例如出發日），群集範圍會很大，限制最小縮放避免整張世界地圖
     const b = L.latLngBounds(pts);
-    dayMap.fitBounds(b.pad(0.25), { maxZoom: 15 });
+    dayMap.fitBounds(b.pad(0.25), { maxZoom: 15, minZoom: 5 });
+    // 若有點離群超過 300 公里，提示可能定位錯誤
+    const far = [];
+    const c0 = { lat: pts[0][0], lon: pts[0][1] };
+    list.forEach(x => { if (haversineKm(c0, { lat: x.pos.lat, lon: x.pos.lon }) > 300) far.push(x.it.title || ''); });
+    if (far.length && hint) hint.innerHTML += `<br><span style="color:var(--warn);"><i class="fa-solid fa-triangle-exclamation"></i> 有 ${far.length} 個點離其他地方超過 300 公里，可能定位抓錯：${escapeHtml(far.slice(0,3).join('、'))}。可在該項目編輯裡清空「座標」欄位後重新定位。</span>`;
     setTimeout(() => { try { dayMap.invalidateSize(); } catch(e) {} }, 120);
   }
-  // 用 OpenStreetMap 的 Nominatim 查座標（免金鑰）；一次只查一筆、間隔 1.1 秒，符合它的使用規範
-  async function geocodeOne(q) {
+  // 用 OpenStreetMap 的 Nominatim 查座標（免金鑰）。
+  // 重點：一定要限定國家＋以當天城市為中心的範圍，否則像「中洞站」「乘地鐵2號線」這種字串
+  // 會在全世界亂找，結果跑到中國或日本去
+  const COUNTRY_CC = { '🇰🇷 韓國':'kr', '🇯🇵 日本':'jp', '🇹🇼 台灣':'tw', '🇹🇭 泰國':'th', '🇸🇬 新加坡':'sg', '🇭🇰 香港':'hk', '🇺🇸 美國':'us' };
+  function haversineKm(a, b) {
+    const R = 6371, rad = (d) => d * Math.PI / 180;
+    const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+    const s = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  async function nominatim(params) {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+      const res = await fetch('https://nominatim.openstreetmap.org/search?' + params.toString(), { headers: { 'Accept': 'application/json' } });
       const data = await res.json();
-      if (Array.isArray(data) && data.length) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-    } catch(e) {}
-    return null;
+      return Array.isArray(data) ? data : [];
+    } catch(e) { return []; }
+  }
+  // center：當天城市座標；maxKm：超過這個距離就視為抓錯，直接丟掉
+  async function geocodeOne(q, center, cc, maxKm) {
+    const pick = (list) => {
+      for (const r of list) {
+        const p = { lat: parseFloat(r.lat), lon: parseFloat(r.lon) };
+        if (isNaN(p.lat) || isNaN(p.lon)) continue;
+        if (center && maxKm && haversineKm(center, p) > maxKm) continue;   // 離當天城市太遠＝抓錯
+        return p;
+      }
+      return null;
+    };
+    // 第一輪：鎖定城市周邊的框內搜尋，最準
+    if (center) {
+      const p1 = new URLSearchParams({ format: 'json', limit: '5', q: q, bounded: '1',
+        viewbox: [center.lon - 0.7, center.lat + 0.6, center.lon + 0.7, center.lat - 0.6].join(',') });
+      if (cc) p1.set('countrycodes', cc);
+      const hit = pick(await nominatim(p1));
+      if (hit) return hit;
+      await sleep(1100);
+    }
+    // 第二輪：放寬成整個國家，但仍用距離把離譜的結果擋掉
+    const p2 = new URLSearchParams({ format: 'json', limit: '5', q: q });
+    if (cc) p2.set('countrycodes', cc);
+    return pick(await nominatim(p2));
   }
   async function locateDaySpots() {
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     const todo = items.filter(it => !itemCoords(it) && [it.place, it.address, it.title].some(v => (v||'').trim()));
     if (!todo.length) { alert('這天的地點都已經定位好了。'); return; }
     const btn = document.getElementById('locate-btn');
-    let okCount = 0;
+    const city = resolveDayCity(activeDay).city || getCountryInfo().cityLabel;
+    const info = getCountryInfo();
+    const local = localCityCoords(city);
+    const center = local ? { lat: local.lat, lon: local.lon } : { lat: info.lat, lon: info.lon };
+    const cc = COUNTRY_CC[(tripSettings && tripSettings.country)] || '';
+    let okCount = 0; const failed = [];
     for (let i = 0; i < todo.length; i++) {
       const it = todo[i];
       if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 定位中 ${i+1}/${todo.length}`;
-      const city = resolveDayCity(activeDay).city || getCountryInfo().cityLabel;
-      const q = [it.address, it.place, it.title].filter(v => (v||'').trim())[0] + ' ' + (it.address ? '' : city);
-      const r = await geocodeOne(q.trim());
+      // 地址最準；其次店家名；標題（例如「出門前往中洞站」）最後才用，而且一定補上城市名
+      const base = [it.address, it.place, it.title].filter(v => (v||'').trim())[0];
+      const q = (it.address && it.address.trim()) ? it.address.trim() : `${base} ${city}`.trim();
+      const r = await geocodeOne(q, center, cc, 180);
       if (r) { it.coords = `${r.lat.toFixed(6)},${r.lon.toFixed(6)}`; okCount++; }
+      else failed.push(it.title || base);
       if (i < todo.length - 1) await sleep(1100);
     }
     if (btn) btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> 本日地點定位`;
     saveItin(); renderDayContent();
-    alert(okCount ? `已定位 ${okCount} / ${todo.length} 個地點。查不到的可以在編輯裡補上完整地址再試一次。` : '這些地點查不到座標，建議在編輯裡補上完整地址（含城市）再試一次。');
+    const tail = failed.length ? `\n\n查不到的 ${failed.length} 項：\n・${failed.slice(0,6).join('\n・')}${failed.length>6?'\n…':''}\n\n這些多半是「出門前往…」這種描述性標題。到該項目的編輯裡，把「地點／店家」或「地址」填具體一點（例如「海雲台站」「釜山廣域市海雲台區…」）再定位一次就會成功。` : '';
+    alert(`已定位 ${okCount} / ${todo.length} 個地點。${tail}`);
   }
 
   // 逐時天氣條：只顯示有行程的時段（早上 7 點到晚上 10 點），並在高降雨機率時提醒
