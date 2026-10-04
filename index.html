@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- 當日路線圖：Leaflet + OpenStreetMap，免金鑰 -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <!-- 房號 QR -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- 加到主畫面時的 App 圖示。直接內嵌成 data URI，這樣不用額外上傳圖檔到 GitHub；
@@ -501,11 +498,11 @@
       </div>
       <div id="prep-list-shopping">
         <div id="wishlist-items"></div>
-        <button class="ghost-btn only-master" onclick="openWishlistForm()"><i class="fa-solid fa-plus"></i> 新增購物項目</button>
+        <button class="ghost-btn" onclick="openWishlistForm()"><i class="fa-solid fa-plus"></i> 新增購物項目</button>
       </div>
       <div id="prep-list-food" style="display:none;">
         <div id="food-list-items"></div>
-        <button class="ghost-btn only-master" onclick="openFoodListForm()"><i class="fa-solid fa-plus"></i> 新增店家</button>
+        <button class="ghost-btn" onclick="openFoodListForm()"><i class="fa-solid fa-plus"></i> 新增店家</button>
       </div>
     </div>
   </section>
@@ -1012,7 +1009,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 17:00</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 19:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1434,7 +1431,6 @@ Day2 12:00 outlet購物，預計逛一小時
     { key: 'place', label: '地點/店家', icon: 'fa-shop' },
     { key: 'nameOriginal', label: '原文店名', icon: 'fa-language', placeholder: '當地語言店名，給店員看或導航用' },
     { key: 'area', label: '區域', icon: 'fa-map-pin', placeholder: '例如：西面、海雲台、機張、新千歲' },
-    { key: 'coords', label: '座標（地圖用，可留空）', icon: 'fa-crosshairs', placeholder: '按「本日地點定位」會自動填入' },
     { key: 'address', label: '地址', icon: 'fa-location-dot' },
     { key: 'mapLink', label: '地圖連結', icon: 'fa-map', placeholder: 'Google Map 或 Naver Map 連結' },
     { key: 'transport', label: '交通方式', icon: 'fa-route', placeholder: '地鐵、步行、計程車...' },
@@ -2199,7 +2195,7 @@ Day2 12:00 outlet購物，預計逛一小時
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
             <div onclick="event.stopPropagation(); toggleWishlistBought(${it.id})" title="標記已買到" style="width:24px; height:24px; border-radius:7px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.bought?'var(--teal)':'#fff'};">${it.bought?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
-            <div class="only-master" style="display:flex; gap:6px;">
+            <div style="display:flex; gap:6px;">
               <button onclick="event.stopPropagation(); openWishlistForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
               <button onclick="event.stopPropagation(); deleteWishlistItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
             </div>
@@ -2348,7 +2344,7 @@ Day2 12:00 outlet購物，預計逛一小時
             ${meta ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${meta}</div>` : ''}
             ${it.hours ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;"><i class="fa-solid fa-clock" style="color:var(--gold);"></i> ${escapeHtml(it.hours)}${it.closed?`　公休 ${escapeHtml(it.closed)}`:''}</div>` : ''}
           </div>
-          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
+          <div style="display:flex; gap:6px; flex-shrink:0;">
             <button onclick="event.stopPropagation(); openFoodListForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
             <button onclick="event.stopPropagation(); deleteFoodListItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
           </div>
@@ -4382,216 +4378,6 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     }
   }
 
-  // ===== 當日路線總圖：Leaflet + OpenStreetMap（免金鑰）=====
-  let dayMap = null, dayMapLayers = [];
-  function itemCoords(it) {
-    const m = String(it.coords||'').match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
-    return m ? { lat: parseFloat(m[1]), lon: parseFloat(m[2]) } : null;
-  }
-  function mappableItems(dayKey) {
-    return (itinData[dayKey]||[]).slice()
-      .sort((a,b) => (a.time||'').localeCompare(b.time||''))
-      .map((it, i) => ({ it, no: i+1, pos: itemCoords(it) }))
-      .filter(x => x.pos);
-  }
-  function renderDayMap() {
-    const box = document.getElementById('day-map'); if (!box) return;
-    const list = mappableItems(activeDay);
-    const hint = document.getElementById('day-map-hint');
-    if (!list.length) {
-      box.style.display = 'none';
-      if (hint) hint.innerHTML = `這天還沒有定位過的地點。<b style="color:var(--navy);">按上面的「本日地點定位」</b>，系統會依每個行程的地點或地址自動查座標，接著就會把當天所有點依時間編號畫在地圖上、連成一條路線，還能直接開導航。<br><span style="color:var(--gray);">※ 行程有填「地點／店家」或「地址」才查得到。</span>`;
-      return;
-    }
-    box.style.display = 'block';
-    if (hint) hint.innerHTML = `共 ${list.length} 個地點${list.length < (itinData[activeDay]||[]).length ? `（另有 ${(itinData[activeDay]||[]).length - list.length} 項尚未定位）` : ''}`;
-    if (typeof L === 'undefined') { box.innerHTML = '<div style="padding:16px; text-align:center; color:var(--gray); font-size:calc(12px * var(--font-scale));">地圖元件載入中，請確認網路連線</div>'; return; }
-    if (!dayMap) {
-      dayMap = L.map(box, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(dayMap);
-    }
-    dayMapLayers.forEach(l => dayMap.removeLayer(l)); dayMapLayers = [];
-    const pts = [];
-    list.forEach(x => {
-      const done = !!x.it.done;
-      const color = done ? '#98A2B3' : (x.no === list.findIndex(y => !y.it.done) + 1 ? '#49B8D0' : '#FF8A84');
-      const icon = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 28],
-        html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:${color};color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);">${x.no}</span></div>` });
-      const mk = L.marker([x.pos.lat, x.pos.lon], { icon }).addTo(dayMap);
-      const q = encodeURIComponent([x.it.place, x.it.address, x.it.title].filter(Boolean)[0] || '');
-      mk.bindPopup(`<div style="font-family:inherit; min-width:150px;">
-        <b style="font-size:14px; color:#1D2B45;">${escapeHtml(x.it.title||'')}</b>
-        <div style="font-size:12px; color:#98A2B3; margin:3px 0 7px;">${escapeHtml(x.it.time||'')}${x.it.place?' · '+escapeHtml(x.it.place):''}</div>
-        <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="display:inline-block; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; text-decoration:none;">Google 導航</a>
-        ${isKoreaTrip() ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" style="display:inline-block; margin-left:5px; background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; text-decoration:none;">NAVER</a>` : ''}
-      </div>`);
-      dayMapLayers.push(mk);
-      pts.push([x.pos.lat, x.pos.lon]);
-    });
-    if (pts.length > 1) {
-      const line = L.polyline(pts, { color: '#49B8D0', weight: 3, dashArray: '8 7', opacity: .9 }).addTo(dayMap);
-      dayMapLayers.push(line);
-    }
-    // 同一天若同時有國內與國外的點（例如出發日），群集範圍會很大，限制最小縮放避免整張世界地圖
-    const b = L.latLngBounds(pts);
-    dayMap.fitBounds(b.pad(0.25), { maxZoom: 15, minZoom: 5 });
-    // 若有點離群超過 300 公里，提示可能定位錯誤
-    const far = [];
-    const c0 = { lat: pts[0][0], lon: pts[0][1] };
-    list.forEach(x => { if (haversineKm(c0, { lat: x.pos.lat, lon: x.pos.lon }) > 300) far.push(x.it.title || ''); });
-    if (far.length && hint) hint.innerHTML += `<br><span style="color:var(--warn);"><i class="fa-solid fa-triangle-exclamation"></i> 有 ${far.length} 個點離其他地方超過 300 公里，可能定位抓錯：${escapeHtml(far.slice(0,3).join('、'))}。可在該項目編輯裡清空「座標」欄位後重新定位。</span>`;
-    setTimeout(() => { try { dayMap.invalidateSize(); } catch(e) {} }, 120);
-  }
-  // 用 OpenStreetMap 的 Nominatim 查座標（免金鑰）。
-  // 重點：一定要限定國家＋以當天城市為中心的範圍，否則像「中洞站」「乘地鐵2號線」這種字串
-  // 會在全世界亂找，結果跑到中國或日本去
-  const COUNTRY_CC = { '🇰🇷 韓國':'kr', '🇯🇵 日本':'jp', '🇹🇼 台灣':'tw', '🇹🇭 泰國':'th', '🇸🇬 新加坡':'sg', '🇭🇰 香港':'hk', '🇺🇸 美國':'us' };
-  function haversineKm(a, b) {
-    const R = 6371, rad = (d) => d * Math.PI / 180;
-    const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
-    const s = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(s));
-  }
-  async function nominatim(params) {
-    try {
-      const res = await fetch('https://nominatim.openstreetmap.org/search?' + params.toString(), { headers: { 'Accept': 'application/json' } });
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch(e) { return []; }
-  }
-  // center：當天城市座標；maxKm：超過這個距離就視為抓錯，直接丟掉
-  async function geocodeOne(q, center, cc, maxKm) {
-    const pick = (list) => {
-      for (const r of list) {
-        const p = { lat: parseFloat(r.lat), lon: parseFloat(r.lon) };
-        if (isNaN(p.lat) || isNaN(p.lon)) continue;
-        if (center && maxKm && haversineKm(center, p) > maxKm) continue;   // 離當天城市太遠＝抓錯
-        return p;
-      }
-      return null;
-    };
-    // 第一輪：鎖定城市周邊的框內搜尋，最準
-    if (center) {
-      const p1 = new URLSearchParams({ format: 'json', limit: '5', q: q, bounded: '1',
-        viewbox: [center.lon - 0.7, center.lat + 0.6, center.lon + 0.7, center.lat - 0.6].join(',') });
-      if (cc) p1.set('countrycodes', cc);
-      const hit = pick(await nominatim(p1));
-      if (hit) return hit;
-      await sleep(1100);
-    }
-    // 第二輪：放寬成整個國家，但仍用距離把離譜的結果擋掉
-    const p2 = new URLSearchParams({ format: 'json', limit: '5', q: q });
-    if (cc) p2.set('countrycodes', cc);
-    return pick(await nominatim(p2));
-  }
-  // 把行程標題還原成可以查詢的地點名稱。
-  // 「出門前往中洞站」→「中洞站」；「搭乘交通工具前往西面站」→「西面站」；
-  // 「吃飯名單建議」「行前最後檢查」這種根本不是地點的就跳過
-  const NON_PLACE_RE = /(建議|名單|檢查|整理|打包|休息|自由活動|自由行動|集合|確認|提醒|注意|備註|預約|報到|睡覺|起床|出發準備|兌換|儲值|入境|出境|登機|下飛機|上飛機|領行李|托運|退稅|換錢|買票|排隊)/;
-  const VERB_PREFIX_RE = /^(出門|一早|早上|中午|下午|晚上)?\s*(搭乘?交通工具)?\s*(前往|去|到|抵達|搭車前往|步行前往|移動到|轉乘到|搭機到)\s*/;
-  const TAIL_RE = /\s*(排隊|逛逛|逛街|散步|吃飯|用餐|晚餐|午餐|早餐|購物|採買|拍照|參觀|體驗|泡湯|check\s*in|checkin|入住|退房|並儲值|儲值)\s*$/i;
-  function cleanPlaceQuery(it) {
-    const addr = (it.address||'').trim();
-    if (addr) return { q: addr, how: '地址' };
-    let base = (it.place||'').trim();
-    let how = '地點欄位';
-    if (!base) { base = (it.title||'').trim(); how = '行程名稱'; }
-    if (!base) return { q: '', how: '' };
-    // 行程名稱才需要清理動詞；地點欄位通常已經是店名
-    if (how === '行程名稱') {
-      if (NON_PLACE_RE.test(base) && !/站|機場|飯店|酒店|公園|市場|寺|宮|塔|館|城|海|山|百貨|購物中心/.test(base)) return { q: '', how: 'skip' };
-      base = base.replace(VERB_PREFIX_RE, '').replace(TAIL_RE, '').trim();
-      base = base.replace(/^[「『（(]|[」』）)]$/g, '').trim();
-    }
-    if (!base) return { q: '', how: 'skip' };
-    // 店家清單裡有同名的店，直接用它的地址，最準
-    const shop = (foodListData||[]).find(s => s.name && (base.includes(s.name) || s.name.includes(base)));
-    if (shop && ((shop.location||'').trim())) return { q: shop.location.trim(), how: '店家清單地址' };
-    // 住宿類：對應到憑證裡的飯店地址
-    if (/飯店|酒店|hotel|住宿|民宿/i.test(base)) {
-      const h = (travelDocs.hotels||[]).find(x => (x.address||'').trim());
-      if (h) return { q: h.address.trim(), how: '住宿憑證地址' };
-    }
-    return { q: base, how };
-  }
-  // 有 Gemini 金鑰時，先讓 AI 一次把整天的地點名稱整理出來（含當地語言），命中率高很多
-  async function aiResolvePlaces(items, city) {
-    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
-    if (!apiKey || !items.length) return null;
-    const country = (tripSettings && tripSettings.country) || '';
-    const lines = items.map((it, i) => `${i}. 標題：${it.title||''}｜地點欄位：${it.place||''}｜地址：${it.address||''}｜交通：${it.transport||''}｜備註：${(it.notes||'').slice(0,40)}`).join('\n');
-    const prompt = `你是地圖搜尋助理。使用者的旅遊行程在「${country} ${city}」。
-下面每一行是一個行程項目，標題常常是「出門前往中洞站」「搭乘交通工具前往西面站」這種句子，請你還原成「可以直接丟進地圖搜尋的地點名稱」。
-
-規則：
-1. 盡量輸出當地語言的正式名稱（韓國用韓文、日本用日文），例如「中洞站」→「중동역」、「西面站」→「서면역」、「金海機場」→「김해국제공항」。
-2. 地點名稱後面請加上城市，例如「서면역 부산」。
-3. 如果這一項根本不是一個實體地點（例如「吃飯名單建議」「行前最後檢查」「兌換實體Busan Pass並儲值」只是待辦事項），請把 skip 設成 true。
-4. 如果你很確定該地點的經緯度，可以一併填 lat / lng（小數點後 5 位）；不確定就不要填。
-5. 絕對不要編造不存在的地點。
-
-行程：
-${lines}
-
-只回傳 JSON 陣列，不要有其他文字：
-[{"i":行程編號數字,"query":"可搜尋的地點名稱 城市","lat":緯度或null,"lng":經度或null,"skip":false}]`;
-    try {
-      const text = await callGeminiVision(prompt, null, null, 'locate');
-      const arr = JSON.parse(extractJsonBlock(text));
-      return Array.isArray(arr) ? arr : null;
-    } catch(e) { console.error('AI 地點整理失敗:', e); return null; }
-  }
-
-  async function locateDaySpots() {
-    const items = (itinData[activeDay]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    const todo = items.filter(it => !itemCoords(it) && [it.place, it.address, it.title].some(v => (v||'').trim()));
-    if (!todo.length) { alert('這天的地點都已經定位好了。'); return; }
-    const btn = document.getElementById('locate-btn');
-    const city = resolveDayCity(activeDay).city || getCountryInfo().cityLabel;
-    const info = getCountryInfo();
-    const local = localCityCoords(city);
-    const center = local ? { lat: local.lat, lon: local.lon } : { lat: info.lat, lon: info.lon };
-    const cc = COUNTRY_CC[(tripSettings && tripSettings.country)] || '';
-
-    // 第一步：有 AI 金鑰就先讓它把每一項還原成真正的地點名稱（並可能直接給座標）
-    if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 整理地點中...`;
-    const aiList = await aiResolvePlaces(todo, city);
-    const plan = todo.map((it, i) => {
-      const local2 = cleanPlaceQuery(it);
-      const ai = aiList ? aiList.find(x => Number(x.i) === i) : null;
-      if (ai && ai.skip) return { it, skip: true, reason: '不是地點' };
-      if (ai && ai.lat && ai.lng) return { it, coords: { lat: Number(ai.lat), lon: Number(ai.lng) }, q: ai.query || local2.q, how: 'AI' };
-      if (ai && (ai.query||'').trim()) return { it, q: ai.query.trim(), how: 'AI 整理' };
-      if (!local2.q || local2.how === 'skip') return { it, skip: true, reason: '不是地點' };
-      return { it, q: local2.q + (local2.how === '地址' ? '' : ' ' + city), how: local2.how };
-    });
-
-    let okCount = 0; const failed = []; const skipped = [];
-    const needLookup = plan.filter(x => !x.skip && !x.coords);
-    let n = 0;
-    for (const x of plan) {
-      if (x.skip) { skipped.push(x.it.title || ''); continue; }
-      if (x.coords) {   // AI 直接給座標，一樣要通過距離檢查
-        if (!isNaN(x.coords.lat) && !isNaN(x.coords.lon) && haversineKm(center, x.coords) <= 180) {
-          x.it.coords = `${x.coords.lat.toFixed(6)},${x.coords.lon.toFixed(6)}`; okCount++; continue;
-        }
-      }
-      n++;
-      if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 定位中 ${n}/${needLookup.length}`;
-      const r = await geocodeOne(x.q, center, cc, 180);
-      if (r) { x.it.coords = `${r.lat.toFixed(6)},${r.lon.toFixed(6)}`; okCount++; }
-      else failed.push((x.it.title || x.q) + `（查詢：${x.q}）`);
-      if (n < needLookup.length) await sleep(1100);
-    }
-    if (btn) btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> 本日地點定位`;
-    saveItin(); renderDayContent();
-    let msg = `已定位 ${okCount} 個地點。`;
-    if (skipped.length) msg += `\n\n略過 ${skipped.length} 項（不是實體地點，例如待辦或提醒）：\n・${skipped.slice(0,4).join('\n・')}${skipped.length>4?'\n…':''}`;
-    if (failed.length) msg += `\n\n查不到 ${failed.length} 項：\n・${failed.slice(0,4).join('\n・')}${failed.length>4?'\n…':''}\n\n可以到該項目編輯裡的「地點／店家」填店名、或「地址」填完整地址，再定位一次。`;
-    if (!aiList) msg += `\n\n提示：在設定裡填入 Gemini API 金鑰後，系統會先用 AI 把「出門前往中洞站」這類標題自動還原成「중동역 부산」再查，命中率會高很多。`;
-    alert(msg);
-  }
-
   // 逐時天氣條：只顯示有行程的時段（早上 7 點到晚上 10 點），並在高降雨機率時提醒
   function weatherIcon(code) {
     if (code === 0) return 'fa-sun';
@@ -4645,15 +4431,7 @@ ${lines}
       <div id="day-weather-slot" style="font-size:calc(12.5px * var(--font-scale)); color:var(--teal); font-weight:700; margin-top:8px;"></div>
       <div id="day-hours-slot" style="margin-top:10px;"></div>
     </div>
-    <div class="card" style="padding:14px 14px 12px; margin-bottom:12px;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-        <i class="fa-solid fa-route" style="color:var(--teal);"></i>
-        <b style="flex:1; min-width:0; color:var(--navy); font-size:calc(14.5px * var(--font-scale));">當日路線</b>
-        <button id="locate-btn" class="only-master" onclick="locateDaySpots()" style="flex-shrink:0; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:7px 12px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-location-crosshairs"></i> 本日地點定位</button>
-      </div>
-      <div id="day-map" style="display:none; height:230px; border-radius:16px; overflow:hidden; border:1px solid var(--line); z-index:0;"></div>
-      <div id="day-map-hint" style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:9px; line-height:1.6;"></div>
-    </div>`;
+`;
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
     const dayIssues = itinIssues(items, activeDay);   // 營業時間／公休／趕不上，排好就自動檢查
     if (items.length===0) { html += `<div class="card" style="text-align:center; padding:25px; color:var(--gray);">暫無行程</div>`; }
@@ -4664,10 +4442,9 @@ ${lines}
         const metaBits = [];
         if (it.price) metaBits.push(`<span><i class="fa-solid fa-coins" style="color:var(--gold);"></i> ${escapeHtml(it.price)}</span>`);
         if (it.transport) metaBits.push(`<span><i class="fa-solid fa-route" style="color:var(--gold);"></i> ${escapeHtml(it.transport)}</span>`);
-        if (it.coords) metaBits.push(`<span title="已定位，會顯示在當日路線圖"><i class="fa-solid fa-map-pin" style="color:var(--teal);"></i> 已定位</span>`);
         const companionNames = Array.isArray(it.companions) ? it.companions.filter(n => travelers.includes(n)) : [];
 
-        const extraRows = ITIN_EXTRA_FIELDS.filter(f => f.key !== 'coords').map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
+        const extraRows = ITIN_EXTRA_FIELDS.map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
         const companionsRow = companionNames.length ? `<div class="detail-row"><i class="fa-solid fa-user-group"></i><span><b>同行人：</b>${escapeHtml(companionNames.join('、'))}</span></div>` : '';
         const notesRow = it.notes ? `<div class="detail-row"><i class="fa-solid fa-message"></i><span><b>備註：</b>${escapeHtml(it.notes)}</span></div>` : '';
         const hasNext = idx < items.length - 1;
@@ -4708,9 +4485,7 @@ ${lines}
       else if (formState[activeDay] === undefined) { html += `<button class="ghost-btn only-master" onclick="openAddForm()"><i class="fa-solid fa-plus"></i> 新增行程項目</button>`; }
     }
     wrap.innerHTML = html;
-    dayMap = null;   // 內容重畫後舊的地圖容器已失效，下次重新建立
     renderDayWeather(activeDay, resolved.candidates && resolved.candidates.length ? resolved.candidates : [getCountryInfo().cityLabel]);
-    renderDayMap();
     if (isMasterMode && formState[activeDay] !== undefined) {
       const editId = formState[activeDay]==='new' ? null : formState[activeDay];
       const editing = editId ? (itinData[activeDay]||[]).find(i=>i.id===editId) : null;
