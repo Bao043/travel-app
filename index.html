@@ -893,7 +893,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
 <!-- 附近雷達：用目前位置查周圍的店家與景點（資料來自 OpenStreetMap，免金鑰、各國通用） -->
 <div class="guide-overlay" id="radar-overlay" style="align-items:flex-start; padding:0;">
-  <div onclick="event.stopPropagation()" style="background:var(--bg); width:100%; max-width:560px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column;">
+  <div onclick="event.stopPropagation()" style="background:var(--bg); width:100%; max-width:560px; margin:0 auto; height:100dvh; display:flex; flex-direction:column;">
     <div style="background:linear-gradient(135deg,#16283f 0%,#2E6B7E 100%); color:#fff; padding:max(18px, calc(10px + env(safe-area-inset-top,0px))) 18px 16px; display:flex; align-items:center; gap:11px;">
       <i class="fa-solid fa-satellite-dish" style="font-size:calc(19px * var(--font-scale)); color:#9FE6F5;"></i>
       <div style="flex:1; min-width:0;">
@@ -1038,7 +1038,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-05 10:15</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-05 12:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1867,7 +1867,13 @@ Day2 12:00 outlet購物，預計逛一小時
     { key:'spot', label:'景點',   icon:'📸', color:'#28C76F' },
     { key:'shop', label:'購物',   icon:'🛍️', color:'#F2994A' }
   ];
-  let radarPos = null, radarRaw = [], radarRadius = 800, radarCat = 'all', radarSel = null, radarBusy = false;
+  let radarPos = null, radarRaw = [], radarRadius = 800, radarCat = 'all', radarSel = null, radarBusy = false, radarChartOpen = true;
+  function toggleRadarChart() { radarChartOpen = !radarChartOpen; renderRadar(); }
+  async function radarCopyName(id) {
+    const x = radarRaw.find(y => y.id === id); if (!x) return;
+    try { await navigator.clipboard.writeText(x.name); alert(`已複製「${x.name}」，可以直接給店員或司機看。`); }
+    catch(e) { alert('複製失敗，請長按店名手動複製。'); }
+  }
 
   function radarDistKm(a, b) {
     const R = 6371, rad = d => d * Math.PI / 180;
@@ -1995,12 +2001,14 @@ Day2 12:00 outlet購物，預計逛一小時
       return `<circle cx="${(R + r * Math.cos(ang)).toFixed(1)}" cy="${(R + r * Math.sin(ang)).toFixed(1)}" r="${on?7:4.5}" fill="${c}" stroke="${on?'#1D2B45':'#fff'}" stroke-width="${on?2.5:1.3}" style="cursor:pointer;" onclick="pickRadar(${x.id})"></circle>`;
     }).join('');
     html += `<div class="card" style="padding:14px;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <div onclick="toggleRadarChart()" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer;">
         <i class="fa-solid fa-compass" style="color:var(--teal);"></i>
         <b style="flex:1; color:var(--navy); font-size:calc(14px * var(--font-scale));">方位圖</b>
         <span style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">${list.length} 筆</span>
+        <i class="fa-solid fa-chevron-${radarChartOpen?'up':'down'}" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
       </div>
-      <svg viewBox="0 0 ${R*2} ${R*2}" style="width:100%; max-width:320px; display:block; margin:0 auto;">
+      <div style="display:${radarChartOpen?'block':'none'};">
+      <svg viewBox="0 0 ${R*2} ${R*2}" style="width:100%; max-width:270px; display:block; margin:0 auto;">
         <circle cx="${R}" cy="${R}" r="${R-16}" fill="#F7F9FC" stroke="#E2E8F0"/>
         <circle cx="${R}" cy="${R}" r="${(R-16)*0.66}" fill="none" stroke="#E2E8F0" stroke-dasharray="4 5"/>
         <circle cx="${R}" cy="${R}" r="${(R-16)*0.33}" fill="none" stroke="#E2E8F0" stroke-dasharray="4 5"/>
@@ -2019,6 +2027,11 @@ Day2 12:00 outlet購物，預計逛一小時
         ${RADAR_CATS.filter(c => counts[c.key]).map(c => `<span style="display:inline-flex; align-items:center; gap:5px; font-size:calc(11px * var(--font-scale)); color:var(--text-secondary);"><span style="width:9px; height:9px; border-radius:50%; background:${c.color};"></span>${c.label}</span>`).join('')}
       </div>
       <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); text-align:center; margin-top:8px; line-height:1.6;">中心點是你，圓圈是直線距離（非步行路線）。點圖上的點可以跳到下方那一筆。</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:baseline; gap:8px; padding:4px 4px 10px;">
+      <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">附近 ${list.length} 筆</b>
+      <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">依直線距離由近到遠</span>
     </div>`;
 
     // 清單
@@ -2039,11 +2052,12 @@ Day2 12:00 outlet購物，預計逛一小時
             <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray);">往${x.dir}</div>
           </div>
         </div>
-        ${on ? `<div style="display:flex; gap:6px; margin-top:11px; flex-wrap:wrap;">
-          <a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:110px; text-align:center; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:9px 6px; font-size:calc(12px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map-location-dot"></i> Google 導航</a>
-          ${korea ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:110px; text-align:center; background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F; border-radius:10px; padding:9px 6px; font-size:calc(12px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map"></i> NAVER</a>` : ''}
-          <button onclick="event.stopPropagation(); radarAddToShop(${x.id})" style="flex:1; min-width:110px; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:9px 6px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-plus"></i> 加入店家清單</button>
-        </div>` : ''}
+        <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:96px; text-align:center; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map-location-dot"></i> Google</a>
+          ${korea ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:96px; text-align:center; background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F; border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map"></i> NAVER</a>` : ''}
+          <button onclick="event.stopPropagation(); radarAddToShop(${x.id})" style="flex:1; min-width:96px; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-plus"></i> 加入清單</button>
+          <button onclick="event.stopPropagation(); radarCopyName(${x.id})" style="flex:0 0 auto; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:8px 11px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;" title="複製店名給店員看"><i class="fa-solid fa-copy"></i></button>
+        </div>
       </div>`;
     }).join('');
     if (list.length > 60) html += `<div style="text-align:center; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:6px 0 2px;">只顯示最近的 60 筆，可縮小範圍或切換類別</div>`;
