@@ -121,6 +121,7 @@
   .final-res-card .krw { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
   /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
+  body.has-nowbar #main-app-container { padding-bottom: calc(184px + env(safe-area-inset-bottom, 0px)); }
   #now-bar { position: fixed; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; bottom: calc(104px + env(safe-area-inset-bottom, 0px)); background: rgba(255,255,255,0.97); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.14); padding: 10px 13px; z-index: 1400; cursor: pointer; }
   body.tablet-view #now-bar { max-width: 640px; }
   @media (min-width: 700px) { #now-bar { max-width: 640px; } }
@@ -441,6 +442,7 @@
     <!-- 行程大綱 -->
     <div class="card">
         <div class="section-title"><i class="fa-solid fa-route"></i> 行程快看</div>
+        <div id="trip-glance" style="display:none; margin:-6px 0 12px;"></div>
         <div class="day-pill-row" id="day-pill-row" style="display:flex; gap:8px; overflow-x:auto; padding-bottom: 6px; margin-bottom: 12px;"></div>
         <button class="ghost-btn" onclick="goToItinerary()">前往每日行程規劃 <i class="fa-solid fa-arrow-right"></i></button>
     </div>
@@ -1010,7 +1012,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 10:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 15:30</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -2839,20 +2841,8 @@ Day2 12:00 outlet購物，預計逛一小時
     const nowMin = now.getHours() * 60 + now.getMinutes();
     const clock = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 
-    if (!inTrip) {   // 還沒出發（或已結束）：顯示倒數與第一天的第一項
-      const p = tripSettings.startDate.split('-');
-      const left = Math.round((new Date(+p[0], +p[1]-1, +p[2]) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
-      if (left < 0) { bar.style.display = 'none'; return; }
-      const first = (itinData[ITIN_DAYS[0].key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''))[0];
-      bar.style.display = 'block';
-      bar.onclick = () => goToItinerary(ITIN_DAYS[0].key);
-      bar.innerHTML = `<div class="nb-row">
-        <div class="nb-l"><b>${left === 0 ? '今天' : left}</b><span>${left === 0 ? 'GO' : 'DAYS'}</span></div>
-        <div class="nb-m"><b>${left === 0 ? '今天出發，玩得開心！' : `距離出發還有 ${left} 天`}</b><span>${first ? `第一站 ${escapeHtml(first.time||'')} ${escapeHtml(first.title||'')}` : '還沒排第一天的行程'}</span></div>
-        <div class="nb-r"><b><i class="fa-solid fa-chevron-right"></i></b><span>行程</span></div>
-      </div>`;
-      return;
-    }
+    // 還沒出發就不用浮在底部擋版面，資訊改放在總覽的「行程快看」卡片裡
+    if (!inTrip) { bar.style.display = 'none'; document.body.classList.remove('has-nowbar'); return; }
 
     const items = (itinData[todayKey]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     if (!items.length) { bar.style.display = 'none'; return; }
@@ -2868,6 +2858,7 @@ Day2 12:00 outlet購物，預計逛一小時
       current = past.length ? past[past.length-1] : null;
     }
     bar.style.display = 'block';
+    document.body.classList.add('has-nowbar');
     bar.onclick = () => goToItinerary(todayKey);
     const midTitle = current ? `${current.done ? '✓ ' : ''}${escapeHtml(current.title||'')}` : '今天還沒開始的行程';
     const midSub = current
@@ -3194,6 +3185,48 @@ Day2 12:00 outlet購物，預計逛一小時
     const el = document.getElementById('korea-time'); if (el) el.innerText = `當地時間 ${String(kr.getHours()).padStart(2,'0')}:${String(kr.getMinutes()).padStart(2,'0')}`;
   }
 
+  // 行程快看上方的一行摘要：出發前顯示倒數與第一站，旅行中顯示今天的進度與下一站
+  function renderTripGlance() {
+    const el = document.getElementById('trip-glance'); if (!el) return;
+    if (!tripSettings || !tripSettings.startDate || !ITIN_DAYS.length) { el.style.display = 'none'; return; }
+    const todayKey = todayOrTripDate();
+    const inTrip = ITIN_DAYS.some(d => d.key === todayKey);
+    const now = new Date();
+    const box = (icon, big, unit, title, sub, onclick) => {
+      el.style.display = 'block';
+      el.innerHTML = `<div onclick="${onclick}" style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#F1F7FA 0%,#E7F2F6 100%); border:1px solid #CFE4EC; border-radius:16px; padding:12px 14px; cursor:pointer;">
+        <div style="flex:0 0 auto; text-align:center; min-width:46px;">
+          <div style="font-size:calc(21px * var(--font-scale)); font-weight:800; color:var(--navy); line-height:1.1;">${big}</div>
+          <div style="font-size:calc(9px * var(--font-scale)); color:var(--gray); letter-spacing:1px;">${unit}</div>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:calc(13.5px * var(--font-scale)); font-weight:800; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</div>
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--text-secondary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${sub}</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="flex-shrink:0; color:var(--gray); font-size:calc(12px * var(--font-scale));"></i>
+      </div>`;
+    };
+    if (!inTrip) {
+      const p = tripSettings.startDate.split('-');
+      const left = Math.round((new Date(+p[0], +p[1]-1, +p[2]) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+      if (left < 0) { el.style.display = 'none'; return; }
+      const first = (itinData[ITIN_DAYS[0].key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''))[0];
+      box('', left === 0 ? '今天' : left, left === 0 ? 'GO' : 'DAYS',
+        left === 0 ? '今天出發，玩得開心！' : `距離出發還有 ${left} 天`,
+        first ? `第一站 ${escapeHtml(first.time||'')} ${escapeHtml(first.title||'')}` : '還沒排第一天的行程',
+        `goToItinerary('${ITIN_DAYS[0].key}')`);
+      return;
+    }
+    const items = (itinData[todayKey]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const done = items.filter(x => x.done).length;
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const next = items.find(it => { const s = hhmmToMin(it.time); return s !== null && s > nowMin; });
+    const dayNo = ITIN_DAYS.findIndex(d => d.key === todayKey) + 1;
+    box('', 'D' + dayNo, 'TODAY', `今天完成 ${done} / ${items.length} 項`,
+      next ? `下一站 ${escapeHtml(next.time||'')} ${escapeHtml(next.title||'')}` : (items.length ? '今天的行程都走完了' : '今天沒有排行程'),
+      `goToItinerary('${todayKey}')`);
+  }
+
   function renderDayPills() {
     const row = document.getElementById('day-pill-row'); if (!row) return;
     row.innerHTML = ITIN_DAYS.map(d => `
@@ -3203,7 +3236,8 @@ Day2 12:00 outlet購物，預計逛一小時
     `).join('');
     updateDayPillStatuses();
   }
-  function updateDayPillStatuses() { ITIN_DAYS.forEach(d => { const el = document.getElementById(`dp-status-${d.key}`); if (el) el.innerText = (itinData[d.key]||[]).length > 0 ? `${(itinData[d.key]).length}項行程` : '未規劃'; }); renderHeroMetaRow(); }
+  function updateDayPillStatuses() {
+    renderTripGlance(); ITIN_DAYS.forEach(d => { const el = document.getElementById(`dp-status-${d.key}`); if (el) el.innerText = (itinData[d.key]||[]).length > 0 ? `${(itinData[d.key]).length}項行程` : '未規劃'; }); renderHeroMetaRow(); }
   function goToItinerary(dayKey) { showP('p-itinerary', document.querySelectorAll('.nav-btn')[2]); if (dayKey) selectDay(dayKey); }
 
   // ===== 準備頁分頁切換（憑證資訊／打包清單） =====
@@ -4433,6 +4467,64 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     if (cc) p2.set('countrycodes', cc);
     return pick(await nominatim(p2));
   }
+  // 把行程標題還原成可以查詢的地點名稱。
+  // 「出門前往中洞站」→「中洞站」；「搭乘交通工具前往西面站」→「西面站」；
+  // 「吃飯名單建議」「行前最後檢查」這種根本不是地點的就跳過
+  const NON_PLACE_RE = /(建議|名單|檢查|整理|打包|休息|自由活動|自由行動|集合|確認|提醒|注意|備註|預約|報到|睡覺|起床|出發準備|兌換|儲值|入境|出境|登機|下飛機|上飛機|領行李|托運|退稅|換錢|買票|排隊)/;
+  const VERB_PREFIX_RE = /^(出門|一早|早上|中午|下午|晚上)?\s*(搭乘?交通工具)?\s*(前往|去|到|抵達|搭車前往|步行前往|移動到|轉乘到|搭機到)\s*/;
+  const TAIL_RE = /\s*(排隊|逛逛|逛街|散步|吃飯|用餐|晚餐|午餐|早餐|購物|採買|拍照|參觀|體驗|泡湯|check\s*in|checkin|入住|退房|並儲值|儲值)\s*$/i;
+  function cleanPlaceQuery(it) {
+    const addr = (it.address||'').trim();
+    if (addr) return { q: addr, how: '地址' };
+    let base = (it.place||'').trim();
+    let how = '地點欄位';
+    if (!base) { base = (it.title||'').trim(); how = '行程名稱'; }
+    if (!base) return { q: '', how: '' };
+    // 行程名稱才需要清理動詞；地點欄位通常已經是店名
+    if (how === '行程名稱') {
+      if (NON_PLACE_RE.test(base) && !/站|機場|飯店|酒店|公園|市場|寺|宮|塔|館|城|海|山|百貨|購物中心/.test(base)) return { q: '', how: 'skip' };
+      base = base.replace(VERB_PREFIX_RE, '').replace(TAIL_RE, '').trim();
+      base = base.replace(/^[「『（(]|[」』）)]$/g, '').trim();
+    }
+    if (!base) return { q: '', how: 'skip' };
+    // 店家清單裡有同名的店，直接用它的地址，最準
+    const shop = (foodListData||[]).find(s => s.name && (base.includes(s.name) || s.name.includes(base)));
+    if (shop && ((shop.location||'').trim())) return { q: shop.location.trim(), how: '店家清單地址' };
+    // 住宿類：對應到憑證裡的飯店地址
+    if (/飯店|酒店|hotel|住宿|民宿/i.test(base)) {
+      const h = (travelDocs.hotels||[]).find(x => (x.address||'').trim());
+      if (h) return { q: h.address.trim(), how: '住宿憑證地址' };
+    }
+    return { q: base, how };
+  }
+  // 有 Gemini 金鑰時，先讓 AI 一次把整天的地點名稱整理出來（含當地語言），命中率高很多
+  async function aiResolvePlaces(items, city) {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey || !items.length) return null;
+    const country = (tripSettings && tripSettings.country) || '';
+    const lines = items.map((it, i) => `${i}. 標題：${it.title||''}｜地點欄位：${it.place||''}｜地址：${it.address||''}｜交通：${it.transport||''}｜備註：${(it.notes||'').slice(0,40)}`).join('\n');
+    const prompt = `你是地圖搜尋助理。使用者的旅遊行程在「${country} ${city}」。
+下面每一行是一個行程項目，標題常常是「出門前往中洞站」「搭乘交通工具前往西面站」這種句子，請你還原成「可以直接丟進地圖搜尋的地點名稱」。
+
+規則：
+1. 盡量輸出當地語言的正式名稱（韓國用韓文、日本用日文），例如「中洞站」→「중동역」、「西面站」→「서면역」、「金海機場」→「김해국제공항」。
+2. 地點名稱後面請加上城市，例如「서면역 부산」。
+3. 如果這一項根本不是一個實體地點（例如「吃飯名單建議」「行前最後檢查」「兌換實體Busan Pass並儲值」只是待辦事項），請把 skip 設成 true。
+4. 如果你很確定該地點的經緯度，可以一併填 lat / lng（小數點後 5 位）；不確定就不要填。
+5. 絕對不要編造不存在的地點。
+
+行程：
+${lines}
+
+只回傳 JSON 陣列，不要有其他文字：
+[{"i":行程編號數字,"query":"可搜尋的地點名稱 城市","lat":緯度或null,"lng":經度或null,"skip":false}]`;
+    try {
+      const text = await callGeminiVision(prompt, null, null, 'locate');
+      const arr = JSON.parse(extractJsonBlock(text));
+      return Array.isArray(arr) ? arr : null;
+    } catch(e) { console.error('AI 地點整理失敗:', e); return null; }
+  }
+
   async function locateDaySpots() {
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     const todo = items.filter(it => !itemCoords(it) && [it.place, it.address, it.title].some(v => (v||'').trim()));
@@ -4443,22 +4535,44 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     const local = localCityCoords(city);
     const center = local ? { lat: local.lat, lon: local.lon } : { lat: info.lat, lon: info.lon };
     const cc = COUNTRY_CC[(tripSettings && tripSettings.country)] || '';
-    let okCount = 0; const failed = [];
-    for (let i = 0; i < todo.length; i++) {
-      const it = todo[i];
-      if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 定位中 ${i+1}/${todo.length}`;
-      // 地址最準；其次店家名；標題（例如「出門前往中洞站」）最後才用，而且一定補上城市名
-      const base = [it.address, it.place, it.title].filter(v => (v||'').trim())[0];
-      const q = (it.address && it.address.trim()) ? it.address.trim() : `${base} ${city}`.trim();
-      const r = await geocodeOne(q, center, cc, 180);
-      if (r) { it.coords = `${r.lat.toFixed(6)},${r.lon.toFixed(6)}`; okCount++; }
-      else failed.push(it.title || base);
-      if (i < todo.length - 1) await sleep(1100);
+
+    // 第一步：有 AI 金鑰就先讓它把每一項還原成真正的地點名稱（並可能直接給座標）
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 整理地點中...`;
+    const aiList = await aiResolvePlaces(todo, city);
+    const plan = todo.map((it, i) => {
+      const local2 = cleanPlaceQuery(it);
+      const ai = aiList ? aiList.find(x => Number(x.i) === i) : null;
+      if (ai && ai.skip) return { it, skip: true, reason: '不是地點' };
+      if (ai && ai.lat && ai.lng) return { it, coords: { lat: Number(ai.lat), lon: Number(ai.lng) }, q: ai.query || local2.q, how: 'AI' };
+      if (ai && (ai.query||'').trim()) return { it, q: ai.query.trim(), how: 'AI 整理' };
+      if (!local2.q || local2.how === 'skip') return { it, skip: true, reason: '不是地點' };
+      return { it, q: local2.q + (local2.how === '地址' ? '' : ' ' + city), how: local2.how };
+    });
+
+    let okCount = 0; const failed = []; const skipped = [];
+    const needLookup = plan.filter(x => !x.skip && !x.coords);
+    let n = 0;
+    for (const x of plan) {
+      if (x.skip) { skipped.push(x.it.title || ''); continue; }
+      if (x.coords) {   // AI 直接給座標，一樣要通過距離檢查
+        if (!isNaN(x.coords.lat) && !isNaN(x.coords.lon) && haversineKm(center, x.coords) <= 180) {
+          x.it.coords = `${x.coords.lat.toFixed(6)},${x.coords.lon.toFixed(6)}`; okCount++; continue;
+        }
+      }
+      n++;
+      if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 定位中 ${n}/${needLookup.length}`;
+      const r = await geocodeOne(x.q, center, cc, 180);
+      if (r) { x.it.coords = `${r.lat.toFixed(6)},${r.lon.toFixed(6)}`; okCount++; }
+      else failed.push((x.it.title || x.q) + `（查詢：${x.q}）`);
+      if (n < needLookup.length) await sleep(1100);
     }
     if (btn) btn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> 本日地點定位`;
     saveItin(); renderDayContent();
-    const tail = failed.length ? `\n\n查不到的 ${failed.length} 項：\n・${failed.slice(0,6).join('\n・')}${failed.length>6?'\n…':''}\n\n這些多半是「出門前往…」這種描述性標題。到該項目的編輯裡，把「地點／店家」或「地址」填具體一點（例如「海雲台站」「釜山廣域市海雲台區…」）再定位一次就會成功。` : '';
-    alert(`已定位 ${okCount} / ${todo.length} 個地點。${tail}`);
+    let msg = `已定位 ${okCount} 個地點。`;
+    if (skipped.length) msg += `\n\n略過 ${skipped.length} 項（不是實體地點，例如待辦或提醒）：\n・${skipped.slice(0,4).join('\n・')}${skipped.length>4?'\n…':''}`;
+    if (failed.length) msg += `\n\n查不到 ${failed.length} 項：\n・${failed.slice(0,4).join('\n・')}${failed.length>4?'\n…':''}\n\n可以到該項目編輯裡的「地點／店家」填店名、或「地址」填完整地址，再定位一次。`;
+    if (!aiList) msg += `\n\n提示：在設定裡填入 Gemini API 金鑰後，系統會先用 AI 把「出門前往中洞站」這類標題自動還原成「중동역 부산」再查，命中率會高很多。`;
+    alert(msg);
   }
 
   // 逐時天氣條：只顯示有行程的時段（早上 7 點到晚上 10 點），並在高降雨機率時提醒
