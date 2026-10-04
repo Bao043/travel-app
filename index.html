@@ -1012,7 +1012,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 15:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-04 17:00</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4233,6 +4233,11 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     return isNaN(d.getTime()) ? -1 : d.getDay();
   }
 
+  // 判斷這個行程項目本身是不是「移動」：是的話，通勤時間＝這段的長度，不是抵達期限
+  function isTransitItem(it) {
+    if (it.category === '交通') return true;
+    return /^(出門|一早)?\s*(搭乘?交通工具)?\s*(前往|搭車|搭機|搭船|移動|轉乘|步行前往|開車前往|騎車前往)/.test((it.title||'').trim());
+  }
   // ===== 行程衝突檢查：營業時間、公休日、趕不趕得上 =====
   function itinIssues(items, dayKey) {
     const wd = dayKeyWeekday(dayKey);
@@ -4253,25 +4258,37 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
         else if (start >= oh.close) add(it.id, 'bad', `已打烊：${it.hours}，你排 ${it.time}`);
         else if (oh.close - start < 30) add(it.id, 'warn', `只剩 ${oh.close - start} 分鐘就打烊（${it.hours}）`);
       }
-      // 3) 上一站結束 + 交通時間 是否趕得上
+      // 3) 交通時間：要先分清楚「這一項本身就是移動」還是「要移動過去的目的地」
+      const move = parseDurationMin(it.transportTime);
+      const dur = (start !== null && endM !== null && endM > start) ? endM - start : null;
+      if (isTransitItem(it)) {
+        // 這一項就是在移動（例如「前往桃園機場 13:20–14:20・預估1小時」）：
+        // 通勤時間是這段的長度，只要排的時間夠長就沒問題
+        if (move > 0 && dur !== null && dur < move - 2) {
+          add(it.id, 'warn', `交通時間不夠：預估 ${move} 分，只排了 ${dur} 分`);
+        }
+      } else if (i > 0 && start !== null && move > 0) {
+        // 這一項是目的地：通勤時間是「從上一項移動過來要多久」
+        const prev = items[i-1];
+        const prevEnd = hhmmToMin(prev.endTime) !== null ? hhmmToMin(prev.endTime) : hhmmToMin(prev.time);
+        if (prevEnd !== null) {
+          const need = prevEnd + move;
+          if (need - start >= 10) add(it.id, 'warn', `可能趕不上：路程 ${move} 分，最快 ${minToHHMM(need)} 到`);
+        }
+      }
+      // 4) 單純的時間重疊（跟交通無關）
       if (i > 0 && start !== null) {
         const prev = items[i-1];
         const prevEnd = hhmmToMin(prev.endTime) !== null ? hhmmToMin(prev.endTime) : hhmmToMin(prev.time);
-        const move = parseDurationMin(it.transportTime);
-        if (prevEnd !== null && move > 0 && prevEnd + move > start) {
-          const need = prevEnd + move;
-          add(it.id, 'warn', `銜接太緊：上一項「${prev.title||''}」${minToHHMM(prevEnd)} 結束，而這一項填的通勤時間是 ${move} 分鐘，最快 ${minToHHMM(need)} 才到得了，但開始時間排在 ${it.time}`);
-        } else if (prevEnd !== null && start < prevEnd) {
-          add(it.id, 'warn', `時間重疊：上一項「${prev.title||''}」排到 ${minToHHMM(prevEnd)}，這一項卻從 ${it.time} 開始`);
-        }
+        if (prevEnd !== null && start < prevEnd - 2) add(it.id, 'warn', `時間重疊：上一項排到 ${minToHHMM(prevEnd)}`);
       }
     });
     return out;
   }
   function issueHtml(list) {
     if (!list || !list.length) return '';
-    return list.map(x => `<div style="display:flex; gap:7px; margin-top:7px; padding:8px 10px; border-radius:11px; font-size:calc(11.5px * var(--font-scale)); line-height:1.6; background:${x.level==='bad'?'var(--warn-bg)':'#FFFBEB'}; border:1px solid ${x.level==='bad'?'var(--warn-border)':'#FDE68A'}; color:${x.level==='bad'?'#943126':'#92400E'};">
-      <i class="fa-solid ${x.level==='bad'?'fa-circle-exclamation':'fa-triangle-exclamation'}" style="margin-top:2px;"></i><span>${escapeHtml(x.text)}</span></div>`).join('');
+    return `<div style="margin-top:7px; display:flex; flex-direction:column; gap:5px;">` + list.map(x => `<div style="display:flex; align-items:flex-start; gap:6px; padding:6px 9px; border-radius:9px; font-size:calc(11px * var(--font-scale)); line-height:1.5; word-break:break-word; background:${x.level==='bad'?'var(--warn-bg)':'#FFFBEB'}; border:1px solid ${x.level==='bad'?'var(--warn-border)':'#FDE68A'}; color:${x.level==='bad'?'#943126':'#92400E'};">
+      <i class="fa-solid ${x.level==='bad'?'fa-circle-exclamation':'fa-triangle-exclamation'}" style="margin-top:2.5px; flex-shrink:0; font-size:calc(10px * var(--font-scale));"></i><span style="flex:1; min-width:0;">${escapeHtml(x.text)}</span></div>`).join('') + `</div>`;
   }
 
   function renderDayTabs() {
