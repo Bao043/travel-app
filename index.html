@@ -1038,7 +1038,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-05 12:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-05 15:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1867,7 +1867,8 @@ Day2 12:00 outlet購物，預計逛一小時
     { key:'spot', label:'景點',   icon:'📸', color:'#28C76F' },
     { key:'shop', label:'購物',   icon:'🛍️', color:'#F2994A' }
   ];
-  let radarPos = null, radarRaw = [], radarRadius = 800, radarCat = 'all', radarSel = null, radarBusy = false, radarChartOpen = true;
+  let radarPos = null, radarRaw = [], radarRadius = 800, radarCat = 'all', radarSel = null, radarBusy = false, radarChartOpen = true, radarOpenOnly = false;
+  function toggleRadarOpenOnly() { radarOpenOnly = !radarOpenOnly; radarSel = null; renderRadar(); }
   function toggleRadarChart() { radarChartOpen = !radarChartOpen; renderRadar(); }
   async function radarCopyName(id) {
     const x = radarRaw.find(y => y.id === id); if (!x) return;
@@ -1898,6 +1899,61 @@ Day2 12:00 outlet購物，預計逛一小時
     if (['convenience','supermarket'].includes(s)) return 'conv';
     if (s) return 'shop';
     return 'shop';
+  }
+  // OSM 的 cuisine/shop 標籤是英文代碼，轉成看得懂的中文
+  const CUISINE_ZH = {
+    korean:'韓式', japanese:'日式', chinese:'中式', taiwanese:'台式', american:'美式', italian:'義式',
+    french:'法式', thai:'泰式', vietnamese:'越南', indian:'印度', mexican:'墨西哥', western:'西式',
+    asian:'亞洲料理', barbecue:'燒肉烤肉', bbq:'燒肉烤肉', chicken:'炸雞', pizza:'披薩', burger:'漢堡',
+    sandwich:'三明治', noodle:'麵食', ramen:'拉麵', udon:'烏龍麵', soba:'蕎麥麵', sushi:'壽司',
+    seafood:'海鮮', steak_house:'牛排', hotpot:'火鍋', dumpling:'水餃', dumplings:'水餃',
+    coffee_shop:'咖啡', cafe:'咖啡', dessert:'甜點', ice_cream:'冰品', bubble_tea:'手搖飲',
+    bakery:'麵包', cake:'蛋糕', donut:'甜甜圈', breakfast:'早餐', regional:'在地料理',
+    fried_food:'炸物', friture:'炸物', kebab:'串燒', curry:'咖哩', vegetarian:'素食', vegan:'純素',
+    convenience:'便利商店', supermarket:'超市', cosmetics:'美妝', chemist:'藥妝', clothes:'服飾',
+    shoes:'鞋', department_store:'百貨', mall:'購物中心', variety_store:'生活雜貨', gift:'禮品',
+    electronics:'3C', books:'書店', jewelry:'飾品', toys:'玩具', sports:'運動用品', bag:'包包',
+    attraction:'景點', museum:'博物館', viewpoint:'觀景點', gallery:'藝廊', artwork:'公共藝術',
+    theme_park:'主題樂園', zoo:'動物園', aquarium:'水族館'
+  };
+  function cuisineText(t) {
+    const raw = t.cuisine || t.shop || t.tourism || t.amenity || '';
+    if (!raw) return '';
+    return String(raw).split(';').slice(0, 2)
+      .map(x => CUISINE_ZH[x.trim()] || x.trim().replace(/_/g, ' ')).join('／');
+  }
+  // 解析 OSM 的 opening_hours，判斷「現在是否營業中」。
+  // 支援 24/7、Mo-Fr 09:00-18:00、Mo,We 10:00-14:00,17:00-21:00 這些常見寫法；看不懂就回 null（不顯示）
+  function isOpenNow(oh) {
+    const s = String(oh || '').trim(); if (!s) return null;
+    if (/24\/7/.test(s)) return true;
+    const DAY = { Mo:1, Tu:2, We:3, Th:4, Fr:5, Sa:6, Su:0 };
+    const now = new Date(), wd = now.getDay(), mins = now.getHours() * 60 + now.getMinutes();
+    let known = false, open = false;
+    s.split(';').forEach(rule => {
+      const r = rule.trim(); if (!r || /ph/i.test(r.split(' ')[0]) ) return;
+      const m = r.match(/^((?:Mo|Tu|We|Th|Fr|Sa|Su)(?:\s*[-,]\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))*)?\s*(.*)$/);
+      if (!m) return;
+      const daysPart = (m[1] || 'Mo-Su').trim(), timePart = (m[2] || '').trim();
+      const days = [];
+      daysPart.split(',').forEach(seg => {
+        const rg = seg.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s*-\s*(Mo|Tu|We|Th|Fr|Sa|Su)$/);
+        if (rg) { let a = DAY[rg[1]], b = DAY[rg[2]]; for (let i = 0; i < 7; i++) { const d = (a + i) % 7; days.push(d); if (d === b) break; } }
+        else if (DAY[seg.trim()] !== undefined) days.push(DAY[seg.trim()]);
+      });
+      if (!days.includes(wd)) return;
+      if (/^off|closed/i.test(timePart)) { known = true; return; }
+      const ranges = timePart.match(/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/g);
+      if (!ranges) return;
+      known = true;
+      ranges.forEach(rr => {
+        const p = rr.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+        const a = +p[1] * 60 + +p[2]; let b = +p[3] * 60 + +p[4];
+        if (b <= a) b += 1440;   // 跨午夜
+        if ((mins >= a && mins <= b) || (mins + 1440 >= a && mins + 1440 <= b)) open = true;
+      });
+    });
+    return known ? open : null;
   }
   function isInKorea(p) { return p && p.lat > 33 && p.lat < 39.6 && p.lon > 124 && p.lon < 132; }
 
@@ -1945,15 +2001,32 @@ Day2 12:00 outlet購物，預計逛一小時
       const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q) });
       const data = await res.json();
       radarRaw = (data.elements || []).filter(e => e.tags && e.tags.name).map(e => {
-        const p = { lat: e.lat, lon: e.lon };
+        const p = { lat: e.lat, lon: e.lon }, t = e.tags;
         return {
-          id: e.id, name: e.tags.name,
-          nameEn: e.tags['name:en'] || '', nameZh: e.tags['name:zh'] || e.tags['name:zh-Hant'] || '',
-          cat: classifyPoi(e.tags),
+          id: e.id, name: t.name,
+          nameEn: t['name:en'] || '', nameZh: t['name:zh'] || t['name:zh-Hant'] || '',
+          cat: classifyPoi(t),
           dist: Math.round(radarDistKm(radarPos, p) * 1000),
           dir: bearingText(radarBearing(radarPos, p)),
           lat: e.lat, lon: e.lon,
-          detail: e.tags.cuisine || e.tags.shop || e.tags.tourism || e.tags.amenity || ''
+          kind: cuisineText(t),                       // 賣什麼、吃什麼
+          brand: t.brand || t.operator || '',
+          hours: t.opening_hours || '',
+          open: isOpenNow(t.opening_hours),           // true / false / null(無資料)
+          phone: t.phone || t['contact:phone'] || '',
+          web: t.website || t['contact:website'] || '',
+          addr: [t['addr:city'], t['addr:district'], t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' '),
+          level: t.level || '',
+          price: t.price_range || t['price:range'] || '',
+          veg: (t['diet:vegetarian'] === 'only' || t['diet:vegan'] === 'only') ? '純素'
+             : (t['diet:vegetarian'] === 'yes' || t['diet:vegan'] === 'yes') ? '有素食' : '',
+          takeaway: t.takeaway === 'yes' || t.takeaway === 'only',
+          delivery: t.delivery === 'yes',
+          seats: t.outdoor_seating === 'yes' ? '有戶外座位' : '',
+          wifi: (t.internet_access === 'wlan' || t.internet_access === 'yes') ? 'Wi-Fi' : '',
+          card: (t['payment:credit_cards'] === 'yes' || t['payment:cards'] === 'yes') ? '可刷卡' : '',
+          wheel: t.wheelchair === 'yes' ? '無障礙' : '',
+          ac: t.air_conditioning === 'yes' ? '有冷氣' : ''
         };
       }).sort((a, b) => a.dist - b.dist);
       radarBusy = false;
@@ -1969,7 +2042,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function renderRadar() {
     const body = document.getElementById('radar-body'); if (!body || !radarPos) return;
-    const list = radarRaw.filter(x => radarCat === 'all' || x.cat === radarCat);
+    const list = radarRaw.filter(x => (radarCat === 'all' || x.cat === radarCat) && (!radarOpenOnly || x.open === true));
     const counts = {}; radarRaw.forEach(x => { counts[x.cat] = (counts[x.cat] || 0) + 1; });
     const korea = isInKorea(radarPos) || isKoreaTrip();
 
@@ -1978,6 +2051,11 @@ Day2 12:00 outlet購物，預計逛一小時
       <div class="input-label" style="margin-bottom:8px;">搜尋範圍</div>
       <div style="display:flex; gap:7px; margin-bottom:12px;">
         ${[300, 800, 1500, 3000].map(r => `<button onclick="setRadarRadius(${r})" style="flex:1; padding:9px 0; border:none; border-radius:11px; font-weight:800; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; font-family:inherit; background:${radarRadius===r?'var(--navy)':'#F1F5F9'}; color:${radarRadius===r?'#fff':'var(--navy)'};">${r < 1000 ? r + 'm' : (r/1000) + 'km'}</button>`).join('')}
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px; padding:9px 11px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; cursor:pointer;" onclick="toggleRadarOpenOnly()">
+        <i class="fa-solid ${radarOpenOnly?'fa-toggle-on':'fa-toggle-off'}" style="font-size:calc(18px * var(--font-scale)); color:${radarOpenOnly?'var(--teal)':'var(--gray)'};"></i>
+        <span style="flex:1; min-width:0; font-size:calc(12.5px * var(--font-scale)); font-weight:700; color:var(--navy);">只看現在營業中</span>
+        <span style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">${radarRaw.filter(z=>z.open===true).length} 間</span>
       </div>
       <div class="input-label" style="margin-bottom:8px;">類別</div>
       <div style="display:flex; gap:7px; overflow-x:auto; padding-bottom:4px;">
@@ -2039,24 +2117,50 @@ Day2 12:00 outlet購物，預計逛一小時
       const c = RADAR_CATS.find(c2 => c2.key === x.cat) || { icon:'📍', color:'#98A2B3', label:'其他' };
       const on = radarSel === x.id;
       const q = encodeURIComponent(x.name);
+      const chip = (t, bg, bd, fg) => `<span style="display:inline-block; background:${bg}; border:1px solid ${bd}; color:${fg}; border-radius:7px; padding:1px 7px; font-size:calc(10.5px * var(--font-scale)); font-weight:800;">${t}</span>`;
+      const chips = [
+        x.open === true ? chip('營業中', '#ECFDF5', '#A7F3D0', '#065F46') : '',
+        x.open === false ? chip('已打烊', '#FFF1F0', '#FCA5A5', '#C5221F') : '',
+        x.veg ? chip('🌱 ' + x.veg, '#ECFDF5', '#A7F3D0', '#15803D') : '',
+        x.takeaway ? chip('可外帶', '#F5F3FF', '#DDD6FE', '#5B21B6') : '',
+        x.card ? chip('可刷卡', '#F1F5F9', 'var(--line)', 'var(--text-secondary)') : '',
+        x.wifi ? chip('Wi-Fi', '#F1F5F9', 'var(--line)', 'var(--text-secondary)') : '',
+        x.level ? chip(x.level + 'F', '#F1F5F9', 'var(--line)', 'var(--text-secondary)') : ''
+      ].filter(Boolean).join(' ');
+      const row = (icon, label, val) => val ? `<div style="display:flex; gap:8px; font-size:calc(11.5px * var(--font-scale)); padding:3px 0;"><i class="fa-solid ${icon}" style="width:14px; text-align:center; color:var(--gold); margin-top:2px;"></i><span style="flex:1; min-width:0; color:var(--text-secondary); word-break:break-word;">${escapeHtml(val)}</span></div>` : '';
+      const btn = 'border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; text-decoration:none; text-align:center; cursor:pointer; flex:1; min-width:84px;';
       return `<div id="radar-item-${x.id}" class="timeline-card" style="margin-bottom:9px; padding:13px; ${on?'border:2px solid var(--teal);':''}" onclick="pickRadar(${x.id})">
         <div style="display:flex; align-items:flex-start; gap:11px;">
           <div style="flex:0 0 auto; width:34px; height:34px; border-radius:11px; background:${c.color}22; display:flex; align-items:center; justify-content:center; font-size:calc(16px * var(--font-scale));">${c.icon}</div>
           <div style="flex:1; min-width:0;">
             <div style="font-weight:700; font-size:calc(14px * var(--font-scale)); color:var(--navy);">${escapeHtml(x.name)}</div>
             ${(x.nameZh || x.nameEn) ? `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:1px;">${escapeHtml(x.nameZh || x.nameEn)}</div>` : ''}
-            <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--text-secondary); margin-top:3px;">${c.label}${x.detail?' · '+escapeHtml(String(x.detail).slice(0,18)):''}</div>
+            <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--text-secondary); margin-top:3px;">${c.label}${x.kind?' · '+escapeHtml(x.kind):''}${x.brand && x.brand !== x.name ? ' · '+escapeHtml(x.brand) : ''}</div>
+            ${chips ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;">${chips}</div>` : ''}
           </div>
           <div style="flex:0 0 auto; text-align:right;">
             <div style="font-size:calc(15px * var(--font-scale)); font-weight:800; color:var(--teal);">${x.dist < 1000 ? x.dist + 'm' : (x.dist/1000).toFixed(1) + 'km'}</div>
             <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray);">往${x.dir}</div>
+            <div style="font-size:calc(10px * var(--font-scale)); color:var(--gray); margin-top:3px;">步行約 ${Math.max(1, Math.round(x.dist / 75))} 分</div>
           </div>
         </div>
+
+        ${on ? `<div style="margin-top:11px; padding-top:11px; border-top:1px dashed var(--line);">
+          ${row('fa-clock', '', x.hours || '')}
+          ${row('fa-phone', '', x.phone || '')}
+          ${row('fa-location-dot', '', x.addr || '')}
+          ${row('fa-globe', '', x.web || '')}
+          ${[x.seats, x.wheel, x.ac, x.delivery?'可外送':'' , x.price?('價位 '+x.price):''].filter(Boolean).length
+            ? row('fa-circle-info', '', [x.seats, x.wheel, x.ac, x.delivery?'可外送':'', x.price?('價位 '+x.price):''].filter(Boolean).join(' · ')) : ''}
+          ${(!x.hours && !x.phone && !x.addr && !x.web) ? `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); line-height:1.7;">OpenStreetMap 上這家店只有登錄名稱與位置。評價、價位、菜單可以按下面的「評價」直接看 Google。</div>` : ''}
+        </div>` : ''}
+
         <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
-          <a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:96px; text-align:center; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map-location-dot"></i> Google</a>
-          ${korea ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" onclick="event.stopPropagation()" style="flex:1; min-width:96px; text-align:center; background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F; border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; text-decoration:none;"><i class="fa-solid fa-map"></i> NAVER</a>` : ''}
-          <button onclick="event.stopPropagation(); radarAddToShop(${x.id})" style="flex:1; min-width:96px; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:8px 6px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-plus"></i> 加入清單</button>
-          <button onclick="event.stopPropagation(); radarCopyName(${x.id})" style="flex:0 0 auto; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:8px 11px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;" title="複製店名給店員看"><i class="fa-solid fa-copy"></i></button>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" onclick="event.stopPropagation()" style="${btn} background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF;"><i class="fa-solid fa-diamond-turn-right"></i> 導航</a>
+          <a href="https://www.google.com/maps/search/${q}/@${x.lat},${x.lon},18z" target="_blank" onclick="event.stopPropagation()" style="${btn} background:#FFFBEB; border:1px solid #FDE68A; color:#92400E;"><i class="fa-solid fa-star"></i> 評價</a>
+          ${korea ? `<a href="https://map.naver.com/p/search/${q}" target="_blank" onclick="event.stopPropagation()" style="${btn} background:#ECFDF3; border:1px solid #A7E8C6; color:#03701F;"><i class="fa-solid fa-map"></i> NAVER</a>` : ''}
+          <button onclick="event.stopPropagation(); radarAddToShop(${x.id})" style="${btn} background:#F1F5F9; border:1px solid var(--line); color:var(--navy);"><i class="fa-solid fa-plus"></i> 清單</button>
+          <button onclick="event.stopPropagation(); radarCopyName(${x.id})" style="background:#F1F5F9; border:1px solid var(--line); color:var(--navy); border-radius:10px; padding:8px 11px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; flex:0 0 auto;" title="複製店名"><i class="fa-solid fa-copy"></i></button>
         </div>
       </div>`;
     }).join('');
@@ -2071,9 +2175,10 @@ Day2 12:00 outlet購物，預計逛一小時
     if ((foodListData||[]).some(s => s.name === x.name)) { alert('店家清單裡已經有這一家了。'); return; }
     foodListData.push({
       id: foodListItemSeq++, name: x.name, type: typeMap[x.cat] || '其他',
-      area: '', location: `${x.lat.toFixed(6)},${x.lon.toFixed(6)}`, phone: '',
-      hours: '', closed: '', budget: 0,
-      note: `附近雷達加入${x.nameEn?'（'+x.nameEn+'）':''}`, tried: false
+      area: '', location: x.addr || `${x.lat.toFixed(6)},${x.lon.toFixed(6)}`, phone: x.phone || '',
+      hours: x.hours || '', closed: '', budget: 0,
+      note: [x.kind?('類型 '+x.kind):'', x.veg, x.takeaway?'可外帶':'', x.addr].filter(Boolean).join('　') || `附近雷達加入${x.nameEn?'（'+x.nameEn+'）':''}`,
+      tried: false
     });
     saveFoodList(); renderFoodList();
     alert(`已把「${x.name}」加入店家清單。`);
