@@ -134,6 +134,18 @@
   .nb-r b { display: block; font-size: calc(13px * var(--font-scale)); color: var(--teal); font-weight: 800; }
   .nb-r span { font-size: calc(9px * var(--font-scale)); color: var(--gray); }
 
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* 進房間後主畫面淡入上滑，比直接「啪」一下出現更像有在載入 */
+  @keyframes appIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .app-enter { animation: appIn .34s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+  /* 分頁切換的淡入：純 CSS，不增加計算量 */
+  @keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .panel.active { animation: panelIn .22s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    .app-enter, .panel.active { animation: none !important; }
+    #app-loading [style*="animation"] { animation: none !important; }
+  }
+
   .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
     #main-app-container {
     min-height: 100vh;
@@ -880,6 +892,34 @@ Day2 12:00 outlet購物，預計逛一小時
   </div>
 </div>
 
+<!-- 載入中遮罩：進房間要讀本機＋雲端，沒有提示的話看起來像當掉 -->
+<div id="app-loading" style="display:none; position:fixed; inset:0; z-index:11000; background:linear-gradient(140deg,#16283f 0%,#1d3557 45%,#457b9d 100%); flex-direction:column; align-items:center; justify-content:center; color:#fff;">
+  <div style="width:62px; height:62px; position:relative; margin-bottom:20px;">
+    <div style="position:absolute; inset:0; border:3px solid rgba(255,255,255,0.18); border-top-color:#fff; border-radius:50%; animation:spin 0.85s linear infinite;"></div>
+    <i class="fa-solid fa-plane" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:calc(21px * var(--font-scale)); color:rgba(255,255,255,0.92);"></i>
+  </div>
+  <div id="app-loading-title" style="font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:.5px;">載入中</div>
+  <div id="app-loading-step" style="font-size:calc(12.5px * var(--font-scale)); opacity:.78; margin-top:6px;">正在準備資料…</div>
+  <div style="width:min(220px,62vw); height:4px; background:rgba(255,255,255,0.18); border-radius:99px; margin-top:18px; overflow:hidden;">
+    <div id="app-loading-bar" style="height:100%; width:8%; background:#fff; border-radius:99px; transition:width .28s ease;"></div>
+  </div>
+</div>
+
+<!-- 圖片放大檢視：點任何縮圖都會開這個，可左右切換、可下載 -->
+<div id="lightbox" style="display:none; position:fixed; inset:0; z-index:12000; background:rgba(10,14,20,0.94); flex-direction:column; touch-action:none;" onclick="closeLightbox()">
+  <div style="flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:max(14px, calc(8px + env(safe-area-inset-top,0px))) 16px 10px; color:#fff;">
+    <span id="lb-count" style="flex:1; min-width:0; font-size:calc(13px * var(--font-scale)); font-weight:700; opacity:.85;"></span>
+    <button onclick="event.stopPropagation(); lbDownload()" title="儲存圖片" style="flex-shrink:0; background:rgba(255,255,255,0.16); border:none; width:38px; height:38px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(14px * var(--font-scale));"><i class="fa-solid fa-download"></i></button>
+    <button onclick="event.stopPropagation(); closeLightbox()" style="flex-shrink:0; background:rgba(255,255,255,0.16); border:none; width:38px; height:38px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(15px * var(--font-scale));"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:0 10px; position:relative;">
+    <button id="lb-prev" onclick="event.stopPropagation(); lbStep(-1)" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.14); border:none; width:42px; height:42px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(16px * var(--font-scale)); z-index:2;"><i class="fa-solid fa-chevron-left"></i></button>
+    <img id="lb-img" src="" alt="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:10px;" onclick="event.stopPropagation()">
+    <button id="lb-next" onclick="event.stopPropagation(); lbStep(1)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.14); border:none; width:42px; height:42px; border-radius:50%; color:#fff; cursor:pointer; font-size:calc(16px * var(--font-scale)); z-index:2;"><i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+  <div id="lb-strip" style="flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));" onclick="event.stopPropagation()"></div>
+</div>
+
 <!-- 自製密碼鍵盤：取代瀏覽器原生 prompt，避免叫出系統鍵盤、也讓視覺跟 App 一致 -->
 <!-- 遮罩的 padding 要歸零、面板要限制高度，否則在螢幕較矮或平板上底部整排按鍵會被切掉 -->
 <div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end; padding:0;">
@@ -1009,7 +1049,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-05 16:10</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-14 22:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1940,6 +1980,7 @@ Day2 12:00 outlet購物，預計逛一小時
   function closeGeneralEdit() { document.getElementById('general-edit-overlay').style.display = 'none'; }
 
   async function fetchRates() {
+    invalidateAllocCache();
     try {
       const res = await fetch("https://open.er-api.com/v6/latest/TWD"); const data = await res.json();
       if(data.result === "success") {
@@ -2168,13 +2209,15 @@ Day2 12:00 outlet購物，預計逛一小時
       const whoLine = (buyer || forWhom)
         ? `<span style="color:var(--navy); font-weight:700;">${escapeHtml(buyer||'未指定')}</span> <i class="fa-solid fa-arrow-right-long" style="color:var(--gold); font-size:calc(10px * var(--font-scale));"></i> <span>${escapeHtml(forWhom||'自己')}</span>`
         : '';
+      const lbKey = 'wl' + it.id;
+      if (photos.length) lbRegister(lbKey, photos);
       const thumb = photo
-        ? `<div style="position:relative; flex-shrink:0;"><img src="${escapeHtml(photo)}" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:14px; display:block; border:1px solid var(--line); ${it.bought?'opacity:0.55;':''}" onerror="this.style.display='none'">${photos.length>1?`<span style="position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,0.6); color:#fff; font-size:calc(9.5px * var(--font-scale)); font-weight:800; border-radius:6px; padding:1px 6px;">+${photos.length-1}</span>`:''}</div>`
+        ? `<div style="position:relative; flex-shrink:0; cursor:zoom-in;" onclick="event.stopPropagation(); lbOpen('${lbKey}',0)"><img src="${escapeHtml(photo)}" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:14px; display:block; border:1px solid var(--line); ${it.bought?'opacity:0.55;':''}" onerror="this.style.display='none'"><span style="position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,0.6); color:#fff; font-size:calc(9.5px * var(--font-scale)); font-weight:800; border-radius:6px; padding:1px 6px;">${photos.length>1?'+'+(photos.length-1):'<i class="fa-solid fa-magnifying-glass-plus"></i>'}</span></div>`
         : `<div style="width:70px; height:70px; border-radius:14px; flex-shrink:0; background:#F1F5F9; display:flex; align-items:center; justify-content:center; color:#C5CEDA;"><i class="fa-solid fa-bag-shopping" style="font-size:calc(22px * var(--font-scale));"></i></div>`;
       const row = (icon, label, val) => val ? `<div class="detail-row"><i class="fa-solid ${icon}"></i><span><b>${label}：</b>${escapeHtml(String(val))}</span></div>` : '';
       const gallery = photos.length > 1
-        ? `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">${photos.map(s=>`<img src="${escapeHtml(s)}" alt="" style="width:110px; height:110px; object-fit:cover; border-radius:12px; border:1px solid var(--line); flex:0 0 auto;" onerror="this.style.display='none'">`).join('')}</div>`
-        : (photos.length === 1 ? `<img src="${escapeHtml(photos[0])}" alt="" style="width:100%; border-radius:12px; border:1px solid var(--line); margin-bottom:9px;" onerror="this.style.display='none'">` : '');
+        ? `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">${photos.map((s,i)=>`<img src="${escapeHtml(s)}" alt="" onclick="event.stopPropagation(); lbOpen('${lbKey}',${i})" style="width:110px; height:110px; object-fit:cover; border-radius:12px; border:1px solid var(--line); flex:0 0 auto; cursor:zoom-in;" onerror="this.style.display='none'">`).join('')}</div>`
+        : (photos.length === 1 ? `<img src="${escapeHtml(photos[0])}" alt="" onclick="event.stopPropagation(); lbOpen('${lbKey}',0)" style="width:100%; border-radius:12px; border:1px solid var(--line); margin-bottom:9px; cursor:zoom-in;" onerror="this.style.display='none'">` : '');
       const detail = gallery + row('fa-layer-group', '數量／組數', qty + ' 組')
         + row('fa-tag', '預估單價', price ? `${symbol}${f(price)}（共 ${symbol}${f(total)}${twd?`　約 NT$ ${f(twd)}`:''}）` : '')
         + row('fa-shop', '購買地點', it.store)
@@ -3609,10 +3652,12 @@ Day2 12:00 outlet購物，預計逛一小時
       html += `<button onclick="event.stopPropagation(); openCouponLink(${entry.id})" style="width:100%; margin-top:8px; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:9px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer;"><i class="fa-solid fa-up-right-from-square"></i> 開啟優惠連結</button>`;
     }
     const imgs = imagesOf(entry);
-    if (imgs.length) {   // 收合時只放縮圖，避免整張優惠券把版面撐開；大圖移到展開後才顯示
-      html += `<div style="display:flex; align-items:center; gap:9px; margin-top:9px; padding:7px 9px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px;">
+    if (imgs.length) {   // 收合時只放縮圖，避免整張優惠券把版面撐開；點縮圖可直接放大
+      const ck = 'cp' + entry.id; lbRegister(ck, imgs);
+      html += `<div onclick="event.stopPropagation(); lbOpen('${ck}',0)" style="display:flex; align-items:center; gap:9px; margin-top:9px; padding:7px 9px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; cursor:zoom-in;">
         <img src="${escapeHtml(imgs[0])}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:9px; flex-shrink:0;" onerror="this.style.display='none'">
-        <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">附有 ${imgs.length} 張優惠圖片，點卡片展開看大圖</span>
+        <span style="flex:1; min-width:0; font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">${imgs.length > 1 ? `附有 ${imgs.length} 張優惠圖片` : '附有優惠圖片'}，點這裡放大看</span>
+        <i class="fa-solid fa-magnifying-glass-plus" style="flex-shrink:0; color:var(--gray); font-size:calc(12px * var(--font-scale));"></i>
       </div>`;
     }
     return html;
@@ -3620,8 +3665,73 @@ Day2 12:00 outlet購物，預計逛一小時
   function couponImageHtml(entry) {
     const imgs = imagesOf(entry);
     if (!imgs.length) return '';
-    return imgs.map(s => `<img src="${escapeHtml(s)}" alt="優惠圖片" style="width:100%; margin-bottom:10px; border-radius:12px; border:1px solid var(--line);" onerror="this.style.display='none'">`).join('');
+    const key = 'cp' + entry.id; lbRegister(key, imgs);
+    return imgs.map((s, i) => `<img src="${escapeHtml(s)}" alt="優惠圖片" onclick="event.stopPropagation(); lbOpen('${key}',${i})" style="width:100%; margin-bottom:10px; border-radius:12px; border:1px solid var(--line); cursor:zoom-in;" onerror="this.style.display='none'">`).join('');
   }
+  // ===== 圖片放大檢視：購物清單、優惠碼的縮圖點下去都會開這個 =====
+  let lbList = [], lbIdx = 0, lbTouchX = null;
+  function openLightbox(srcList, idx) {
+    lbList = (srcList || []).filter(Boolean);
+    if (!lbList.length) return;
+    lbIdx = Math.max(0, Math.min(idx || 0, lbList.length - 1));
+    document.getElementById('lightbox').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    renderLightbox();
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  function lbStep(d) {
+    if (!lbList.length) return;
+    lbIdx = (lbIdx + d + lbList.length) % lbList.length;
+    renderLightbox();
+  }
+  function renderLightbox() {
+    const img = document.getElementById('lb-img');
+    if (img) img.src = lbList[lbIdx];
+    const cnt = document.getElementById('lb-count');
+    if (cnt) cnt.innerText = lbList.length > 1 ? `${lbIdx + 1} / ${lbList.length}` : '';
+    const multi = lbList.length > 1 ? '' : 'none';
+    ['lb-prev','lb-next'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = multi === 'none' ? 'none' : 'flex'; });
+    const strip = document.getElementById('lb-strip');
+    if (strip) {
+      strip.style.display = lbList.length > 1 ? 'flex' : 'none';
+      strip.innerHTML = lbList.map((s, i) => `<img src="${escapeHtml(s)}" alt="" onclick="lbGo(${i})" style="width:54px; height:54px; object-fit:cover; border-radius:9px; flex:0 0 auto; cursor:pointer; border:2px solid ${i===lbIdx?'#fff':'transparent'}; opacity:${i===lbIdx?1:0.55};">`).join('');
+    }
+  }
+  function lbGo(i) { lbIdx = i; renderLightbox(); }
+  function lbDownload() {
+    const s = lbList[lbIdx]; if (!s) return;
+    const a = document.createElement('a');
+    a.href = s; a.download = 'image-' + (lbIdx + 1) + (s.indexOf('data:image/png') === 0 ? '.png' : '.jpg');
+    a.target = '_blank';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  // 鍵盤與滑動切換
+  document.addEventListener('keydown', (e) => {
+    const box = document.getElementById('lightbox');
+    if (!box || box.style.display !== 'flex') return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lbStep(-1);
+    else if (e.key === 'ArrowRight') lbStep(1);
+  });
+  document.addEventListener('touchstart', (e) => {
+    const box = document.getElementById('lightbox');
+    if (box && box.style.display === 'flex' && e.touches.length === 1) lbTouchX = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const box = document.getElementById('lightbox');
+    if (!box || box.style.display !== 'flex' || lbTouchX === null) return;
+    const dx = e.changedTouches[0].clientX - lbTouchX;
+    if (Math.abs(dx) > 55) lbStep(dx > 0 ? -1 : 1);
+    lbTouchX = null;
+  }, { passive: true });
+  // 把一組圖片塞進全域暫存，供 onclick 使用（避免把整串 base64 寫進 HTML 屬性）
+  const lbStore = {};
+  function lbRegister(key, list) { lbStore[key] = list; return key; }
+  function lbOpen(key, idx) { openLightbox(lbStore[key] || [], idx); }
+
   // ===== 多張圖片編輯器：可以一次加好幾張、刪掉不要的、也可以指定哪一張當封面。
   // 優惠碼與購物清單共用同一套；資料存成 images 陣列，第一張同時寫回舊的 imageUrl 欄位保持相容 =====
   const IMG_EDITOR_MAX = 8;
@@ -3644,13 +3754,14 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   function imgEditorRender() {
     const box = document.getElementById('img-editor-box'); if (!box) return;
+    lbRegister('__editor__', imgEditorList);
     if (!imgEditorList.length) {
       box.innerHTML = `<div style="padding:14px; border:1.5px dashed var(--line); border-radius:12px; text-align:center; color:var(--gray); font-size:calc(12px * var(--font-scale));">尚未加入圖片，最多可放 ${IMG_EDITOR_MAX} 張</div>`;
       return;
     }
     box.innerHTML = `<div style="display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px;">` + imgEditorList.map((s, i) => `
       <div style="position:relative; flex:0 0 auto;">
-        <img src="${escapeHtml(s)}" alt="" style="width:94px; height:94px; object-fit:cover; border-radius:13px; border:2px solid ${i===0?'var(--teal)':'var(--line)'};" onerror="this.style.opacity='0.25'">
+        <img src="${escapeHtml(s)}" alt="" onclick="lbOpen('__editor__',${i})" style="width:94px; height:94px; object-fit:cover; border-radius:13px; border:2px solid ${i===0?'var(--teal)':'var(--line)'}; cursor:zoom-in;" onerror="this.style.opacity='0.25'">
         ${i===0
           ? `<span style="position:absolute; left:5px; bottom:5px; background:var(--teal); color:#fff; font-size:calc(9.5px * var(--font-scale)); font-weight:800; border-radius:6px; padding:2px 7px;">封面</span>`
           : `<button type="button" onclick="imgEditorMakeCover(${i})" style="position:absolute; left:5px; bottom:5px; background:rgba(0,0,0,0.55); color:#fff; border:none; font-size:calc(9.5px * var(--font-scale)); font-weight:700; border-radius:6px; padding:3px 7px; cursor:pointer;">設為封面</button>`}
@@ -5148,7 +5259,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
     renderExpenseSummary(); renderMembersSettingsList();
   }
-  async function saveExpense() { 
+  async function saveExpense() {
+    invalidateAllocCache(); 
     try { 
       await storage.set(roomScopedKey('expense-data'), JSON.stringify({records:expenseRecords, travelers})); 
       await autoUploadIfEnabled();
@@ -5230,27 +5342,27 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   // 每件商品直接在同一列點名字分配，不用再切換到別的區塊
   function allocQtyOf(item, who) {
-    const row = (item.alloc||[]).find(a => a.who === who && !(a.proxyFor||'').trim());
+    const row = (item.alloc||[]).find(a => a.who === who && !(a.proxyFor||'').trim() && !a.isProxy);
     return row ? (Number(row.qty)||0) : 0;
   }
   function tapAllocPerson(itemId, who) { // 點一下加一個
     const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
     it.alloc = it.alloc || [];
-    const idx = it.alloc.findIndex(a => a.who === who && !(a.proxyFor||'').trim());
+    const idx = it.alloc.findIndex(a => a.who === who && !(a.proxyFor||'').trim() && !a.isProxy);
     if (idx >= 0) it.alloc[idx].qty = (Number(it.alloc[idx].qty)||0) + 1;
     else it.alloc.push({ who, qty: 1, proxyFor: '' });
     renderAllocItems();
   }
   function clearAllocPerson(itemId, who) { // 點數字歸零
     const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
-    it.alloc = (it.alloc||[]).filter(a => !(a.who === who && !(a.proxyFor||'').trim()));
+    it.alloc = (it.alloc||[]).filter(a => !(a.who === who && !(a.proxyFor||'').trim() && !a.isProxy));
     renderAllocItems();
   }
   function splitAllocEvenly(itemId) { // 依「數量」平均分給所有成員，除不盡的從前面的人多給一個
     const it = qaAllocItems.find(i => i._id === itemId); if (!it || !travelers.length) return;
     const total = Number(it.totalQty)||0;
     if (!total) { alert('請先填這項商品的數量'); return; }
-    it.alloc = (it.alloc||[]).filter(a => (a.proxyFor||'').trim()); // 保留代購列
+    it.alloc = (it.alloc||[]).filter(a => (a.proxyFor||'').trim() || a.isProxy); // 保留代購列
     const base = Math.floor(total / travelers.length);
     let rest = total - base * travelers.length;
     travelers.forEach(t => {
@@ -5261,7 +5373,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
   function addProxyRow(itemId) {
     const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
-    it.alloc = it.alloc || []; it.alloc.push({ who: travelers[0]||'', qty: 1, proxyFor: '' });
+    it.alloc = it.alloc || []; it.alloc.push({ who: travelers[0]||'', qty: 1, proxyFor: '', isProxy: true });
     renderAllocItems();
   }
   function updateProxyRow(itemId, idx, field, val) {
@@ -5292,7 +5404,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const remain = total ? total - assigned : 0;
       const subtotal = (Number(it.unitPrice)||0) * assigned;
       const proxies = (it.alloc||[]).map((a,i)=>({a,i})).filter(x => (x.a.proxyFor||'').trim() !== '' || (x.a.qty && x.a.proxyFor === '' && false));
-      const proxyRows = (it.alloc||[]).map((a,i)=>({a,i})).filter(x => Object.prototype.hasOwnProperty.call(x.a,'proxyFor') && x.a.proxyFor !== undefined && x.a.proxyFor !== null && String(x.a.proxyFor).trim() !== '');
+      // 認 isProxy 旗標：剛按下「代購」、名字還沒填的那一列也要畫出來，不然使用者沒地方填
+      const proxyRows = (it.alloc||[]).map((a,i)=>({a,i})).filter(x => x.a.isProxy === true || String(x.a.proxyFor||'').trim() !== '');
       const chips = travelers.map(t => {
         const q = allocQtyOf(it, t);
         const on = q > 0;
@@ -5301,13 +5414,15 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           ${on ? `<span onclick="clearAllocPerson(${it._id},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:7px; padding:1px 6px;">${q}</span>` : ''}
         </span>`;
       }).join('');
+      const proxyHint = proxyRows.length
+        ? `<div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gold); margin-top:7px; line-height:1.6;"><i class="fa-solid fa-circle-info"></i> 代購的錢算在被代購者頭上，不列入旅伴分帳；算帳頁的「代購請款」會列出對方要還多少。</div>` : '';
       const proxyHtml = proxyRows.map(({a,i}) => `
         <div style="display:flex; gap:5px; align-items:center; margin-top:6px;">
           <select onchange="updateProxyRow(${it._id},${i},'who',this.value)" style="width:80px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; background:#fff; font-family:inherit; font-size:calc(11.5px * var(--font-scale));">
             ${travelers.map(t=>`<option value="${escapeHtml(t)}" ${a.who===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
           </select>
-          <span style="font-size:calc(11px * var(--font-scale)); color:var(--gray); flex-shrink:0;">代購給</span>
-          <input type="text" value="${escapeHtml(a.proxyFor||'')}" placeholder="對方名字" oninput="updateProxyRow(${it._id},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid #ccc; font-size:calc(11.5px * var(--font-scale));">
+          <span style="font-size:calc(11px * var(--font-scale)); color:var(--gray); flex-shrink:0;">幫</span>
+          <input type="text" value="${escapeHtml(a.proxyFor||'')}" placeholder="被代購者姓名" oninput="updateProxyRow(${it._id},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid ${(a.proxyFor||'').trim()?'#ccc':'var(--gold)'}; font-size:calc(11.5px * var(--font-scale));">
           <input type="number" min="1" value="${a.qty}" oninput="updateProxyRow(${it._id},${i},'qty',this.value)" style="width:48px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; text-align:center;">
           <button type="button" onclick="removeProxyRow(${it._id},${i})" style="flex-shrink:0; background:#F1F5F9; border:none; width:26px; height:26px; border-radius:7px; color:var(--warn); cursor:pointer;">×</button>
         </div>`).join('');
@@ -5324,7 +5439,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           ${travelers.length > 1 ? `<button type="button" onclick="splitAllocEvenly(${it._id})" style="background:#E2E7EC; border:none; border-radius:11px; padding:6px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">平均分</button>` : ''}
           <button type="button" onclick="addProxyRow(${it._id})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:11px; padding:5px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
         </div>
-        ${proxyHtml}
+        ${proxyHint}${proxyHtml}
         <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:calc(11.5px * var(--font-scale));">
           <span style="color:${total && remain !== 0 ? 'var(--warn)' : 'var(--gray)'};">${total ? (remain === 0 ? '已分配完畢' : remain > 0 ? `還有 ${remain} 個沒分` : `超出 ${-remain} 個`) : `已分配 ${assigned} 個`}</span>
           <span style="color:var(--gray);">小計 ${symbol}${f(subtotal)}</span>
@@ -5496,10 +5611,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       ? pf.items.map(it => {
           const q = Number(it.quantity)||1;
           return { _id: allocSeq++, name: it.nameZh || it.nameOriginal || '', unitPrice: q > 0 ? (Number(it.price)||0)/q : (Number(it.price)||0),
-                   totalQty: q, alloc: (it.owners||[]).map(o => ({ who: o.who||'', qty: Number(o.qty)||0, proxyFor: o.proxyFor||'' })) };
+                   totalQty: q, alloc: (it.owners||[]).map(o => ({ who: o.who||'', qty: Number(o.qty)||0, proxyFor: o.proxyFor||'', isProxy: !!o.isProxy })) };
         })
       : (Array.isArray(pf.allocItems) && pf.allocItems.length)
-        ? pf.allocItems.map(it => ({ _id: allocSeq++, name: it.name||'', unitPrice: Number(it.unitPrice)||0, totalQty: Number(it.totalQty)||Number(it.qty)||0, alloc: (it.alloc||[]).map(a => ({ who: a.who||'', qty: Number(a.qty)||0, proxyFor: a.proxyFor||'' })) }))
+        ? pf.allocItems.map(it => ({ _id: allocSeq++, name: it.name||'', unitPrice: Number(it.unitPrice)||0, totalQty: Number(it.totalQty)||Number(it.qty)||0, alloc: (it.alloc||[]).map(a => ({ who: a.who||'', qty: Number(a.qty)||0, proxyFor: a.proxyFor||'', isProxy: !!a.isProxy })) }))
         : [];
     box.querySelectorAll('.qa-mode-btn').forEach(b => b.addEventListener('click', () => setQaSplitMode(b.dataset.mode)));
     setQaSplitMode(pf.splitMode === 'items' ? 'items' : 'even');
@@ -5564,7 +5679,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           price: (Number(it.unitPrice)||0) * qty,   // 商品明細記的是該品項總價
           quantity: qty,
           owners: (it.alloc||[]).filter(a=>a.who && (Number(a.qty)||0) > 0)
-                    .map(a => ({ who: a.who, qty: Number(a.qty)||0, proxyFor: (a.proxyFor||'').trim() }))
+                    .map(a => ({ who: a.who, qty: Number(a.qty)||0, proxyFor: (a.proxyFor||'').trim(), isProxy: !!a.isProxy }))
         };
       });
       data.allocItems = data.items.map(it => ({
@@ -5798,22 +5913,22 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
     it.evenSplit = false; // 改成指定給某人，就不再是平均分
     it.owners = it.owners || [];
-    const row = it.owners.find(o => o.who === who && !(o.proxyFor||'').trim());
+    const row = it.owners.find(o => o.who === who && !(o.proxyFor||'').trim() && !o.isProxy);
     if (row) row.qty = (Number(row.qty)||0) + 1; else it.owners.push({ who, qty: 1, proxyFor: '' });
     renderReceiptItemsList();
   }
   function rrClearPerson(ridx, who) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
-    it.owners = (it.owners||[]).filter(o => !(o.who === who && !(o.proxyFor||'').trim()));
+    it.owners = (it.owners||[]).filter(o => !(o.who === who && !(o.proxyFor||'').trim() && !o.isProxy));
     renderReceiptItemsList();
   }
   function rrOwnerQty(it, who) {
-    const row = (it.owners||[]).find(o => o.who === who && !(o.proxyFor||'').trim());
+    const row = (it.owners||[]).find(o => o.who === who && !(o.proxyFor||'').trim() && !o.isProxy);
     return row ? (Number(row.qty)||0) : 0;
   }
   function rrAddProxy(ridx) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
-    it.owners = it.owners || []; it.owners.push({ who: travelers[0]||'', qty: 1, proxyFor: '' });
+    it.owners = it.owners || []; it.owners.push({ who: travelers[0]||'', qty: 1, proxyFor: '', isProxy: true });
     renderReceiptItemsList();
   }
   function rrUpdateProxy(ridx, oi, field, val) {
@@ -5829,7 +5944,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   function rrSplitEven(ridx) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it || !travelers.length) return;
     it.evenSplit = !it.evenSplit;
-    if (it.evenSplit) it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim()); // 保留代購列
+    if (it.evenSplit) it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim() || o.isProxy); // 保留代購列
     renderReceiptItemsList();
   }
 
@@ -5847,15 +5962,15 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           ${on?`<span onclick="rrClearPerson(${it._ridx},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:6px; padding:0 5px;">${q}</span>`:''}
         </span>`;
       }).join('');
-      const proxyRows = (it.owners||[]).map((o,i)=>({o,i})).filter(x => String(x.o.proxyFor||'').trim() !== '' || (x.o.proxyFor === '' && false));
-      const proxyEditable = (it.owners||[]).map((o,i)=>({o,i})).filter(x => Object.prototype.hasOwnProperty.call(x.o,'proxyFor') && String(x.o.proxyFor||'').trim() !== '');
+      const proxyRows = (it.owners||[]).map((o,i)=>({o,i})).filter(x => x.o.isProxy === true || String(x.o.proxyFor||'').trim() !== '');
+      const proxyEditable = proxyRows;
       const proxyHtml = proxyEditable.map(({o,i}) => `
         <div style="display:flex; gap:5px; align-items:center; margin-top:5px;">
           <select onchange="rrUpdateProxy(${it._ridx},${i},'who',this.value)" style="width:74px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; background:#fff; font-family:inherit; font-size:calc(11px * var(--font-scale));">
             ${travelers.map(t=>`<option value="${escapeHtml(t)}" ${o.who===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
           </select>
           <span style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); flex-shrink:0;">代購給</span>
-          <input type="text" value="${escapeHtml(o.proxyFor||'')}" placeholder="對方名字" oninput="rrUpdateProxy(${it._ridx},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid #ccc; font-size:calc(11px * var(--font-scale));">
+          <input type="text" value="${escapeHtml(o.proxyFor||'')}" placeholder="被代購者姓名" oninput="rrUpdateProxy(${it._ridx},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid ${(o.proxyFor||'').trim()?'#ccc':'var(--gold)'}; font-size:calc(11px * var(--font-scale));">
           <input type="number" min="1" value="${o.qty}" oninput="rrUpdateProxy(${it._ridx},${i},'qty',this.value)" style="width:44px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; text-align:center;">
           <button onclick="rrRemoveProxy(${it._ridx},${i})" style="flex-shrink:0; background:#F1F5F9; border:none; width:24px; height:24px; border-radius:7px; color:var(--warn); cursor:pointer;">×</button>
         </div>`).join('');
@@ -5916,7 +6031,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const rec = expenseRecords.find(x => x.id === ownerEditTargetId); if (!rec) { closeGeneralEdit(); return; }
       receiptReviewItemsState.forEach((st, i) => {
         if (rec.items[i]) rec.items[i].owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0)
-          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }));
+          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }));
       });
       const anyOwner = rec.items.some(it => (it.owners||[]).length);
       if (anyOwner) {
@@ -5927,7 +6042,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           qty: Number(it.quantity)||1,
           mode: it.evenSplit ? 'even' : 'qty',
           evenWith: it.evenSplit ? travelers.slice() : [],
-          alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
+          alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
         }));
         rec.paidTotal = Number(rec.amount)||0;
         const sub = rec.allocItems.reduce((s2,it)=>s2 + it.unitPrice * (Number(it.qty)||0), 0); // 用品項全額，未分配的部分也要算進去
@@ -5962,7 +6077,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1,
         evenSplit: !!it.evenSplit,
         owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
-          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
+          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
       };
     }).filter(it => it.nameOriginal || it.nameZh);
 
@@ -5974,7 +6089,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       qty: Number(it.quantity)||1,
       mode: it.evenSplit ? 'even' : 'qty',              // 平均分＝按金額平分，不受數量限制
       evenWith: it.evenSplit ? travelers.slice() : [],
-      alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
+      alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
     })) : [];
 
     expenseRecords.push({
@@ -6033,8 +6148,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     });
     return out;
   }
-  // 代購墊付清單：誰幫誰墊了多少，用來跟旅程外的人請款
-  // 代購標註：列出「誰幫誰買了什麼、多少錢」。金額已計入代購者的分攤，這裡只是讓他知道要跟對方收多少
+  // 代購請款清單：誰幫誰墊了多少錢、買了哪些東西。
+  // 金額算在被代購者身上，所以這張清單就是「對方要還給代購者多少」
   function computeProxyNotes() {
     const rows = [];
     (expenseRecords || []).forEach(raw => {
@@ -6093,12 +6208,24 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       return people.map(w => ({ who: w, proxyFor: '', qty: 0, unit, amount: each, even: true }));
     }
     return (item.alloc || []).map(a => ({
-      who: a.who || '', proxyFor: (a.proxyFor || '').trim(),
+      who: a.who || '', proxyFor: (a.proxyFor || '').trim(), isProxy: !!a.isProxy,
       qty: Number(a.qty) || 0, unit,
       amount: mode === 'amount' ? (Number(a.amount) || 0) : unit * (Number(a.qty) || 0)
     })).filter(l => l.who || l.proxyFor);
   }
+  let _allocCache = new WeakMap();
+  // 支出內容、成員或匯率一變就要失效，否則會用到舊的分攤結果
+  function invalidateAllocCache() { _allocCache = new WeakMap(); }
   function allocateExpense(raw) {
+    if (raw && typeof raw === 'object') {
+      const hit = _allocCache.get(raw);
+      if (hit) return hit;
+    }
+    const out = allocateExpenseUncached(raw);
+    if (raw && typeof raw === 'object') { try { _allocCache.set(raw, out); } catch(e) {} }
+    return out;
+  }
+  function allocateExpenseUncached(raw) {
     const r = normalizeExpense(raw);
     // 主要付款人：沒有特別指定歸屬的品項一律算他的
     const mainPayer = (r.payers && r.payers.length)
@@ -6117,9 +6244,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     });
     const subtotal = lines.reduce((s, l) => s + l.amount, 0);
     const base = {};
-    // 代購的金額一律算在「代購者」身上，代購對象只作為標註用途，
-    // 這樣旅伴之間的分帳單純，之後他要跟對方收多少也看得到
-    lines.forEach(l => { const key = l.who || l.proxyFor; if (key) base[key] = (base[key] || 0) + l.amount; });
+    // 代購：錢算在「被代購的人」頭上（他才是真正要負擔的人），代購者只是先墊。
+    // 被代購者通常不是旅伴 → 會進 external，算帳頁的「代購請款」就會列出他欠誰多少。
+    // 名字還沒填完的代購列（isProxy 但 proxyFor 空）先暫記在代購者身上，避免金額憑空消失
+    lines.forEach(l => { const key = l.proxyFor || l.who; if (key) base[key] = (base[key] || 0) + l.amount; });
     const extras = r.extras || [];
     const extrasTotal = extras.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const add = {}; Object.keys(base).forEach(k => { add[k] = 0; });
@@ -6195,15 +6323,43 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
     // 換算成台幣後再做一次尾差校正：每個人各自四捨五入會累積誤差，
     // 這裡把差額補回金額最大的人，確保「應付總額 + 代購待收 = 實付總額」完全相等
-    const paidTotalTWD = Math.round(people.reduce((s, t) => s + paid[t], 0));
+    // 這裡要跟下面 rows 的 paid 用同一種算法（各自四捨五入後加總）。
+    // 先加總再四捨五入的話，兩邊會差 1 元，導致「應付總額 + 代購待收 ≠ 實付總額」
+    const paidTotalTWD = people.reduce((s, t) => s + Math.round(paid[t]), 0);
     const combined = {};
     people.forEach(t => { combined['T:' + t] = owed[t]; });
     Object.entries(external).forEach(([n, v]) => { combined['E:' + n] = v.amount; });
     const balanced = roundToTarget(combined, paidTotalTWD);
     people.forEach(t => { owed[t] = balanced['T:' + t] || 0; });
-    Object.entries(external).forEach(([n, v]) => { v.amount = balanced['E:' + n] || 0; });
+    // 校正後的外部金額要同步按比例調整各債權人，墊款才對得起來
+    Object.entries(external).forEach(([n, v]) => {
+      const newAmt = balanced['E:' + n] || 0;
+      if (v.amount > 0 && newAmt !== v.amount) {
+        const k = newAmt / v.amount;
+        Object.keys(v.creditors).forEach(w => { v.creditors[w] *= k; });
+      }
+      v.amount = newAmt;
+    });
 
-    const rows = people.map(t => ({ name: t, paid: Math.round(paid[t]), share: Math.round(owed[t]), balance: Math.round(paid[t]) - Math.round(owed[t]) }));
+    // 每個旅伴替「旅程外的人」代墊了多少：這段不屬於旅伴之間的債務，要從差額裡扣掉
+    const advanced = {};
+    people.forEach(t => { advanced[t] = 0; });
+    Object.values(external).forEach(v => {
+      Object.entries(v.creditors).forEach(([who, a]) => { if (advanced[who] !== undefined) advanced[who] += a; });
+    });
+    // 差額先用未取整的值算，再把尾差補給金額最大的人，保證旅伴之間的差額總和剛好是 0
+    const rawBal = {}; people.forEach(t => { rawBal[t] = paid[t] - owed[t] - advanced[t]; });
+    const balInt = {}; people.forEach(t => { balInt[t] = Math.round(rawBal[t]); });
+    const balDiff = -people.reduce((s, t) => s + balInt[t], 0);
+    if (balDiff !== 0 && people.length) {
+      const big = people.slice().sort((a, b) => Math.abs(rawBal[b]) - Math.abs(rawBal[a]))[0];
+      balInt[big] += balDiff;
+    }
+    const rows = people.map(t => {
+      const paidR = Math.round(paid[t]), shareR = Math.round(owed[t]);
+      // 讓「已付 − 應付 − 代墊 = 差額」在畫面上完全對得起來，尾差由代墊欄吸收
+      return { name: t, paid: paidR, share: shareR, advanced: paidR - shareR - balInt[t], balance: balInt[t] };
+    });
     const creditors = rows.filter(r => r.balance > 0).map(r => ({ ...r })).sort((a, b) => b.balance - a.balance);
     const debtors = rows.filter(r => r.balance < 0).map(r => ({ ...r, balance: -r.balance })).sort((a, b) => b.balance - a.balance);
     const transfers = [];
@@ -6453,14 +6609,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const zero = Math.abs(r.balance) < 1;
       const color = zero ? 'var(--gray)' : r.balance > 0 ? 'var(--teal)' : 'var(--coral)';
       const label = zero ? '✓ 已平衡' : r.balance > 0 ? `＋NT$ ${f(r.balance)}` : `−NT$ ${f(-r.balance)}`;
-      const sub = zero ? `已付 NT$ ${f(r.paid)} · 應付 NT$ ${f(r.share)}`
+      const adv = Number(r.advanced) || 0;
+      const base = zero ? `已付 NT$ ${f(r.paid)} · 應付 NT$ ${f(r.share)}`
         : r.balance > 0 ? `代墊 NT$ ${f(r.paid)} · 自己應付 NT$ ${f(r.share)}`
         : `已付 NT$ ${f(r.paid)} · 應付 NT$ ${f(r.share)}`;
+      // 代購墊款不屬於旅伴之間的債務，要單獨標出來，差額才看得懂
+      const sub = base + (adv ? ` · <span style="color:var(--gold);">代購墊付 NT$ ${f(adv)}</span>` : '');
       return `<div style="padding:12px 0; border-bottom:1px solid var(--line);">
         <div onclick="toggleSettleDetail('${escapeHtml(r.name)}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:pointer;">
           <div style="min-width:0;">
             <b style="color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.name)}</b>
-            <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${sub}</div>
+            <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px; line-height:1.6;">${sub}</div>
           </div>
           <b style="color:${color}; font-size:calc(15px * var(--font-scale)); flex-shrink:0;">${label}</b>
         </div>
@@ -6478,12 +6637,14 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         byPair[k].twd += x.twd;
         byPair[k].items.push(`${x.item}${x.qty>1?`×${x.qty}`:''}`);
       });
-      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購標註</div>
-        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">這些金額已經算在代購者的分攤裡，列出來是方便他之後跟對方收錢</p>`;
+      const proxyTotal = Object.values(byPair).reduce((s,x)=>s+x.twd, 0);
+      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購請款</div>
+        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 4px; line-height:1.7;">幫旅程以外的人買的東西。這些錢<b style="color:var(--navy);">不算在旅伴的分帳裡</b>，是對方要還給代購者的。</p>
+        <div style="font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:800; margin-bottom:10px;">待收總額 NT$ ${f(proxyTotal)}</div>`;
       html += Object.values(byPair).map(x => `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-            <span style="font-size:calc(13.5px * var(--font-scale));"><b style="color:var(--navy);">${escapeHtml(x.buyer)}</b> <span style="color:var(--gray);">幫</span> <b style="color:var(--gold);">${escapeHtml(x.forWhom)}</b> <span style="color:var(--gray);">代購</span></span>
-            <b style="color:var(--navy); flex-shrink:0;">NT$ ${f(x.twd)}</b>
+            <span style="font-size:calc(13.5px * var(--font-scale));"><b style="color:var(--gold);">${escapeHtml(x.forWhom)}</b> <span style="color:var(--gray);">要還給</span> <b style="color:var(--navy);">${escapeHtml(x.buyer)}</b></span>
+            <b style="color:var(--coral); flex-shrink:0;">NT$ ${f(x.twd)}</b>
           </div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(x.items.join('、'))}</div>
         </div>`).join('') + `</div>`;
@@ -6589,11 +6750,12 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderBudget(expList);
     if (expList.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
 
-    const groupKeyOf = expBreakdownMode === 'member' ? (r => r.payer || '未指定')
+    // 有篩選成員時，分組就固定是那個人（舊版用 r.payer，會變成顯示付款人而不是被篩選的人）
+    const groupKeyOf = expBreakdownMode === 'member' ? (r => expMemberFilter || r.payer || '未指定')
       : expBreakdownMode === 'date' ? (r => r.date || '未填日期')
       : (r => r.category || '其他');
 
-    // 選了成員就只留「他有分攤到」的紀錄
+    // 選了成員就只留「他有分攤到」的紀錄（分攤結果走快取，不會每筆重算）
     const shownList = !expMemberFilter ? expList : expList.filter(r => {
       try {
         const res = allocateExpense(r);
@@ -6650,13 +6812,49 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const rateLocal = currentRateForCurrency(curLocal) || 1;
     const secondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal} ${f(recordToTWD(r) * rateLocal)}`) : `≈ NT$ ${f(recordToTWD(r))}`;
     const isExpanded = expandedExpenseIds.has(r.id);
-    const metaBits = [`數量 ×${r.quantity||1}`, r.payer, r.method].filter(Boolean).map(escapeHtml).join(' · ');
+    const metaBits = [`數量 ×${r.quantity||1}`, r.payer ? `${r.payer} 付` : '', r.method].filter(Boolean).map(escapeHtml).join(' · ');
 
-    const itemsBlock = (Array.isArray(r.items) && r.items.length) ? `
+    // 篩選了成員，就只列他買的品項與他的小計，不用再從整張收據裡自己找
+    const mf = expMemberFilter;
+    let shownItems = Array.isArray(r.items) ? r.items : [];
+    let mfSubtotal = 0, mfProxy = [];
+    if (mf && shownItems.length) {
+      const picked = [];
+      shownItems.forEach(it => {
+        const q = Number(it.quantity) || 1;
+        const unit = q > 0 ? (Number(it.price)||0) / q : (Number(it.price)||0);
+        let myQty = 0, proxyQty = 0;
+        (it.owners||[]).forEach(o => {
+          if (o.who !== mf) return;
+          if ((o.proxyFor||'').trim()) proxyQty += Number(o.qty)||0;
+          else myQty += Number(o.qty)||0;
+        });
+        if (myQty > 0) { picked.push({ ...it, _myQty: myQty, _myAmt: unit * myQty }); mfSubtotal += unit * myQty; }
+        if (proxyQty > 0) {
+          const names = (it.owners||[]).filter(o => o.who === mf && (o.proxyFor||'').trim()).map(o => o.proxyFor.trim());
+          mfProxy.push({ name: it.nameZh || it.nameOriginal || '商品', qty: proxyQty, amt: unit * proxyQty, forWhom: Array.from(new Set(names)).join('、') });
+        }
+      });
+      shownItems = picked;
+    }
+    const mfSubRecord = { amount: mfSubtotal, currency: cur, rateAtTime: r.rateAtTime };
+    const mfHeader = (mf && (shownItems.length || mfProxy.length)) ? `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:9px; padding:8px 10px; background:#EAF7FA; border:1px solid #BFE3EC; border-radius:10px;">
+        <span style="font-size:calc(12px * var(--font-scale)); color:#0E7A8F; font-weight:800;"><i class="fa-solid fa-user"></i> ${escapeHtml(mf)} 在這筆買了 ${shownItems.length} 項</span>
+        <b style="color:#0E7A8F; flex-shrink:0; font-size:calc(13px * var(--font-scale));">${symbol}${f(mfSubtotal)}<small style="font-weight:600; color:#4E8C9B;">${isTwd?'':` ≈ NT$${f(recordToTWD(mfSubRecord))}`}</small></b>
+      </div>` : '';
+    const mfProxyBlock = (mf && mfProxy.length) ? `
+      <div style="margin-top:8px; padding:8px 10px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px;">
+        <div style="font-size:calc(11px * var(--font-scale)); color:#92400E; font-weight:800; margin-bottom:4px;"><i class="fa-solid fa-hand-holding-dollar"></i> ${escapeHtml(mf)} 幫別人代購（不算他的花費）</div>
+        ${mfProxy.map(p => `<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:#92400E; padding:2px 0;"><span style="flex:1; min-width:0;">${escapeHtml(p.name)}${p.qty>1?` ×${p.qty}`:''} → ${escapeHtml(p.forWhom||'未填對象')}</span><span style="flex-shrink:0;">${symbol}${f(p.amt)}</span></div>`).join('')}
+      </div>` : '';
+
+    const itemsBlock = (shownItems.length || mfProxy.length) ? `
       <div style="margin-top:8px; padding-top:10px; border-top:1px dashed var(--line);">
-        <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ul"></i> 商品明細</div>
-        ${r.items.map(it => {
-          const itemRecord = { amount: it.price, currency: cur, rateAtTime: r.rateAtTime };
+        ${mfHeader}
+        ${shownItems.length ? `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ul"></i> ${mf ? '他買的品項' : '商品明細'}</div>` : ''}
+        ${shownItems.map(it => {
+          const itemRecord = { amount: (mf && it._myAmt !== undefined) ? it._myAmt : it.price, currency: cur, rateAtTime: r.rateAtTime };
           const itemSecondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal}${f(recordToTWD(itemRecord) * rateLocal)}`) : `≈ NT$${f(recordToTWD(itemRecord))}`;
           const nameDisplay = it.nameZh ? `${escapeHtml(it.nameOriginal||'')}${it.nameOriginal?' ':''}(${escapeHtml(it.nameZh)})` : escapeHtml(it.nameOriginal || '未命名商品');
           // 誰買的：只是附註資訊，不影響金額
@@ -6670,13 +6868,16 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
             const [who, pf] = k.split('|');
             return `${escapeHtml(who)}${pf?`→${escapeHtml(pf)}`:''} ${q}`;
           }).join('　');
+          const showQty = (mf && it._myQty !== undefined) ? it._myQty : (Number(it.quantity)||1);
+          const showAmt = (mf && it._myAmt !== undefined) ? it._myAmt : (Number(it.price)||0);
           return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:calc(12px * var(--font-scale)); margin-bottom:6px;">
-            <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}
-              ${ownerTxt?`<br><small style="color:var(--teal); font-weight:700;"><i class="fa-solid fa-user-check" style="font-size:calc(9px * var(--font-scale));"></i> ${ownerTxt}</small>`:''}
+            <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${showQty>1?` ×${showQty}`:''}
+              ${(!mf && ownerTxt)?`<br><small style="color:var(--teal); font-weight:700;"><i class="fa-solid fa-user-check" style="font-size:calc(9px * var(--font-scale));"></i> ${ownerTxt}</small>`:''}
             </span>
-            <span style="flex-shrink:0; text-align:right;"><b style="color:var(--navy);">${symbol}${f(it.price||0)}</b><br><small style="color:var(--gray);">${itemSecondary}</small></span>
+            <span style="flex-shrink:0; text-align:right;"><b style="color:var(--navy);">${symbol}${f(showAmt)}</b><br><small style="color:var(--gray);">${itemSecondary}</small></span>
           </div>`;
         }).join('')}
+        ${mfProxyBlock}
       </div>
     ` : '';
 
@@ -6787,12 +6988,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     try { localStorage.setItem(RECENT_ROOMS_KEY, JSON.stringify(list)); } catch(e) {}
     renderRecentRooms();
   }
+  let enteringRoom = false;
+  // 最近旅程點下去會先進遮罩，連點只會進一次
+  async function enterRoomSafe(roomId) {
+    if (enteringRoom) return;
+    enteringRoom = true;
+    try { await enterRoom(roomId); } finally { enteringRoom = false; }
+  }
   function renderRecentRooms() {
     const wrap = document.getElementById('home-recent-rooms'); if (!wrap) return;
     const list = getRecentRooms();
     if (!list.length) { wrap.innerHTML = ''; return; }
     wrap.innerHTML = `<div class="input-label" style="padding-left:10px;">最近旅程</div>` + list.map(r => `
-      <div class="card" style="margin-bottom:10px; padding:16px; cursor:pointer;" onclick="enterRoom('${escapeHtml(r.roomId)}')">
+      <div class="card" style="margin-bottom:10px; padding:16px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s ease;" ontouchstart="this.style.transform='scale(0.985)'" ontouchend="this.style.transform=''" onclick="enterRoomSafe('${escapeHtml(r.roomId)}')">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="min-width:0;">
             <div style="font-weight:700; color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}${isSoloRoom(r.roomId) ? `<span style="margin-left:7px; background:#E8F3EE; border:1px solid #BFDED0; color:#27624E; border-radius:7px; padding:1px 7px; font-size:calc(10px * var(--font-scale)); font-weight:800; vertical-align:middle;">個人記帳</span>` : ''}</div>
@@ -6995,6 +7203,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   function showHomeScreen() {
+    hideLoading();
     document.body.classList.remove('solo-mode');
     const nb = document.getElementById('now-bar'); if (nb) nb.style.display = 'none';
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; } // 離開房間context，不要繼續在背景聽這個房的更新
@@ -7004,9 +7213,27 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     localStorage.setItem('app-screen', 'home');
     renderRecentRooms();
   }
+  // 載入遮罩：step 是文字，pct 是進度百分比
+  function showLoading(step, pct, title) {
+    const box = document.getElementById('app-loading'); if (!box) return;
+    box.style.display = 'flex';
+    const t = document.getElementById('app-loading-title'); if (t && title) t.innerText = title;
+    const s = document.getElementById('app-loading-step'); if (s && step) s.innerText = step;
+    const b = document.getElementById('app-loading-bar'); if (b && pct) b.style.width = pct + '%';
+  }
+  function hideLoading() {
+    const box = document.getElementById('app-loading'); if (!box) return;
+    const b = document.getElementById('app-loading-bar'); if (b) b.style.width = '100%';
+    setTimeout(() => { box.style.display = 'none'; const bb = document.getElementById('app-loading-bar'); if (bb) bb.style.width = '8%'; }, 180);
+  }
+  // 讓瀏覽器有機會把前面設定的畫面先畫出來，不然遮罩文字不會更新
+  function nextFrame() { return new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); }
+
   function showMainApp() {
     document.getElementById('home-screen').style.display = 'none';
-    document.getElementById('main-app-container').style.display = 'block';
+    const mc = document.getElementById('main-app-container');
+    mc.style.display = 'block';
+    mc.classList.remove('app-enter'); void mc.offsetWidth; mc.classList.add('app-enter');
     document.getElementById('bottom-nav').style.display = 'flex';
     localStorage.setItem('app-screen', 'room');
     const labelEl = document.getElementById('current-room-label'); if (labelEl) labelEl.innerText = syncRoomId || '--';
@@ -7021,6 +7248,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   // 切換房間前把記憶體資料整個歸零：各 load 函式在「這個房間沒有資料」時不會覆寫變數，
   // 舊房間的內容就會留在記憶體裡被當成新房間的資料顯示（新房間出現別人的記帳就是這樣來的）
   function resetRoomDataInMemory() {
+    invalidateAllocCache();
     tripSettings = { title: '', sub: '', startDate: '', endDate: '', notes: [], warns: [] };
     prepData = {}; itinData = {}; expenseRecords = [];
     travelDocs = { flights: [], cars: [], hotels: [], passes: [], coupons: [] };
@@ -7038,6 +7266,16 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   async function enterRoom(roomId) {
+    try { await enterRoomInner(roomId); }
+    catch (e) {
+      console.error('進入房間失敗:', e);
+      alert('開啟房間時發生問題，請再試一次。\n\n' + (e && e.message ? e.message : ''));
+    }
+    finally { hideLoading(); }   // 不管中途出什麼事，遮罩一定要收掉，不然會像當掉
+  }
+  async function enterRoomInner(roomId) {
+    showLoading('正在開啟房間…', 10, '載入中');
+    await nextFrame();   // 先讓遮罩畫出來，否則後面的同步工作會把它卡住
     // 進別的房間前先切斷舊房監聽，避免載入過程中舊房資料還被寫進來
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
     resetRoomDataInMemory();
@@ -7051,35 +7289,46 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       masterPin = pin || '1234';
     }
 
-    await loadTripSettings();
-    await loadTravelDocs();
-    await loadPrep();
-    await loadItin();
-    await loadExpense();
-    await loadWishlist();
-    await loadFoodList();
-
+    // 七份資料彼此獨立，並行讀取。舊版一個等一個，光本機就要跑二十幾次非同步存取
+    showLoading('讀取本機資料…', 35);
     try {
-      const snapshot = await db.ref('rooms/' + roomId).once('value');
-      if (snapshot.exists()) { await updateLocalData(snapshot.val()); }
-    } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
+      await Promise.all([
+        loadTripSettings(), loadTravelDocs(), loadPrep(),
+        loadItin(), loadExpense(), loadWishlist(), loadFoodList()
+      ]);
+    } catch (e) { console.error('載入本機資料失敗:', e); }
 
     if (!travelers.length) travelers = ['我']; // 清空後若該房間確實沒有成員資料，補一個預設值，記帳才有付款人可選
-    // 分帳結算的內容只有在切換到該分頁時才會重畫，換房間時不重畫就會看到上一個房間的結算結果
+
+    // 先用本機資料把畫面開起來，使用者馬上能操作；雲端的部分在背景補
+    showLoading('整理畫面…', 65);
+    await nextFrame();
     renderExpenseSummary(); renderSettlement();
     rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
-    registerRoom(roomId, tripSettings.title);
     renderHeroSyncStatus();
     applyRoomModeUI();
-    fetchRates();
-    if (!isSoloMode()) { fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true); fetchTripDailyTemps(); }
+    if (!isSoloMode()) { renderDayPills(); renderDashboard(); renderReminder(true); }
     renderNowBar();
     showMainApp();
     if (isSoloMode()) { showP('p-expense', document.querySelectorAll('.nav-btn')[3]); }
     else { showP('p-overview', document.querySelectorAll('.nav-btn')[0]); }
+    hideLoading();
 
-    const autoEnable = localStorage.getItem('sync-auto-enabled');
-    if (autoEnable === 'true') { attachAutoSyncListener(roomId); }
+    // 以下都不擋畫面：雲端同步、匯率、天氣、房號註冊
+    (async () => {
+      try {
+        const snapshot = await db.ref('rooms/' + roomId).once('value');
+        if (snapshot.exists() && syncRoomId === roomId) {  // 使用者可能已經切到別的房間，這時就不要蓋回去
+          await updateLocalData(snapshot.val());
+          rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
+        }
+      } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
+      registerRoom(roomId, tripSettings.title);
+      fetchRates();
+      if (!isSoloMode()) { fetchWeather(); fetchTripDailyTemps(); }
+      const autoEnable = localStorage.getItem('sync-auto-enabled');
+      if (autoEnable === 'true') { attachAutoSyncListener(roomId); }
+    })();
   }
 
   // ===== 個人記帳模式 =====
@@ -7119,7 +7368,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         };
         travelers = [name]; expenseRecords = []; prepData = {}; itinData = {};
         localStorage.setItem('sync-room-id', roomId);
-        await saveTripSettings(); await saveExpense();
+        await Promise.all([saveTripSettings(), saveExpense()]);
         const payload = { tripSettings, prepData: {}, itinData: {}, expenseRecords: [], masterPin: '1234', travelDocs: {}, travelers, wishlistData: [], foodListData: [] };
         await db.ref('rooms/' + roomId).set(JSON.parse(JSON.stringify(payload, (k, v) => v === undefined ? '' : v)));
         await registerRoom(roomId, tripSettings.title, name);
@@ -7130,7 +7379,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
     if (btn) btn.disabled = false;
     closeSoloRoomForm();
-    await enterRoom(roomId);
+    await enterRoomSafe(roomId);
   }
 
   // 依目前房間型態切換整體介面（配色、底部分頁、旅程專屬區塊）
@@ -7230,6 +7479,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   function closeCreateRoomForm() { document.getElementById('create-room-overlay').style.display = 'none'; }
 
   async function submitCreateRoom() {
+    try { return await submitCreateRoomInner(); }
+    finally { hideLoading(); }
+  }
+  async function submitCreateRoomInner() {
     const roomId = document.getElementById('cr-room-id').value.trim();
     const title = document.getElementById('cr-title').value.trim();
     const creator = document.getElementById('cr-creator').value.trim();
@@ -7282,8 +7535,11 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
 
-    await saveTripSettings(); await savePrep(); await saveItin(); await saveExpense(); await saveTravelDocs(); await saveWishlist(); await saveFoodList();
+    showLoading('建立房間…', 45, '請稍候');
+    await nextFrame();
+    await Promise.all([saveTripSettings(), savePrep(), saveItin(), saveExpense(), saveTravelDocs(), saveWishlist(), saveFoodList()]);
 
+    showLoading('發布到雲端…', 70);
     try {
       const safePayload = { tripSettings, prepData, itinData, expenseRecords, masterPin: masterPin || '1234', travelDocs, travelers, wishlistData, foodListData };
       const finalData = JSON.parse(JSON.stringify(safePayload, (k, v) => v === undefined ? '' : v));
@@ -7304,9 +7560,11 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderExpenseSummary(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
     renderWishlist(); renderFoodList();
-    renderHeroSyncStatus(); fetchRates(); fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true);
+    renderHeroSyncStatus(); renderDayPills(); renderDashboard(); renderReminder(true);
     showMainApp();
     showP('p-overview', document.querySelectorAll('.nav-btn')[0]);
+    hideLoading();
+    fetchRates(); fetchWeather();   // 網路的放最後，不擋畫面
     // 自動同步原本就開著的話，改成監聽這個新房間
     if (localStorage.getItem('sync-auto-enabled') === 'true') { attachAutoSyncListener(roomId); }
   }
@@ -7320,6 +7578,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   async function submitJoinRoom() {
     const roomId = document.getElementById('jr-room-id').value.trim();
     const btn = document.getElementById('jr-submit-btn');
+    if (btn && btn.disabled) return;   // 防連點：第一次還沒跑完就再按會開兩次房
     if (!roomId) { alert('請輸入房號！'); return; }
     if (!/^[0-9]+$/.test(roomId)) { alert('房號只能是數字，請重新確認。'); return; }
     if (btn) btn.disabled = true;
@@ -7337,7 +7596,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
     if (btn) btn.disabled = false;
     closeJoinRoomForm();
-    await enterRoom(roomId);
+    await enterRoomSafe(roomId);
   }
 
   // 流水號必須大於目前資料中最大的 ID，否則新項目會跟既有項目撞號。
@@ -7359,8 +7618,15 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     foodListItemSeq = bump(foodListData, foodListItemSeq);
   }
 
+  let lastSyncedHash = '';
   async function updateLocalData(data) {
     if (!data) return;
+    // 跟上次收到的完全一樣就不用再重畫一次：自動同步每次推送都整頁重繪是卡頓主因之一
+    try {
+      const h = JSON.stringify([data.tripSettings, data.prepData, data.itinData, data.expenseRecords, data.travelDocs, data.travelers, data.wishlistData, data.foodListData]);
+      if (h === lastSyncedHash) return;
+      lastSyncedHash = h;
+    } catch(e) {}
     const prevGeminiKey = tripSettings && tripSettings.geminiApiKey; // 先記住目前本機的金鑰：如果金鑰當初只存在本機、還沒同步上雲端，雲端這份資料就不會有它，
     if (data.tripSettings) tripSettings = data.tripSettings;         // 這裡整包覆蓋 tripSettings 時絕對不能把它弄丟——這正是「AI辨識按鈕突然消失」的真正原因
     if (tripSettings && !tripSettings.geminiApiKey && prevGeminiKey) { tripSettings.geminiApiKey = prevGeminiKey; }
@@ -7372,18 +7638,21 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     if (data.travelers && data.travelers.length) travelers = data.travelers;
     if (data.wishlistData) wishlistData = data.wishlistData;
     if (data.foodListData) foodListData = data.foodListData;
+    invalidateAllocCache();   // 雲端資料整包換掉，之前算好的分攤全部作廢
     refreshItinDays(); // 依同步進來的 tripSettings 日期重新產生天數清單，並確保每一天在 itinData 裡都有陣列可寫
     resyncItemSeqs();  // 同步進來的資料要一併把流水號往後推，否則新增的項目會拿到重複 ID（刪一筆會連帶刪掉同 ID 的其他筆）
 
-    await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings));
-    await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData));
-    await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData));
-    await storage.set(roomScopedKey('expense-data'), JSON.stringify({records: expenseRecords, travelers}));
-    await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs));
-    await storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData));
-    await storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData));
-    
-    await storage.set(roomScopedKey('app-initialized'), 'true');
+    // 八次寫入彼此獨立，並行就好；一個等一個的話資料量大時畫面會整個凍住
+    await Promise.all([
+      storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings)),
+      storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData)),
+      storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData)),
+      storage.set(roomScopedKey('expense-data'), JSON.stringify({records: expenseRecords, travelers})),
+      storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs)),
+      storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData)),
+      storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData)),
+      storage.set(roomScopedKey('app-initialized'), 'true')
+    ]);
 
     renderTripSettingsUI(); renderPrep(); renderDayTabs();
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
@@ -7819,7 +8088,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         let people = '';
         st.rows.forEach(r => {
           people += '<div class="kv"><span class="k">' + esc(r.name) + '</span><span class="v">已付 NT$ ' + f(r.paid) +
-            '　應付 NT$ ' + f(r.share) + '　' + (r.balance >= 0 ? '應收回' : '應再付') + ' NT$ ' + f(Math.abs(r.balance)) + '</span></div>';
+            '　應付 NT$ ' + f(r.share) + (Number(r.advanced) ? '　代購墊付 NT$ ' + f(r.advanced) : '') +
+            '　' + (r.balance >= 0 ? '應收回' : '應再付') + ' NT$ ' + f(Math.abs(r.balance)) + '</span></div>';
         });
         money += sub('每人收支', '總支出 NT$ ' + f(st.totalTWD), '<div class="item">' + people + '</div>', true);
         const pend = (st.transfers||[]).filter(t => !isSettled(t.from, t.to, t.amount));
@@ -8068,10 +8338,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     settleRows.push([]);
     settleRows.push(['總支出(TWD)', st.totalTWD, '', '參與人數', st.rows.length, '', '平均每人(TWD)', st.rows.length?Math.round(st.totalTWD/st.rows.length):0]);
     settleRows.push([]);
-    settleRows.push(['成員','已付(TWD)','應分攤(TWD)','差額(TWD)','狀態']);
+    settleRows.push(['成員','已付(TWD)','應分攤(TWD)','代購墊付(TWD)','差額(TWD)','狀態']);
     st.rows.forEach(r => {
       const status = Math.abs(r.balance) < 1 ? '已平衡' : r.balance > 0 ? `應收回 ${r.balance}` : `應再付 ${-r.balance}`;
-      settleRows.push([r.name, r.paid, r.share, r.balance, status]);
+      settleRows.push([r.name, r.paid, r.share, Number(r.advanced) || 0, r.balance, status]);
     });
     settleRows.push([]);
     settleRows.push(['結清方式（依下列轉帳即可結清，已算成最少筆數）']);
@@ -8157,6 +8427,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   // ===== 全域初始化入口 =====
   window.onload = async () => {
+    try { await bootApp(); }
+    catch (e) { console.error('啟動失敗:', e); hideLoading(); showHomeScreen(); }
+  };
+  async function bootApp() {
     await loadFontScale();
     // 顯示模式已改為依螢幕寬度自動判斷（見 CSS 的響應式版面），不再需要記住使用者的選擇
     // 即時同步預設開啟（只有第一次、還沒有任何設定時才套用；使用者自己關掉的話尊重其選擇）
@@ -8206,23 +8480,25 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
     if (savedPin) masterPin = savedPin;
 
-    await loadTripSettings(); 
-    await loadTravelDocs(); 
-    await loadPrep(); 
-    await loadItin(); 
-    await loadExpense();
-    await loadWishlist();
-    await loadFoodList();
+    showLoading('讀取資料…', 40, '載入中');
+    await nextFrame();
+    try {
+      await Promise.all([
+        loadTripSettings(), loadTravelDocs(), loadPrep(),
+        loadItin(), loadExpense(), loadWishlist(), loadFoodList()
+      ]);
+    } catch (e) { console.error('啟動載入失敗:', e); }
+    storage.set(roomScopedKey('app-initialized'), 'true');   // 不用等它寫完才讓畫面出來
 
-    await storage.set(roomScopedKey('app-initialized'), 'true');
-
-    fetchRates(); fetchWeather(); renderDayPills();
-    renderDashboard(); renderReminder();
-    fetchTripDailyTemps(); renderNowBar();
-
+    showLoading('整理畫面…', 75);
+    await nextFrame();
+    renderDayPills(); renderDashboard(); renderReminder(); renderNowBar();
     renderHeroSyncStatus();
     applyRoomModeUI();
     showMainApp();
+    hideLoading();
+    // 網路相關的都不擋畫面
+    fetchRates(); fetchWeather(); fetchTripDailyTemps();
     if (isSoloMode()) showP('p-expense', document.querySelectorAll('.nav-btn')[3]);
     const autoEnable = localStorage.getItem('sync-auto-enabled');
     if (autoEnable === 'true') {
@@ -8232,7 +8508,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
 
     await maybeShowOnboarding();
-  };
+  }
 </script>
 </body>
 </html>
