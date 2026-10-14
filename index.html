@@ -61,7 +61,10 @@
   
   .app-container {
     max-width: 460px; margin: 0 auto 24px; min-height: 90vh;
-    padding: 0 16px 120px; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 0 16px 120px;
+    /* 這裡不能用 transition/animation 去碰 transform：一旦容器有 transform，
+       裡面的 position:fixed 就會改以它為基準，再被 overflow:hidden 裁掉 */
+    transition: max-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative; background: var(--bg); border-radius: 36px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
@@ -119,7 +122,19 @@
   
   /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
   body.has-nowbar #main-app-container { padding-bottom: calc(184px + env(safe-area-inset-bottom, 0px)); }
-  #now-bar { position: fixed; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; bottom: calc(104px + env(safe-area-inset-bottom, 0px)); background: rgba(255,255,255,0.97); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.14); padding: 10px 13px; z-index: 1400; cursor: pointer; }
+  #now-bar {
+    position: fixed; left: 50%; width: 92%; max-width: 420px;
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255,255,255,0.97);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.7); border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.14); padding: 10px 13px;
+    z-index: 1400; cursor: pointer;
+    transform: translateX(-50%) translateZ(0);
+    -webkit-transform: translateX(-50%) translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
   body.tablet-view #now-bar { max-width: 640px; }
   @media (min-width: 700px) { #now-bar { max-width: 640px; } }
   @media (min-width: 1100px) { #now-bar { max-width: 720px; } }
@@ -136,9 +151,11 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
   /* 進房間後主畫面淡入上滑，比直接「啪」一下出現更像有在載入 */
-  @keyframes appIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  .app-enter { animation: appIn .34s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
-  /* 分頁切換的淡入：純 CSS，不增加計算量 */
+  /* 只動 opacity：如果用 transform，#main-app-container 會變成 fixed 的定位基準，
+     底部導覽列就會被容器的 overflow:hidden 裁掉 */
+  @keyframes appIn { from { opacity: 0; } to { opacity: 1; } }
+  .app-enter { animation: appIn .3s ease both; }
+  /* 分頁切換淡入：panel 內沒有 fixed 元素，可以安全地用位移 */
   @keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .panel.active { animation: panelIn .22s ease both; }
   @media (prefers-reduced-motion: reduce) {
@@ -146,8 +163,24 @@
     #app-loading [style*="animation"] { animation: none !important; }
   }
 
-  .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
+  .bottom-nav {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 50%; width: 92%; max-width: 420px; height: 76px;
+    background: rgba(255,255,255,0.97);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+    display: flex; justify-content: space-around; align-items: center;
+    z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6);
+    /* iPad Safari 慣性滾動時會把 fixed 元素的合成層丟掉造成閃爍消失：
+       用 translateZ 強制獨立合成層，並宣告只有 transform 會變，瀏覽器才不會每幀重畫 */
+    transform: translateX(-50%) translateZ(0);
+    -webkit-transform: translateX(-50%) translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
     #main-app-container {
+    /* 不要在這裡用 transform/filter/perspective：那會讓 position:fixed 改以它為基準，
+       底部導覽列就會跟著內容捲動而不是固定在畫面上 */
     min-height: 100vh;
     min-height: 100dvh;
     margin-bottom: 0;
@@ -297,7 +330,7 @@
   body.solo-mode .final-res-card { background: #233A31; }
   body.solo-mode .tab-btn-sub.active { color: #233A31; }
   body.solo-mode .solo-hide { display: none !important; }
-  #solo-topbar { display:flex; align-items:center; gap:10px; padding:max(16px, calc(8px + env(safe-area-inset-top, 0px))) 16px 12px; background:linear-gradient(140deg,#1F3129 0%,#2E5A48 100%); margin:0 -16px 6px; }
+  #solo-topbar { transform: translateZ(0); -webkit-transform: translateZ(0); backface-visibility: hidden; display:flex; align-items:center; gap:10px; padding:max(16px, calc(8px + env(safe-area-inset-top, 0px))) 16px 12px; background:linear-gradient(140deg,#1F3129 0%,#2E5A48 100%); margin:0 -16px 6px; }
   #solo-topbar #solo-topbar-name { flex:1; min-width:0; color:#fff; font-weight:800; font-size:calc(15px * var(--font-scale)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #solo-topbar button { flex-shrink:0; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.22); color:#fff; border-radius:12px; padding:7px 13px; font-size:calc(12.5px * var(--font-scale)); font-weight:700; cursor:pointer; font-family:inherit; }
   body:not(.solo-mode) .solo-only { display: none !important; }
@@ -627,11 +660,13 @@ Day2 12:00 outlet購物，預計逛一小時
     <div style="padding:0 12px;">
       <div class="card">
         <div class="section-title"><i class="fa-solid fa-chart-pie"></i> 消費明細</div>
-        <div id="exp-member-filter" class="solo-hide" style="display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;"></div>
+        <div class="solo-hide" id="exp-member-filter-wrap" style="margin-bottom:10px;">
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--text-secondary); font-weight:700; margin-bottom:7px; padding-left:2px;"><i class="fa-solid fa-user-group" style="color:var(--teal);"></i> 看誰的帳</div>
+          <div id="exp-member-filter" style="display:flex; gap:7px; overflow-x:auto; padding-bottom:8px;"></div>
+        </div>
         <div class="calc-tabs" id="exp-breakdown-tabs" style="margin-bottom:14px;">
-          <button class="tab-btn-sub active" onclick="switchExpBreakdown('category', this)">類別</button>
-          <button class="tab-btn-sub" onclick="switchExpBreakdown('member', this)">成員</button>
-          <button class="tab-btn-sub" onclick="switchExpBreakdown('date', this)">日期</button>
+          <button class="tab-btn-sub active" onclick="switchExpBreakdown('category', this)">依類別</button>
+          <button class="tab-btn-sub" onclick="switchExpBreakdown('date', this)">依日期</button>
         </div>
         <div id="cat-breakdown"><p class="empty-hint">尚無消費紀錄</p></div>
       </div>
@@ -746,18 +781,20 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>
   </section>
 
-  <!-- 旅行期間常駐：現在這站與下一站 -->
-  <div id="now-bar" class="solo-hide" style="display:none;"></div>
-
-  <!-- 底部導覽列 -->
-  <nav class="bottom-nav" id="bottom-nav">
-    <button class="nav-btn active solo-hide" onclick="showP('p-overview',this)"><i class="fa-solid fa-house"></i><span>總覽</span></button>
-    <button class="nav-btn solo-hide" onclick="showP('p-prep',this)"><i class="fa-solid fa-briefcase"></i><span>準備</span></button>
-    <button class="nav-btn solo-hide" onclick="showP('p-itinerary',this)"><i class="fa-solid fa-calendar-days"></i><span>行程</span></button>
-    <button class="nav-btn" onclick="showP('p-expense',this)"><i class="fa-solid fa-wallet"></i><span>支出</span></button>
-    <button class="nav-btn" onclick="showP('p-calc',this)"><i class="fa-solid fa-calculator"></i><span>算帳</span></button>
-  </nav>
 </div>
+
+<!-- 底部的兩條浮動列放在所有容器之外。
+     放在 #main-app-container 裡面時，那個容器的 overflow:hidden + transition/動畫
+     會在 iOS 滾動時讓 position:fixed 改以容器為定位基準並被裁切，
+     結果就是滑動到一半整排按鈕消失（手機、平板都會發生） -->
+<div id="now-bar" class="solo-hide" style="display:none;"></div>
+<nav class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-btn active solo-hide" onclick="showP('p-overview',this)"><i class="fa-solid fa-house"></i><span>總覽</span></button>
+  <button class="nav-btn solo-hide" onclick="showP('p-prep',this)"><i class="fa-solid fa-briefcase"></i><span>準備</span></button>
+  <button class="nav-btn solo-hide" onclick="showP('p-itinerary',this)"><i class="fa-solid fa-calendar-days"></i><span>行程</span></button>
+  <button class="nav-btn" onclick="showP('p-expense',this)"><i class="fa-solid fa-wallet"></i><span>支出</span></button>
+  <button class="nav-btn" onclick="showP('p-calc',this)"><i class="fa-solid fa-calculator"></i><span>算帳</span></button>
+</nav>
 
 <!-- 首頁：建立新旅程／加入房間。開啟App時的第一道畫面，只有明確建立或加入房間後才會進到主要功能 -->
 <div class="app-container" id="home-screen" style="display:none; text-align:center; position:relative; overflow:hidden; min-height:100dvh; box-sizing:border-box; flex-direction:column;">
@@ -1049,7 +1086,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-14 22:10.1</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-14 22:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -5717,7 +5754,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   // ===== 消費統計切換（類別／成員／日期） =====
   function switchExpBreakdown(mode, btn) {
-    expBreakdownMode = mode;
+    expBreakdownMode = (mode === 'member') ? 'category' : mode;   // 成員分組已併入上方篩選
     const tabs = document.getElementById('exp-breakdown-tabs');
     if (tabs) tabs.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
@@ -6684,7 +6721,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   function setExpMember(name) { expMemberFilter = (expMemberFilter === name) ? '' : name; renderExpenseSummary(); }
   function renderExpMemberRow() {
     const wrap = document.getElementById('exp-member-filter'); if (!wrap) return;
-    if (isSoloMode() || (travelers||[]).length < 2) { wrap.style.display = 'none'; return; }
+    const box = document.getElementById('exp-member-filter-wrap');
+    if (isSoloMode() || (travelers||[]).length < 2) { if (box) box.style.display = 'none'; return; }
+    if (box) box.style.display = 'block';
     wrap.style.display = 'flex';
     const chip = (label, val, idx) => {
       const on = expMemberFilter === val;
@@ -6750,9 +6789,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     renderBudget(expList);
     if (expList.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
 
-    // 有篩選成員時，分組就固定是那個人（舊版用 r.payer，會變成顯示付款人而不是被篩選的人）
-    const groupKeyOf = expBreakdownMode === 'member' ? (r => expMemberFilter || r.payer || '未指定')
-      : expBreakdownMode === 'date' ? (r => r.date || '未填日期')
+    // 分組只有「類別／日期」兩種；要看某個人的帳請用上面的成員篩選（兩者原本功能重疊，已合併）
+    const groupKeyOf = expBreakdownMode === 'date' ? (r => r.date || '未填日期')
       : (r => r.category || '其他');
 
     // 選了成員就只留「他有分攤到」的紀錄（分攤結果走快取，不會每筆重算）
@@ -6776,7 +6814,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     wrap.innerHTML = keys.map(k => {
       const g = groups[k];
       const pct = totalKrw ? Math.round(g.total/totalKrw*100) : 0;
-      const icon = expBreakdownMode === 'category' ? (CAT_ICON[k]||'📎') : (expBreakdownMode === 'member' ? '<i class="fa-solid fa-user" style="color:var(--teal);"></i>' : '<i class="fa-solid fa-calendar-day" style="color:var(--teal);"></i>');
+      const icon = expBreakdownMode === 'date' ? '<i class="fa-solid fa-calendar-day" style="color:var(--teal);"></i>' : (CAT_ICON[k]||'📎');
       const label = expBreakdownMode === 'date' ? formatDateLabel(k) : k;
       const sortedRecords = g.records.slice().sort((a,b)=>(b.id||0)-(a.id||0));
       return `<div style="margin-bottom:20px;">
