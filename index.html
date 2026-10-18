@@ -103,6 +103,41 @@
   .tab-btn-sub.active { background: #fff; color: var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   
   .input-label { font-size:calc(13px * var(--font-scale)); color: var(--text-secondary); font-weight: 700; margin-bottom: 8px; display: block; padding-left: 6px; }
+  /* 憑證表單欄位變多之後，用區段標題把相關欄位分組，才不會變成一長條看不完 */
+  .form-sec { display:flex; align-items:center; gap:8px; margin:18px 0 10px; padding-left:2px; }
+  .form-sec:first-child { margin-top:2px; }
+  .form-sec span { font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); white-space:nowrap; }
+  .form-sec i { color:var(--gold); font-size:calc(11px * var(--font-scale)); }
+  .form-sec::after { content:""; flex:1; height:1px; background:var(--line); }
+  .form-select { width:100%; padding:9px 10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; background:#fff; font-family:inherit; font-size:calc(13px * var(--font-scale)); color:var(--navy); }
+  /* 可重複列編輯器：房型／旅客這種一筆訂單有好幾列的資料 */
+  .rowed { margin-bottom:4px; }
+  .rowed-row { border:1.5px solid var(--line); border-radius:14px; padding:10px 11px 4px; margin-bottom:9px; background:#F8FAFC; }
+  .rowed-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .rowed-no { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; border-radius:7px; background:var(--navy); color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; padding:0 6px; }
+  .rowed-del { width:26px; height:26px; border-radius:8px; border:1px solid #FBD5D5; background:#fff; color:var(--warn); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:calc(12px * var(--font-scale)); flex-shrink:0; }
+  .rowed-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .rowed-grid label { display:block; min-width:0; margin-bottom:6px; }
+  .rowed-grid label.wide { grid-column:1 / -1; }
+  .rowed-grid label span { display:block; font-size:calc(10.5px * var(--font-scale)); color:var(--gray); font-weight:700; margin-bottom:3px; padding-left:2px; }
+  .rowed-grid label input { width:100%; box-sizing:border-box; min-width:0; padding:8px 9px; border:1px solid #D7DEE6; border-radius:10px; font-size:calc(13px * var(--font-scale)); font-family:inherit; background:#fff; }
+  .rowed-empty { padding:13px; border:1.5px dashed var(--line); border-radius:12px; text-align:center; color:var(--gray); font-size:calc(12px * var(--font-scale)); margin-bottom:9px; }
+  .rowed-add { width:100%; padding:9px; border:1.5px dashed var(--navy); border-radius:12px; background:none; color:var(--navy); font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:6px; }
+  @media (min-width: 560px) { .rowed-grid { grid-template-columns:repeat(3, minmax(0,1fr)); } }
+  /* 卡片上的小標籤：房型、早餐、艙等這類一眼就要看到的資訊 */
+  .tk-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .tk-chip { display:inline-flex; align-items:center; gap:5px; background:#F1F5F9; border:1px solid var(--line); border-radius:9px; padding:4px 9px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:var(--navy); }
+  .tk-chip i { color:var(--gold); font-size:calc(10.5px * var(--font-scale)); }
+  .tk-chip.on { background:#ECFDF5; border-color:#A7F3D0; color:#065F46; }
+  .tk-chip.on i { color:#059669; }
+  .tk-chip.off { background:#F8FAFC; color:var(--gray); }
+  .tk-chip.off i { color:var(--gray); }
+  /* 房型明細：卡片展開後的小表格 */
+  .tk-rooms { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+  .tk-room { display:flex; align-items:center; gap:8px; background:#F8FAFC; border:1px solid var(--line); border-radius:11px; padding:7px 10px; }
+  .tk-room .n { flex-shrink:0; min-width:20px; height:20px; border-radius:6px; background:var(--navy); color:#fff; font-size:calc(10px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 5px; }
+  .tk-room .t { flex:1; min-width:0; font-size:calc(12.5px * var(--font-scale)); font-weight:700; color:var(--navy); line-height:1.5; }
+  .tk-room .g { font-size:calc(11px * var(--font-scale)); color:var(--gray); font-weight:600; }
   .input-field { position: relative; margin-bottom: 20px; }
   .input-field input {
     width: 100%; border: 2.5px solid #E9EDF0; border-radius: 18px; padding: 16px 16px 16px 50px;
@@ -420,7 +455,7 @@
           </div>
         </div>
 
-        <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 20px; font-size:calc(31px * var(--font-scale)); letter-spacing:-0.8px; text-shadow:0 2px 12px rgba(0,0,0,0.18);">釜山行旅</h1>
+        <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 20px; font-size:calc(31px * var(--font-scale)); letter-spacing:-0.8px; text-shadow:0 2px 12px rgba(0,0,0,0.18);">旅程</h1>
         <p class="hero-sub" id="display-trip-sub" style="margin:7px 0 0; opacity:0.92; font-size:calc(14.5px * var(--font-scale)); font-weight:700;">11.10(二) - 11.14(六)・5天4夜</p>
         <div id="hero-meta-row" style="display:flex; flex-wrap:wrap; gap:7px; margin-top:13px;"></div>
 
@@ -471,13 +506,13 @@
             <div id="overview-rate" class="mini-value">讀取中...</div>
         </div>
         <div class="card mini-card" onclick="openWeatherCityEdit()" style="cursor:pointer;" title="城市抓錯了？點一下可以手動指定">
-            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> <span id="weather-city-label">釜山天氣</span> <i class="fa-solid fa-pen only-master" style="font-size:calc(9px * var(--font-scale)); color:var(--gray);"></i></div>
+            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> <span id="weather-city-label">天氣</span> <i class="fa-solid fa-pen only-master" style="font-size:calc(9px * var(--font-scale)); color:var(--gray);"></i></div>
             <div id="overview-weather" class="mini-value">讀取中...</div>
             <div class="mini-sub" id="korea-time">當地時間 --:--</div>
         </div>
     </div>
     <div class="climate-note full-width" id="climate-note-card">
-        <i class="fa-solid fa-temperature-half"></i> <span id="climate-note-text">11月釜山約 15-17°C (日)、8-9°C (夜),日夜溫差大,建議洋蔥式穿法多帶件外套</span>
+        <i class="fa-solid fa-temperature-half"></i> <span id="climate-note-text">氣候提醒讀取中...</span>
         <button class="edit-pill only-master" onclick="openClimateNoteEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
     </div>
 
@@ -576,8 +611,8 @@ Day2 12:00 outlet購物，預計逛一小時
 11/11 10:00 甘川洞文化村 | 門票 免費 | 備註 必看小王子雕像" style="width:100%; height:110px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box;"></textarea>
       </div>
       <div id="itin-ai-mode-image" style="display:none;">
-        <input type="file" id="itin-ai-image-input" accept="image/*" style="display:none;" onchange="handleItinFileSelect(event,'image')">
-        <button type="button" class="ghost-btn" onclick="document.getElementById('itin-ai-image-input').click()"><i class="fa-solid fa-image"></i> 選擇行程截圖或照片</button>
+        <input type="file" id="itin-ai-image-input" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleItinFileSelect(event,'image')">
+        <button type="button" class="ghost-btn" onclick="document.getElementById('itin-ai-image-input').click()"><i class="fa-solid fa-file-arrow-up"></i> 選擇行程截圖、照片或 PDF</button>
         <div id="itin-ai-image-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:8px; text-align:center;"></div>
         <p style="font-size:calc(11px * var(--font-scale)); color:#1E3A8A; text-align:center; margin:8px 0 0;">選好後記得在AI對話中一併附上這張圖片</p>
       </div>
@@ -623,7 +658,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <!-- 記帳支出面板 -->
   <section class="panel" id="p-expense">
-    <div class="page-header" style="padding-bottom:0;"><h1 class="clean-title" id="expense-page-title">旅行支出</h1><p id="expense-page-sub">Busan Trip Ledger</p></div>
+    <div class="page-header" style="padding-bottom:0;"><h1 class="clean-title" id="expense-page-title">旅行支出</h1><p id="expense-page-sub">Trip Ledger</p></div>
 
     <div class="solo-only" style="padding:0 12px;">
       <div class="card" style="padding:14px;">
@@ -682,13 +717,13 @@ Day2 12:00 outlet購物，預計逛一小時
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="toggleReceiptPanel()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
       </div>
-      <input type="file" id="receipt-file-input" accept="image/*" style="display:none;" onchange="handleReceiptFile(event)">
+      <input type="file" id="receipt-file-input" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleReceiptFile(event)">
       <div id="receipt-ai-panel" style="display:none; margin-bottom:15px;">
         <div class="card" style="border:2px solid #4A6FA1;">
           <div class="section-title" style="color:#1E3A8A; font-size:calc(15px * var(--font-scale));"><i class="fa-solid fa-receipt"></i> AI 收據辨識</div>
 
-          <div class="input-label" style="margin-bottom:6px;">收據照片</div>
-          <button type="button" class="ghost-btn" onclick="document.getElementById('receipt-file-input').click()"><i class="fa-solid fa-image"></i> 選擇或拍攝收據照片</button>
+          <div class="input-label" style="margin-bottom:6px;">收據照片或 PDF</div>
+          <button type="button" class="ghost-btn" onclick="document.getElementById('receipt-file-input').click()"><i class="fa-solid fa-file-arrow-up"></i> 選擇或拍攝收據（可用 PDF）</button>
           <div id="receipt-selected-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:8px; margin-bottom:4px; text-align:center;"></div>
 
           <button id="receipt-auto-btn" style="display:none; width:100%; align-items:center; justify-content:center; gap:6px; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); color:#fff; border:none; padding:12px; border-radius:14px; font-weight:700; font-size:calc(13.5px * var(--font-scale)); cursor:pointer; margin-top:12px; font-family:inherit;" onclick="autoRecognizeReceipt()"><i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵 AI 辨識</button>
@@ -959,7 +994,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
 <!-- 自製密碼鍵盤：取代瀏覽器原生 prompt，避免叫出系統鍵盤、也讓視覺跟 App 一致 -->
 <!-- 遮罩的 padding 要歸零、面板要限制高度，否則在螢幕較矮或平板上底部整排按鍵會被切掉 -->
-<div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end; padding:0;">
+<div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end; padding:0; z-index:11000;">
   <div onclick="event.stopPropagation()" style="background:#fff; width:100%; max-width:420px; border-radius:30px 30px 0 0; padding:22px 22px calc(22px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -12px 40px rgba(29,53,87,0.18); max-height:92dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; box-sizing:border-box;">
     <div style="text-align:center; margin-bottom:4px;">
       <div id="pin-pad-icon" style="width:52px; height:52px; border-radius:17px; background:linear-gradient(140deg,#244A70 0%,#5C91C2 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
@@ -1025,7 +1060,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div id="cr-room-id-status" style="font-size:calc(11.5px * var(--font-scale)); min-height:16px; margin-bottom:10px; font-weight:700;"></div>
 
     <div class="input-label">旅程名稱</div>
-    <input type="text" id="cr-title" placeholder="例如：釜山之旅" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:12px;">
+    <input type="text" id="cr-title" placeholder="例如：京都賞楓五日" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:12px;">
 
     <div class="input-label">你的暱稱（建立者）</div>
     <input type="text" id="cr-creator" placeholder="例如：Angus" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:4px;">
@@ -1086,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-14 22:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-18 22:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1103,7 +1138,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-pen-nib"></i> 行程全域變數自訂</h4>
       <div class="input-label">主標題</div>
-      <input type="text" id="setting-trip-title" placeholder="釜山行旅" style="display:block; width:100%; height:46px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff;">
+      <input type="text" id="setting-trip-title" placeholder="輸入旅程名稱" style="display:block; width:100%; height:46px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff;">
       <div class="input-label">日期與天數標題</div>
       <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:46px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff;">
       <div class="input-label">啟航日期 (用於計算精確倒數天數)</div>
@@ -1170,6 +1205,19 @@ Day2 12:00 outlet購物，預計逛一小時
       </div>
     </div>
 
+    <!-- 進階設定：AI 金鑰、自我檢測、診斷紀錄、主操作者密碼。
+         只有管理旅程的人會動到，誤觸代價也大（改掉密碼、刪掉金鑰），
+         所以整區收在主操作者密碼後面，關閉視窗就自動重新上鎖 -->
+    <button id="adv-unlock-btn" class="ghost-btn" style="margin-bottom:18px; border-style:dashed; color:var(--gray); display:flex;" onclick="unlockAdvancedZone()">
+      <i class="fa-solid fa-lock"></i> 進階設定（AI 金鑰、檢測、密碼）<i class="fa-solid fa-chevron-right" style="margin-left:auto;"></i>
+    </button>
+    <div id="adv-locked-zone" style="display:none;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding:9px 12px; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:12px;">
+      <i class="fa-solid fa-lock-open" style="color:#065F46; flex-shrink:0;"></i>
+      <span style="flex:1; min-width:0; font-size:calc(11.5px * var(--font-scale)); color:#065F46; font-weight:700; line-height:1.5;">已解鎖，關閉這個視窗後會自動重新上鎖</span>
+      <button onclick="lockAdvancedZone()" style="flex-shrink:0; background:#fff; border:1px solid #A7F3D0; color:#065F46; border-radius:9px; padding:5px 10px; font-size:calc(11px * var(--font-scale)); font-weight:700; cursor:pointer;">立即上鎖</button>
+    </div>
+
     <!-- AI 自動辨識設定：串接個人 Gemini API 金鑰後，收據辨識與行程匯入可以一鍵完成，不用再手動複製貼上到外部 AI；金鑰跟著 tripSettings 用既有 Firebase 同步機制一起同步給旅伴 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 自動辨識（選填）</h4>
@@ -1203,6 +1251,7 @@ Day2 12:00 outlet購物，預計逛一小時
       <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">預設解鎖密碼為：1234。此密碼會與上方設定一起儲存。</p>
       <input type="password" maxlength="4" id="setting-master-pin" placeholder="預設密碼：1234" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none;">
     </div>
+    </div><!-- /adv-locked-zone -->
 
     <div style="display:flex; gap:8px;">
       <button class="save-btn" style="flex:1" onclick="saveSettingsModalConfigs(); closeAdvancedSettings();">儲存並返回</button>
@@ -1530,7 +1579,7 @@ Day2 12:00 outlet購物，預計逛一小時
     flight: { label:'機票', icon:'fa-plane', color:'#2563EB',
       headlineKeys: ['label','flightNo','depCode','arrCode','date','time','arrTime','depTerminal','arrTerminal'],
       fields: [
-        { key:'label', label:'標籤 (如：去程／回程)', type:'text', placeholder:'去程' },
+        { key:'label', label:'標籤 (如：去程／回程)', type:'text', placeholder:'去程', section:'航班資訊' },
         { key:'airline', label:'航空公司', type:'text', placeholder:'台灣虎航' },
         { key:'flightNo', label:'航班編號', type:'text', placeholder:'IT606' },
         { key:'depCode', label:'出發地代碼', type:'text', placeholder:'TPE' },
@@ -1541,25 +1590,44 @@ Day2 12:00 outlet購物，預計逛一小時
         { key:'time', label:'起飛時間', type:'time' },
         { key:'arrTime', label:'抵達時間', type:'time' },
         { key:'gate', label:'登機門', type:'text', placeholder:'A3 / Gate 5' },
-        { key:'checkedKg', label:'托運行李 (kg)', type:'text', placeholder:'例如：20kg、共50kg' },
+        { key:'cabinClass', label:'艙等', type:'select', section:'旅客與座位',
+          options:['','經濟艙','豪華經濟艙','商務艙','頭等艙'] },
+        { key:'paxCount', label:'訂了幾個人', type:'number', placeholder:'例如：2' },
+        { key:'pax', label:'旅客與座位（一個人一列）', type:'rowlist',
+          cols:[ { key:'name', label:'旅客姓名', short:'', placeholder:'例如：WANG/DAMING' },
+                 { key:'seat', label:'座位', short:'座位', placeholder:'例如：12A' },
+                 { key:'ticketNo', label:'電子機票號碼', short:'票號', placeholder:'例如：236-1234567890' } ] },
+        { key:'checkedKg', label:'托運行李 (kg)', type:'text', placeholder:'例如：20kg、共50kg', section:'行李' },
         { key:'carryKg', label:'手提行李 (kg)', type:'text', placeholder:'例如：10kg、一人7kg' },
+        { key:'extraBaggage', label:'加購行李', type:'text', placeholder:'例如：去程加購10kg（已付）' },
         { key:'baggage', label:'行李轉盤（抵達後查）', type:'text', placeholder:'Carousel 4' },
-        { key:'bookingRef', label:'訂位代號', type:'text' },
+        { key:'bookingRef', label:'訂位代號', type:'text', section:'訂單與加購' },
+        { key:'platform', label:'訂票平台／旅行社', type:'text', placeholder:'例如：航空公司官網、Trip.com' },
         { key:'price', label:'票價', type:'text' },
+        { key:'meal', label:'機上餐／加購服務', type:'text', placeholder:'例如：已加購機上餐、選位費已付' },
         { key:'notes', label:'備註', type:'textarea' }
       ]},
     car: { label:'租車', icon:'fa-car', color:'#059669',
       headlineKeys: ['company','pickupDate','returnDate'],
       fields: [
-        { key:'company', label:'租車公司', type:'text' },
-        { key:'carModel', label:'車型', type:'text' },
-        { key:'pickupLocation', label:'取車地點', type:'text' },
+        { key:'company', label:'租車公司', type:'text', section:'租車公司' },
+        { key:'platform', label:'訂車平台', type:'text', placeholder:'例如：租車公司官網、Klook' },
         { key:'phone', label:'店家電話（NAVER 地圖用電話搜尋最準）', type:'text', placeholder:'例如：051-123-4567' },
+        { key:'pickupLocation', label:'取車地點', type:'text', section:'取車與還車' },
         { key:'pickupDate', label:'取車日期', type:'date' },
         { key:'pickupTime', label:'取車時間', type:'time' },
         { key:'returnLocation', label:'還車地點', type:'text' },
         { key:'returnDate', label:'還車日期', type:'date' },
         { key:'returnTime', label:'還車時間', type:'time' },
+        { key:'carModel', label:'車型', type:'text', section:'車輛', placeholder:'例如：Toyota Sienta' },
+        { key:'carCount', label:'租幾台', type:'number', placeholder:'例如：1' },
+        { key:'transmission', label:'排檔', type:'select', options:['','自排 AT','手排 MT'] },
+        { key:'seatCount', label:'座位數', type:'number', placeholder:'例如：7' },
+        { key:'driverInfo', label:'駕駛人／駕照需求', type:'text', placeholder:'例如：尤偉檁（需國際駕照正本＋台灣駕照）' },
+        { key:'insurance', label:'保險方案', type:'text', section:'費用與條件', placeholder:'例如：全險 CDW＋竊盜險，自負額 0' },
+        { key:'fuelPolicy', label:'油料政策', type:'select', options:['','滿油取車・滿油還車','預付油資','原樣還車','不限'] },
+        { key:'mileage', label:'里程限制', type:'text', placeholder:'例如：不限里程／每日 200km' },
+        { key:'extras', label:'加購配備', type:'textarea', placeholder:'例如：兒童座椅 ×1、雪胎、ETC 卡、導航' },
         { key:'bookingRef', label:'訂單編號', type:'text' },
         { key:'price', label:'費用', type:'text' },
         { key:'notes', label:'備註 (保險/國際駕照需求等)', type:'textarea' }
@@ -1567,15 +1635,25 @@ Day2 12:00 outlet購物，預計逛一小時
     hotel: { label:'住宿', icon:'fa-hotel', color:'#C5A07A',
       headlineKeys: ['name','checkinDate','checkoutDate'],
       fields: [
-        { key:'name', label:'飯店名稱', type:'text' },
+        { key:'name', label:'飯店名稱', type:'text', section:'飯店資訊' },
         { key:'address', label:'地址', type:'text' },
         { key:'phone', label:'電話（NAVER 地圖用電話搜尋最準）', type:'text', placeholder:'例如：051-123-4567' },
-        { key:'checkinDate', label:'入住日期', type:'date' },
+        { key:'platform', label:'訂房平台', type:'text', placeholder:'例如：Agoda、Booking.com、飯店官網' },
+        { key:'checkinDate', label:'入住日期', type:'date', section:'入住與退房' },
         { key:'checkinTime', label:'入住時間', type:'time' },
         { key:'checkoutDate', label:'退房日期', type:'date' },
         { key:'checkoutTime', label:'退房時間', type:'time' },
-        { key:'bookingRef', label:'訂單編號', type:'text' },
+        { key:'rooms', label:'訂了哪些房型（一間一列，同房型可以填間數）', type:'rowlist', section:'房型與餐食',
+          cols:[ { key:'type', label:'房型', short:'', placeholder:'例如：雙床房 Twin' },
+                 { key:'count', label:'間數', short:'×', type:'number', placeholder:'1' },
+                 { key:'guests', label:'誰住這間', short:'住客', placeholder:'例如：Will、Angus', wide:true } ] },
+        { key:'guestCount', label:'入住人數', type:'number', placeholder:'例如：4' },
+        { key:'breakfast', label:'早餐', type:'select',
+          options:['','含早餐','不含早餐','部分房型含早餐','現場加購'] },
+        { key:'mealNote', label:'餐食備註', type:'text', placeholder:'例如：早餐 07:00-10:00 在 2F、每房 2 客' },
+        { key:'bookingRef', label:'訂單編號', type:'text', section:'訂單' },
         { key:'price', label:'費用', type:'text' },
+        { key:'cancelPolicy', label:'取消政策', type:'textarea', placeholder:'例如：入住前 3 天可免費取消，之後收一晚房費' },
         { key:'notes', label:'備註', type:'textarea' }
       ]},
     pass: { label:'票券', icon:'fa-ticket', color:'#E4572E',
@@ -1583,6 +1661,9 @@ Day2 12:00 outlet購物，預計逛一小時
       fields: [
         { key:'name', label:'票券名稱', type:'text', placeholder:'Visit Busan Pass' },
         { key:'durationHours', label:'方案時數 (小時)', type:'number', placeholder:'48' },
+        { key:'qty', label:'張數', type:'number', placeholder:'例如：2' },
+        { key:'holders', label:'誰的票', type:'text', placeholder:'例如：Will、Angus' },
+        { key:'platform', label:'購買平台', type:'text', placeholder:'例如：KKday、Klook、官網' },
         { key:'startDate', label:'啟用日期', type:'date' },
         { key:'startTime', label:'啟用時間', type:'time' },
         { key:'price', label:'費用', type:'text' },
@@ -1847,20 +1928,27 @@ Day2 12:00 outlet購物，預計逛一小時
       saveTripSettings(); renderClimateNote(); closeGeneralEdit();
     });
   }
-  // 標準緊急號碼依旅程國家自動帶入（不可編輯，避免打錯號碼）；其他聯絡資訊（駐外辦事處等）可自行編輯，
-  // 沒設定過的舊房間預設保留原本的駐釜山辦事處那筆，新房間則從空白開始
+  // 標準緊急號碼依旅程國家自動帶入（不可編輯，避免打錯號碼）；其他聯絡資訊（駐外辦事處等）可自行編輯。
+  // 沒設定過的房間要給預設值時，只有去韓國才帶駐釜山辦事處那筆（維持原本111房間看到的內容），
+  // 其他國家一律留空白，不要顯示跟這趟旅程無關的號碼
+  function defaultExtraContacts() {
+    if (tripSettings && tripSettings.hasCustomContacts) return tripSettings.extraContacts || [];
+    const country = (tripSettings && tripSettings.country) || '';
+    if (country.indexOf('韓國') >= 0) return ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+    return [];
+  }
   function renderEmergencyContacts() {
     const info = getCountryInfo();
     const stdWrap = document.getElementById('emergency-standard-contacts');
     if (stdWrap) { stdWrap.innerHTML = info.emergency.map(([label, num]) => `<div class="contact-row"><span>${escapeHtml(label)}</span><a href="tel:${escapeHtml(num)}">${escapeHtml(num)}</a></div>`).join(''); }
     const extraWrap = document.getElementById('emergency-extra-contacts');
     if (extraWrap) {
-      const list = tripSettings.hasCustomContacts ? (tripSettings.extraContacts || []) : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+      const list = defaultExtraContacts();
       extraWrap.innerHTML = list.map(c => `<div class="contact-row"><span style="font-size:calc(13px * var(--font-scale));">${escapeHtml(c)}</span></div>`).join('');
     }
   }
   function openExtraContactsEdit() {
-    const list = tripSettings.hasCustomContacts ? (tripSettings.extraContacts || []) : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+    const list = defaultExtraContacts();
     const fields = `<div class="input-label">其他聯絡資訊（每行一條，例如駐外辦事處電話）</div><textarea id="edf-extracontacts" style="width:100%; height:110px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(list.join('\n'))}</textarea>`;
     setupGeneralEdit('編輯其他聯絡資訊', fields, () => {
       tripSettings.extraContacts = document.getElementById('edf-extracontacts').value.split('\n').map(l => l.trim()).filter(Boolean);
@@ -1946,8 +2034,6 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
     document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
     document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
-    document.getElementById('setting-master-pin').value = masterPin;
-    const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
     renderMembersSettingsList();
     syncFontScaleTabsUI();
     document.getElementById('settings-drawer-overlay').style.display = 'flex';
@@ -1959,29 +2045,68 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
     document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
     document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
-    document.getElementById('setting-master-pin').value = masterPin;
-    const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
+    lockAdvancedZone();   // 每次打開都是上鎖狀態，金鑰與密碼要解鎖後才填入
     // 即時同步的勾選狀態要跟實際設定對齊，否則新建房間後打開設定會看到沒勾（但其實是開著的）
     const autoEl = document.getElementById('sync-auto-check');
     if (autoEl) autoEl.checked = localStorage.getItem('sync-auto-enabled') === 'true';
     const curLabel = document.getElementById('current-room-label'); if (curLabel) curLabel.innerText = syncRoomId || '--';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
   }
-  function closeAdvancedSettings() { document.getElementById('advanced-settings-overlay').style.display = 'none'; }
+  function closeAdvancedSettings() {
+    document.getElementById('advanced-settings-overlay').style.display = 'none';
+    lockAdvancedZone();
+  }
+
+  // ===== 進階設定區的密碼鎖 =====
+  // advZoneUnlocked 同時是「儲存時要不要寫入金鑰／密碼」的開關：
+  // 鎖住時那兩個欄位是空的，若照常讀取就會把已設定的金鑰清掉。
+  let advZoneUnlocked = false;
+  function lockAdvancedZone() {
+    advZoneUnlocked = false;
+    const zone = document.getElementById('adv-locked-zone');
+    const btn = document.getElementById('adv-unlock-btn');
+    if (zone) zone.style.display = 'none';
+    if (btn) btn.style.display = 'flex';
+    const pinEl = document.getElementById('setting-master-pin'); if (pinEl) pinEl.value = '';
+    const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = '';
+  }
+  function showAdvancedZone() {
+    advZoneUnlocked = true;
+    const zone = document.getElementById('adv-locked-zone');
+    const btn = document.getElementById('adv-unlock-btn');
+    if (zone) zone.style.display = 'block';
+    if (btn) btn.style.display = 'none';
+    // 解鎖後才把實際內容填進欄位
+    const pinEl = document.getElementById('setting-master-pin'); if (pinEl) pinEl.value = masterPin;
+    const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
+    refreshAiAutoButtons();
+  }
+  function unlockAdvancedZone() {
+    openPinPad({
+      title: '進階設定', sub: '請輸入主操作者密碼', icon: 'fa-lock',
+      onDone: (code) => {
+        if (code !== masterPin) return false;   // 回傳 false：鍵盤留著讓他重試
+        showAdvancedZone();
+      }
+    });
+  }
 
   async function saveSettingsModalConfigs() {
     tripSettings.title = document.getElementById('setting-trip-title').value.trim();
     tripSettings.sub = document.getElementById('setting-trip-sub').value.trim();
     tripSettings.startDate = document.getElementById('setting-trip-startdate').value;
     tripSettings.endDate = document.getElementById('setting-trip-enddate').value;
-    const keyEl = document.getElementById('setting-gemini-key');
-    if (keyEl) {
-      tripSettings.geminiApiKey = keyEl.value.trim();
-      if (tripSettings.geminiApiKey) saveSharedApiKey(tripSettings.geminiApiKey); // 備份到本機＋雲端，所有房間與裝置共用
+    // 進階區沒解鎖時那兩個欄位是空的，照常讀取會把已設定的金鑰與密碼清掉，所以只在解鎖後才寫入
+    if (advZoneUnlocked) {
+      const keyEl = document.getElementById('setting-gemini-key');
+      if (keyEl) {
+        tripSettings.geminiApiKey = keyEl.value.trim();
+        if (tripSettings.geminiApiKey) saveSharedApiKey(tripSettings.geminiApiKey); // 備份到本機＋雲端，所有房間與裝置共用
+      }
+      const pin = document.getElementById('setting-master-pin').value.trim();
+      if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
+      else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
     }
-    const pin = document.getElementById('setting-master-pin').value.trim();
-    if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
-    else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
     refreshItinDays();
     await saveTripSettings(); closeSettingsModal(); alert('所有配置已儲存完成！');
     renderDayPills(); renderDayTabs(); renderDayContent();
@@ -2968,6 +3093,11 @@ Day2 12:00 outlet購物，預計逛一小時
     showP('p-prep', document.querySelectorAll('.nav-btn')[1]);
     switchPrepTab('checklist', document.querySelectorAll('#prep-main-tabs .tab-btn-sub')[1]);
   }
+  // 畫面文案要用到旅程名稱時一律走這裡，不要再把城市名寫死在字串裡
+  function tripName() {
+    const t = (tripSettings && tripSettings.title || '').trim();
+    return t || '旅程';
+  }
   function computeReminder() {
     if (!tripSettings || !tripSettings.startDate) {
       return { text: '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！', btnLabel: '前往設定', action: openSettingsModal };
@@ -2988,7 +3118,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const todayUndone = todayItems.filter(it => !it.done);
 
     if (daysLeft < -4) {
-      return { text: '旅程已經結束囉，希望這趟釜山行玩得盡興！記得把記帳紀錄匯出留作紀念 📖', btnLabel: '匯出 Excel', action: exportToExcel };
+      return { text: `旅程已經結束囉，希望這趟${tripName()}玩得盡興！記得把記帳紀錄匯出留作紀念 📖`, btnLabel: '匯出 Excel', action: exportToExcel };
     }
     if (daysLeft <= 0) {
       if (todayUndone.length > 0) {
@@ -3412,6 +3542,12 @@ Day2 12:00 outlet購物，預計逛一小時
     }
 
     ['flights','cars','hotels','passes','coupons'].forEach(k => { if(!travelDocs[k]) travelDocs[k]=[]; });
+    // 舊版把票券誤存成 travelDocs.passs（pass+'s'），搬回正確的 passes，不然匯出跟換房間清空都會漏掉它
+    if (Array.isArray(travelDocs.passs) && travelDocs.passs.length) {
+      const seen = new Set(travelDocs.passes.map(x => x.id));
+      travelDocs.passs.forEach(x => { if (!seen.has(x.id)) travelDocs.passes.push(x); });
+    }
+    delete travelDocs.passs;
     Object.values(travelDocs).flat().forEach(e => { if (e.id >= docItemSeq) docItemSeq = e.id + 1; });
 
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
@@ -3424,7 +3560,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const wrap = document.getElementById('doc-type-nav'); if (!wrap) return;
     wrap.innerHTML = Object.keys(DOC_TYPES).map(type => {
       const schema = DOC_TYPES[type];
-      const count = (travelDocs[type+'s']||[]).length;
+      const count = docArray(type).length;
       const active = type === activeDocType;
       return `<div onclick="selectDocType('${type}')" style="flex:0 0 auto; background:${active?'var(--navy)':'#fff'}; color:${active?'#fff':'var(--navy)'}; border:1px solid var(--line); border-radius:16px; padding:10px 16px; text-align:center; min-width:64px; cursor:pointer;">
         <i class="fa-solid ${schema.icon}" style="font-size:calc(15px * var(--font-scale));"></i>
@@ -3433,12 +3569,20 @@ Day2 12:00 outlet購物，預計逛一小時
     }).join('');
   }
   function selectDocType(type) { activeDocType = type; renderDocTypeNav(); renderDocList(); }
+  // DOC_TYPES 的鍵加 s 不一定等於實際的陣列名稱（pass → passes，不是 passs）
+  const DOC_ARRAY_KEY = { flight:'flights', car:'cars', hotel:'hotels', pass:'passes', coupon:'coupons' };
+  function docArrayKey(type) { return DOC_ARRAY_KEY[type] || (type + 's'); }
+  function docArray(type) {
+    const k = docArrayKey(type);
+    if (!Array.isArray(travelDocs[k])) travelDocs[k] = [];
+    return travelDocs[k];
+  }
 
   function renderDocList() {
     const wrap = document.getElementById('doc-list-container'); if (!wrap) return;
     const schema = DOC_TYPES[activeDocType];
     const sortKey = { flight:'date', car:'pickupDate', hotel:'checkinDate', pass:'startDate', coupon:'expiry' }[activeDocType];
-    const arr = (travelDocs[activeDocType+'s']||[]).slice().sort((a,b)=>(a[sortKey]||'').localeCompare(b[sortKey]||''));
+    const arr = docArray(activeDocType).slice().sort((a,b)=>(a[sortKey]||'').localeCompare(b[sortKey]||''));
 
     let html = '';
     if (arr.length === 0) {
@@ -3477,6 +3621,43 @@ Day2 12:00 outlet購物，預計逛一小時
     const diff = Math.round((new Date(+pb[0], +pb[1]-1, +pb[2]) - new Date(+pa[0], +pa[1]-1, +pa[2])) / 86400000);
     return diff > 0 ? diff : 0;
   }
+  // 任何欄位轉成純文字：可重複列會攤成一行字，陣列用頓號串起來。
+  // 卡片展開細節、離線手冊、Excel 匯出都走這裡，之後再加欄位就不用三個地方各改一次
+  function docFieldText(f, entry) {
+    const v = entry ? entry[f.key] : '';
+    if (!f) return '';
+    if (f.type === 'rowlist') return rowListLines(f.cols, v).join('；');
+    if (v === null || v === undefined) return '';
+    if (Array.isArray(v)) return v.filter(x => x && typeof x !== 'object').join('、');
+    if (typeof v === 'object') return '';
+    return String(v).trim();
+  }
+  function paxCountText(entry) {
+    if (!entry) return '';
+    const n = parseInt(String(entry.paxCount || '').replace(/[^0-9]/g, ''), 10);
+    if (n > 0) return n + ' 人';
+    const rows = Array.isArray(entry.pax) ? entry.pax.filter(r => r && (r.name || r.seat)) : [];
+    return rows.length ? rows.length + ' 人' : '';
+  }
+  function seatSummary(entry) {
+    const rows = (entry && Array.isArray(entry.pax)) ? entry.pax : [];
+    const seats = rows.map(r => String((r && r.seat) || '').trim()).filter(Boolean);
+    return seats.length ? '座位 ' + seats.join('、') : '';
+  }
+  // 早餐用綠色／灰色區分，掃一眼就知道這間有沒有訂到早餐
+  function breakfastChip(val) {
+    const v = String(val || '').trim();
+    if (!v) return '';
+    const tone = (v.indexOf('不含') >= 0) ? 'off' : (v.indexOf('含') >= 0 ? 'on' : '');
+    return tkChip(v.indexOf('不含') >= 0 ? 'fa-mug-saucer' : 'fa-utensils', v, tone);
+  }
+  // 卡片上的小標籤（房型、早餐、艙等…），一眼就看得到
+  function tkChip(icon, text, tone) {
+    const t = (text === null || text === undefined) ? '' : String(text).trim();
+    if (!t) return '';
+    return `<span class="tk-chip${tone ? ' ' + tone : ''}"><i class="fa-solid ${icon}"></i>${escapeHtml(t)}</span>`;
+  }
+  function tkChips(html) { return html ? `<div class="tk-chips">${html}</div>` : ''; }
   function tkKv(label, val) {
     const v = (val === null || val === undefined) ? '' : String(val).trim();
     return v ? `<div class="tk-kv"><div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(v)}</div></div>` : '';
@@ -3502,7 +3683,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (type === 'flight') {
       headTitle = `<i class="fa-solid fa-plane-departure"></i> ${escapeHtml(entry.label || '航班')}`;
       headRight = escapeHtml(entry.flightNo || '');
-      faceKeys = ['airline','bookingRef','gate','baggage','price','checkedKg','carryKg'];
+      faceKeys = ['airline','bookingRef','gate','baggage','price','checkedKg','carryKg','cabinClass','paxCount','pax'];
       // 機場欄位可能被填成「CTS北海道新千歲」這種長名稱，依字數自動縮字級並允許換行
       const codeCls = (t) => { const n = (t||'').length; return n > 8 ? 'tk-code sm' : (n > 4 ? 'tk-code md' : 'tk-code'); };
       face = `<div class="tk-route">
@@ -3522,16 +3703,29 @@ Day2 12:00 outlet購物，預計逛一小時
             <div class="tk-time">${entry.arrTime ? escapeHtml(entry.arrTime) : '<span style="color:var(--gray); font-weight:600;">待補</span>'}</div>
           </div>
         </div>
-        <div style="text-align:center; margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateChip(entry.date))}</div>`;
+        <div style="text-align:center; margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateChip(entry.date))}</div>
+        ${tkChips(
+          tkChip('fa-couch', entry.cabinClass) +
+          tkChip('fa-user-group', paxCountText(entry)) +
+          tkChip('fa-chair', seatSummary(entry))
+        )}`;
       grid = tkKv('AIRLINE 航空公司', entry.airline) + tkKv('BOOKING 訂位代號', entry.bookingRef)
            + tkKv('BAGGAGE 行李額度', [entry.checkedKg ? '托運 ' + entry.checkedKg : '', entry.carryKg ? '手提 ' + entry.carryKg : ''].filter(Boolean).join('　'))
-           + tkKv('GATE 登機門', entry.gate) + tkKv('CAROUSEL 行李轉盤', entry.baggage) + tkKv('FARE 票價', entry.price);
+           + tkKv('GATE 登機門', entry.gate) + tkKv('CAROUSEL 行李轉盤', entry.baggage) + tkKv('FARE 票價', entry.price)
+           + tkKv('CLASS 艙等', entry.cabinClass);
+      if (Array.isArray(entry.pax) && entry.pax.length) {
+        extra += `<div class="tk-rooms">` + entry.pax.map((pr, i) => `
+          <div class="tk-room">
+            <span class="n">${i + 1}</span>
+            <span class="t">${escapeHtml(pr.name || '旅客')}${pr.seat ? ` <span class="g">座位 ${escapeHtml(pr.seat)}</span>` : ''}${pr.ticketNo ? ` <span class="g">票號 ${escapeHtml(pr.ticketNo)}</span>` : ''}</span>
+          </div>`).join('') + `</div>`;
+      }
 
     } else if (type === 'hotel') {
       headTitle = `<i class="fa-solid fa-hotel"></i> ${escapeHtml(entry.name || '住宿')}`;
       const n = nightsBetween(entry.checkinDate, entry.checkoutDate);
       headRight = n ? `${n} 晚` : '';
-      faceKeys = ['address','bookingRef','price','phone','checkinTime','checkoutTime'];
+      faceKeys = ['address','bookingRef','price','phone','checkinTime','checkoutTime','rooms','guestCount','breakfast'];
       face = `<div style="display:flex; align-items:stretch; gap:9px;">
           <div class="tk-seg">
             <div class="tk-sm">CHECK-IN 入住</div>
@@ -3545,21 +3739,43 @@ Day2 12:00 outlet購物，預計逛一小時
             ${entry.checkoutTime ? `<div class="t">${escapeHtml(entry.checkoutTime)}</div>` : ''}
           </div>
         </div>
-        ${entry.address ? `<div class="tk-addr"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(entry.address)}</div>` : ''}`;
-      grid = tkKv('BOOKING 訂單編號', entry.bookingRef) + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone);
+        ${entry.address ? `<div class="tk-addr"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> ${escapeHtml(entry.address)}</div>` : ''}
+        ${tkChips(
+          tkChip('fa-bed', hotelRoomSummary(entry)) +
+          tkChip('fa-user-group', entry.guestCount ? entry.guestCount + ' 人入住' : '') +
+          breakfastChip(entry.breakfast)
+        )}`;
+      grid = tkKv('BOOKING 訂單編號', entry.bookingRef) + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone)
+           + tkKv('ROOMS 房間數', hotelRoomTotal(entry) ? hotelRoomTotal(entry) + ' 間' : '')
+           + tkKv('BREAKFAST 早餐', entry.breakfast);
+      if (Array.isArray(entry.rooms) && entry.rooms.length) {
+        extra += `<div class="tk-rooms">` + entry.rooms.map((rm, i) => `
+          <div class="tk-room">
+            <span class="n">${i + 1}</span>
+            <span class="t">${escapeHtml(rm.type || '房間')}${rm.count ? ` ×${escapeHtml(String(rm.count))}` : ''}${rm.guests ? `<br><span class="g">住客：${escapeHtml(rm.guests)}</span>` : ''}</span>
+          </div>`).join('') + `</div>`;
+      }
       const q = [entry.name, entry.address].filter(x => (x||'').trim()).join(' ');
       if (q) extra += `<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">${docNavBtn('hotel', entry.id, '', 'Google 地圖')}${isKoreaTrip() ? docNaverBtn('hotel', entry.id, '', 'NAVER 地圖') : ''}</div>`;
 
     } else if (type === 'car') {
       headTitle = `<i class="fa-solid fa-car"></i> ${escapeHtml(entry.company || '租車')}`;
       headRight = escapeHtml(entry.carModel || '');
-      faceKeys = ['carModel','bookingRef','price','phone','pickupDate','pickupTime','pickupLocation','returnDate','returnTime','returnLocation'];
+      faceKeys = ['carModel','bookingRef','price','phone','pickupDate','pickupTime','pickupLocation','returnDate','returnTime','returnLocation','carCount','transmission','seatCount'];
       face = `<div style="display:flex; flex-direction:column; gap:12px;">
           ${tkLeg('PICK-UP 取車', 'var(--teal)', entry.pickupDate, entry.pickupTime, entry.pickupLocation)}
           ${tkLeg('RETURN 還車', 'var(--coral)', entry.returnDate, entry.returnTime, entry.returnLocation)}
         </div>`;
-      grid = tkKv('CAR 車型', entry.carModel) + tkKv('BOOKING 訂單編號', entry.bookingRef)
-           + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone);
+      face += tkChips(
+        tkChip('fa-car-side', entry.carModel ? entry.carModel + (Number(entry.carCount) > 1 ? ` ×${entry.carCount}` : '') : (Number(entry.carCount) > 1 ? `${entry.carCount} 台` : '')) +
+        tkChip('fa-gears', entry.transmission) +
+        tkChip('fa-user-group', entry.seatCount ? entry.seatCount + ' 人座' : '') +
+        tkChip('fa-gas-pump', entry.fuelPolicy)
+      );
+      grid = tkKv('CAR 車型', entry.carModel ? entry.carModel + (Number(entry.carCount) > 1 ? ` ×${entry.carCount}` : '') : '')
+           + tkKv('BOOKING 訂單編號', entry.bookingRef)
+           + tkKv('PRICE 費用', entry.price) + tkKv('TEL 電話', entry.phone)
+           + tkKv('INSURANCE 保險', entry.insurance);
       const pick = [entry.company, entry.pickupLocation].filter(x => (x||'').trim()).join(' ');
       const retLoc = (entry.returnLocation||'').trim();
       const hasRet = retLoc && retLoc !== (entry.pickupLocation||'').trim();
@@ -3577,14 +3793,15 @@ Day2 12:00 outlet購物，預計逛一小時
     } else if (type === 'pass') {
       headTitle = `<i class="fa-solid fa-ticket"></i> ${escapeHtml(entry.name || '票券')}`;
       headRight = entry.durationHours ? escapeHtml(String(entry.durationHours)) + ' 小時' : '';
-      faceKeys = ['price'];
+      faceKeys = ['price','qty','holders'];
       const expiryMs = calcPassExpiry(entry);
       face = `<div style="text-align:center;">
           <div class="tk-sm">EXPIRES IN 剩餘時間</div>
           <div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-weight:800; font-size:calc(22px * var(--font-scale)); color:var(--teal); margin:4px 0 6px;">計算中...</div>
           <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray);">${expiryMs ? `啟用 ${escapeHtml(dateChip(entry.startDate))} ${escapeHtml(entry.startTime||'')}　到期 ${escapeHtml(formatKoreaDateTime(expiryMs))}` : '尚未設定啟用時間與方案時數'}</div>
+          ${tkChips(tkChip('fa-ticket', entry.qty ? entry.qty + ' 張' : '') + tkChip('fa-user-group', entry.holders))}
         </div>`;
-      grid = tkKv('PRICE 費用', entry.price);
+      grid = tkKv('PRICE 費用', entry.price) + tkKv('QTY 張數', entry.qty ? entry.qty + ' 張' : '');
 
     } else if (type === 'coupon') {
       headTitle = `<i class="fa-solid fa-tags"></i> ${escapeHtml(entry.name || '優惠碼')}`;
@@ -3598,8 +3815,11 @@ Day2 12:00 outlet購物，預計逛一小時
 
     const shown = schema.headlineKeys.concat(faceKeys);
     const detailRows = schema.fields
-      .filter(f => !shown.includes(f.key))
-      .map(f => entry[f.key] ? `<div class="detail-row"><i class="fa-solid fa-circle" style="font-size:calc(5px * var(--font-scale)); color:var(--gold);"></i><span><b>${f.label}：</b>${escapeHtml(entry[f.key])}</span></div>` : '')
+      .filter(f => !shown.includes(f.key) && f.type !== 'image')
+      .map(f => {
+        const txt = docFieldText(f, entry);     // 可重複列會被轉成「房型 雙床房・×2・住客 Will」這種文字
+        return txt ? `<div class="detail-row"><i class="fa-solid fa-circle" style="font-size:calc(5px * var(--font-scale)); color:var(--gold);"></i><span><b>${escapeHtml(f.label)}：</b>${escapeHtml(txt)}</span></div>` : '';
+      })
       .filter(Boolean).join('');
     const detailHtml = (type === 'coupon' ? couponImageHtml(entry) : '') + detailRows;
 
@@ -3639,12 +3859,12 @@ Day2 12:00 outlet購物，預計逛一小時
     return '';
   }
   function openDocMap(type, id, which) {
-    const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
+    const e = docArray(type).find(x => x.id === id); if (!e) return;
     openMapSearch(docMapQuery(type, e, which));
   }
   // NAVER 地圖用店名／地址常常查不到，用電話號碼搜尋幾乎一定找得到，所以有填電話就優先用電話
   function openDocNaver(type, id, which) {
-    const e = (travelDocs[type+'s'] || []).find(x => x.id === id); if (!e) return;
+    const e = docArray(type).find(x => x.id === id); if (!e) return;
     const phone = (e.phone||'').trim();
     if (phone) { openNaverMap(phone.replace(/[^0-9+\-]/g, '')); return; }
     openNaverMap(docMapQuery(type, e, which));
@@ -3773,6 +3993,97 @@ Day2 12:00 outlet購物，預計逛一小時
   // 優惠碼與購物清單共用同一套；資料存成 images 陣列，第一張同時寫回舊的 imageUrl 欄位保持相容 =====
   const IMG_EDITOR_MAX = 8;
   let imgEditorList = [];
+  // ===== 可重複列編輯器 =====
+  // 住宿的「哪幾間是哪種房型」、機票的「誰坐哪個位子」這種資料，一筆訂單裡會有好幾列。
+  // 編輯中的內容放在 rowEditorState，打字時只寫回狀態不重畫（重畫會讓游標跳掉），
+  // 只有新增／刪除整列時才重畫。
+  const ROW_EDITOR_MAX = 12;
+  let rowEditorState = {};
+  function rowEditorInit(key, cols, rows) {
+    const clean = (Array.isArray(rows) ? rows : []).map(r => {
+      const o = {}; cols.forEach(c => { o[c.key] = (r && r[c.key] !== undefined && r[c.key] !== null) ? String(r[c.key]) : ''; });
+      return o;
+    }).slice(0, ROW_EDITOR_MAX);
+    rowEditorState[key] = { cols: cols, rows: clean };
+  }
+  function rowEditorBlank(cols) { const o = {}; cols.forEach(c => { o[c.key] = ''; }); return o; }
+  function rowEditorValue(key) {
+    const st = rowEditorState[key]; if (!st) return [];
+    return st.rows.map(r => {
+      const o = {};
+      st.cols.forEach(c => { const v = String(r[c.key] || '').trim(); if (v) o[c.key] = v; });
+      return o;
+    }).filter(o => Object.keys(o).length);     // 整列都空白就不存
+  }
+  function rowEditorHtml(key) { return `<div id="rowed-${key}" class="rowed"></div>`; }
+  function rowEditorSet(key, i, col, val) {
+    const st = rowEditorState[key]; if (!st || !st.rows[i]) return;
+    st.rows[i][col] = val;
+  }
+  function rowEditorAdd(key) {
+    const st = rowEditorState[key]; if (!st) return;
+    if (st.rows.length >= ROW_EDITOR_MAX) { alert(`最多只能新增 ${ROW_EDITOR_MAX} 列`); return; }
+    st.rows.push(rowEditorBlank(st.cols)); rowEditorRender(key);
+  }
+  function rowEditorRemove(key, i) {
+    const st = rowEditorState[key]; if (!st) return;
+    st.rows.splice(i, 1); rowEditorRender(key);
+  }
+  function rowEditorRender(key) {
+    const box = document.getElementById('rowed-' + key); if (!box) return;
+    const st = rowEditorState[key]; if (!st) return;
+    const body = st.rows.map((r, i) => `
+      <div class="rowed-row">
+        <div class="rowed-head">
+          <span class="rowed-no">${i + 1}</span>
+          <button type="button" class="rowed-del" onclick="rowEditorRemove('${key}',${i})" title="刪除這一列"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="rowed-grid">
+          ${st.cols.map(c => `
+            <label${c.wide ? ' class="wide"' : ''}>
+              <span>${escapeHtml(c.label)}</span>
+              <input type="text"${c.type === 'number' ? ' inputmode="numeric"' : ''}
+                value="${escapeHtml(r[c.key] || '')}" placeholder="${escapeHtml(c.placeholder || '')}"
+                oninput="rowEditorSet('${key}',${i},'${c.key}',this.value)">
+            </label>`).join('')}
+        </div>
+      </div>`).join('');
+    box.innerHTML = (body || `<div class="rowed-empty">還沒有資料，點下面的按鈕新增一列</div>`) +
+      `<button type="button" class="rowed-add" onclick="rowEditorAdd('${key}')"><i class="fa-solid fa-plus"></i> 新增一列</button>`;
+  }
+  // 把列資料轉成給卡片／匯出用的文字，例如「雙床房・2 間・Will、Angus」
+  function rowListLines(cols, rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows.map(r => (cols || []).map(c => {
+      const v = String((r && r[c.key]) || '').trim();
+      if (!v) return '';
+      const pfx = (c.short !== undefined && c.short !== null) ? c.short : c.label;
+      if (!pfx) return v;                                   // short:'' = 這欄不用前綴
+      return pfx + (/[\u00d7:：#]$/.test(pfx) ? '' : ' ') + v;   // ×2 不要寫成「× 2」
+    }).filter(Boolean).join('・')).filter(Boolean);
+  }
+  // 住宿卡片上的一行摘要：「雙床房 ×2、和室 ×1（共 3 間）」
+  function hotelRoomSummary(entry) {
+    const rows = (entry && Array.isArray(entry.rooms)) ? entry.rooms : [];
+    if (!rows.length) return '';
+    let total = 0;
+    const parts = rows.map(r => {
+      const n = parseInt(String(r.count || '').replace(/[^0-9]/g, ''), 10);
+      const cnt = (n > 0) ? n : 1;
+      total += cnt;
+      const t = String(r.type || '').trim() || '房間';
+      return t + ' ×' + cnt;
+    });
+    return parts.join('、') + (parts.length > 1 ? `（共 ${total} 間）` : '');
+  }
+  function hotelRoomTotal(entry) {
+    const rows = (entry && Array.isArray(entry.rooms)) ? entry.rooms : [];
+    return rows.reduce((s, r) => {
+      const n = parseInt(String(r.count || '').replace(/[^0-9]/g, ''), 10);
+      return s + ((n > 0) ? n : 1);
+    }, 0);
+  }
+
   function imagesOf(obj) {
     if (!obj) return [];
     if (Array.isArray(obj.images) && obj.images.length) return obj.images.filter(Boolean);
@@ -3865,18 +4176,18 @@ Day2 12:00 outlet購物，預計逛一小時
   // 辨識完不會直接存檔，而是把結果填進新增表單讓使用者確認後再儲存 =====
   let docAiFile = null;
   const DOC_AI_SCHEMA = {
-    flight: '{"label":"去程或回程","airline":"航空公司","flightNo":"航班編號","depCode":"出發機場三碼代碼","depTerminal":"出發航廈，例如 第1航廈 或 T1","arrCode":"抵達機場三碼代碼","arrTerminal":"抵達航廈","date":"出發日期 YYYY-MM-DD","time":"起飛時間 HH:MM","arrTime":"抵達時間 HH:MM","checkedKg":"托運行李額度，含單位，例如 20kg 或 共50kg","carryKg":"手提行李額度，含單位，例如 10kg 或 一人7kg","gate":"登機門（當天才公布，查不到就留空）","baggage":"行李轉盤","bookingRef":"訂位代號","price":"票價","notes":"其他備註"}',
-    hotel: '{"name":"飯店名稱","address":"完整地址","phone":"電話","checkinDate":"入住日期 YYYY-MM-DD","checkinTime":"入住時間 HH:MM","checkoutDate":"退房日期 YYYY-MM-DD","checkoutTime":"退房時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"房型、早餐、取消政策等備註"}',
-    car: '{"company":"租車公司","carModel":"車型","pickupLocation":"取車地點","phone":"店家電話","pickupDate":"取車日期 YYYY-MM-DD","pickupTime":"取車時間 HH:MM","returnLocation":"還車地點","returnDate":"還車日期 YYYY-MM-DD","returnTime":"還車時間 HH:MM","bookingRef":"訂單編號","price":"費用","notes":"保險、駕照需求等備註"}',
-    pass: '{"name":"票券名稱","durationHours":方案時數數字,"startDate":"啟用日期 YYYY-MM-DD","startTime":"啟用時間 HH:MM","price":"費用","plannedSpots":"可用景點","bookingRef":"憑證或訂單編號","notes":"備註"}',
+    flight: '{"label":"去程或回程","airline":"航空公司","flightNo":"航班編號","depCode":"出發機場三碼代碼","depTerminal":"出發航廈，例如 第1航廈 或 T1","arrCode":"抵達機場三碼代碼","arrTerminal":"抵達航廈","date":"出發日期 YYYY-MM-DD","time":"起飛時間 HH:MM","arrTime":"抵達時間 HH:MM","cabinClass":"艙等，只能填 經濟艙 豪華經濟艙 商務艙 頭等艙 其中之一","paxCount":"這張訂單共幾位旅客的數字","pax":[{"name":"旅客姓名，照訂單上的寫法","seat":"座位號碼例如 12A","ticketNo":"電子機票號碼"}],"checkedKg":"托運行李額度，含單位，例如 20kg 或 共50kg","carryKg":"手提行李額度，含單位，例如 10kg 或 一人7kg","extraBaggage":"另外加購的行李，例如 去程加購10kg","gate":"登機門（當天才公布，查不到就留空）","baggage":"行李轉盤","bookingRef":"訂位代號","platform":"訂票平台或旅行社","price":"票價","meal":"機上餐或其他加購服務","notes":"其他備註"}',
+    hotel: '{"name":"飯店名稱","address":"完整地址","phone":"電話","platform":"訂房平台例如 Agoda Booking 官網","checkinDate":"入住日期 YYYY-MM-DD","checkinTime":"入住時間 HH:MM","checkoutDate":"退房日期 YYYY-MM-DD","checkoutTime":"退房時間 HH:MM","rooms":[{"type":"房型名稱例如 雙床房 Twin","count":"這個房型訂了幾間的數字","guests":"住這間的人，訂單上有寫才填"}],"guestCount":"入住總人數的數字","breakfast":"早餐，只能填 含早餐 不含早餐 部分房型含早餐 現場加購 其中之一","mealNote":"早餐時間地點或份數等說明","bookingRef":"訂單編號","price":"費用","cancelPolicy":"取消政策","notes":"其他備註"}',
+    car: '{"company":"租車公司","platform":"訂車平台","carModel":"車型","carCount":"租了幾台的數字","transmission":"排檔，只能填 自排 AT 或 手排 MT","seatCount":"座位數的數字","driverInfo":"駕駛人姓名或駕照需求","pickupLocation":"取車地點","phone":"店家電話","pickupDate":"取車日期 YYYY-MM-DD","pickupTime":"取車時間 HH:MM","returnLocation":"還車地點","returnDate":"還車日期 YYYY-MM-DD","returnTime":"還車時間 HH:MM","insurance":"保險方案與自負額","fuelPolicy":"油料政策，只能填 滿油取車・滿油還車 預付油資 原樣還車 不限 其中之一","mileage":"里程限制","extras":"加購配備例如 兒童座椅 雪胎 ETC 導航","bookingRef":"訂單編號","price":"費用","notes":"其他備註"}',
+    pass: '{"name":"票券名稱","durationHours":方案時數數字,"qty":"張數的數字","holders":"持有人","platform":"購買平台","startDate":"啟用日期 YYYY-MM-DD","startTime":"啟用時間 HH:MM","price":"費用","plannedSpots":"可用景點","bookingRef":"憑證或訂單編號","notes":"備註"}',
     coupon: '{"name":"優惠名稱","code":"優惠碼","discount":"折扣內容","store":"適用店家","url":"活動連結","expiry":"有效期限 YYYY-MM-DD","howTo":"使用方式","storeInfo":"店家資訊","notes":"使用限制"}'
   };
   const DOC_AI_TIP = {
-    flight: '可以只輸入「IT234 10/11」，AI 會補上航空公司、機場代碼與起降時間；也可以貼訂位確認信內容或選機票截圖。',
-    hotel: '貼上 Agoda／Booking／飯店官網的訂房確認信內容，或直接選訂單截圖。',
-    car: '貼上租車確認信內容，或直接選訂單截圖。',
-    pass: '貼上票券說明或選截圖。',
-    coupon: '貼上優惠活動內容或選截圖。'
+    flight: '可以只輸入「IT234 10/11」，AI 會補上航空公司、機場代碼與起降時間；也可以貼訂位確認信內容，或直接選電子機票的截圖／PDF。',
+    hotel: '貼上 Agoda／Booking／飯店官網的訂房確認信內容，或直接選訂單截圖／PDF。房型、訂幾間、誰住哪間、含不含早餐，AI 都會一起抓。',
+    car: '貼上租車確認信內容，或直接選訂單截圖／PDF。車型、排檔、保險方案、油料政策、加購配備都會一起抓。',
+    pass: '貼上票券說明，或直接選截圖／PDF。',
+    coupon: '貼上優惠活動內容，或直接選截圖／PDF。'
   };
   function openDocAiImport(type) {
     const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
@@ -3886,11 +4197,11 @@ Day2 12:00 outlet購物，預計逛一小時
     const fields = `
       <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 12px; line-height:1.7;">${DOC_AI_TIP[type]||''}</p>
       <textarea id="dai-text" placeholder="在這裡貼上訂單內容／航班編號+日期（也可以只丟截圖）" style="width:100%; height:100px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:10px; font-family:sans-serif;"></textarea>
-      <button type="button" class="ghost-btn" style="font-size:calc(12.5px * var(--font-scale)); padding:10px; margin-bottom:8px;" onclick="document.getElementById('dai-file').click()"><i class="fa-solid fa-image"></i> 選擇訂單截圖／照片</button>
-      <input type="file" id="dai-file" accept="image/*" style="display:none;" onchange="handleDocAiFile(event)">
+      <button type="button" class="ghost-btn" style="font-size:calc(12.5px * var(--font-scale)); padding:10px; margin-bottom:8px;" onclick="document.getElementById('dai-file').click()"><i class="fa-solid fa-file-arrow-up"></i> 選擇訂單截圖或 PDF</button>
+      <input type="file" id="dai-file" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleDocAiFile(event)">
       <div id="dai-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E40AF; text-align:center; margin-bottom:8px;"></div>
       <div id="dai-status"></div>
-      <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:4px 0 0; line-height:1.6;">※ 辨識完會先填進表單讓你確認，確認無誤再儲存；AI 看不懂的欄位會留空。</p>`;
+      <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:4px 0 0; line-height:1.6;">※ 截圖、照片、PDF 都可以（PDF 會整份讀，多頁訂單也沒問題，上限 ${DOC_AI_MAX_MB}MB）。辨識完會先填進表單讓你確認，確認無誤再儲存；AI 看不懂的欄位會留空。</p>`;
     setupGeneralEdit(`AI 匯入${schema.label}`, fields, () => runDocAiImport(type));
     const btn = document.getElementById('general-save-btn');
     if (btn) btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 開始辨識';
@@ -3945,7 +4256,37 @@ Day2 12:00 outlet購物，預計逛一小時
     returnLocation:['dropOffLocation','dropoff','returnPlace'],
     returnDate:['dropOffDate','return_date'],
     returnTime:['dropOffTime','return_time'],
-    notes:['note','remark','remarks','memo','description']
+    notes:['note','remark','remarks','memo','description'],
+    cabinClass:['cabin','class','travelClass','seatClass','艙等'],
+    paxCount:['passengerCount','numPassengers','passengers','travelers','pax_count','人數'],
+    pax:['passengerList','passengers','travelers','paxList','旅客'],
+    extraBaggage:['additionalBaggage','extraLuggage','purchasedBaggage','加購行李'],
+    platform:['bookingPlatform','agency','ota','source','channel','bookingSite','訂房平台','訂票平台'],
+    meal:['mealService','inflightMeal','餐食'],
+    rooms:['roomList','roomTypes','roomDetails','accommodations','房型','房間'],
+    guestCount:['guests','numGuests','occupancy','totalGuests','人數','入住人數'],
+    breakfast:['breakfastIncluded','meal','meals','breakfastPlan','早餐'],
+    mealNote:['breakfastNote','mealDetail','早餐說明'],
+    cancelPolicy:['cancellationPolicy','cancellation','freeCancellation','取消政策'],
+    carCount:['vehicleCount','numCars','quantity','台數'],
+    transmission:['gearbox','gear','transmissionType','排檔'],
+    seatCount:['seats','numSeats','capacity','座位數'],
+    driverInfo:['driver','driverName','mainDriver','licenseRequirement','駕駛'],
+    insurance:['insurancePlan','coverage','protection','保險'],
+    fuelPolicy:['fuel','fuelOption','油料'],
+    mileage:['mileageLimit','kmLimit','里程'],
+    extras:['addOns','options','equipment','accessories','加購'],
+    qty:['quantity','count','numTickets','張數'],
+    holders:['holder','ticketHolder','持有人']
+  };
+  // 可重複列（房型、旅客）在 AI 回傳裡也可能用別的欄位名，這裡各自再對照一次
+  const ROW_COL_ALIAS = {
+    type:['roomType','room','name','category','房型'],
+    count:['quantity','qty','num','rooms','numberOfRooms','間數'],
+    guests:['guest','occupants','travelers','names','住客'],
+    name:['passengerName','guestName','traveler','fullName','姓名'],
+    seat:['seatNumber','seatNo','座位'],
+    ticketNo:['ticketNumber','eticket','eTicketNumber','票號']
   };
   // AI 偶爾還是會把機場填成中文名，這裡再換算一次，卡片上才會是漂亮的三碼代碼
   const AIRPORT_ALIAS = {
@@ -4007,29 +4348,118 @@ Day2 12:00 outlet購物，預計逛一小時
     DOC_TYPES[type].fields.forEach(f => {
       let v = pick(f.key);
       if (v === '' || v === null || v === undefined) return;
+      // 可重複列：AI 會回一個陣列，逐列照欄位別名對照回來
+      if (f.type === 'rowlist') {
+        const rows = normalizeRowList(f.cols, v);
+        if (rows.length) out[f.key] = rows;
+        return;
+      }
       if (typeof v === 'object') v = JSON.stringify(v);
       v = String(v).trim();
       if (!v || /^(n\/a|unknown|未知|無|none|null)$/i.test(v)) return;
       if (f.type === 'date') { v = normDate(v, year); if (!v) return; }
       if (f.type === 'time') { v = normTime(v); if (!v) return; }
+      // 下拉選單只接受清單裡的選項；AI 給的寫法不一樣時盡量對回去（含早 → 含早餐）
+      if (f.type === 'select') { v = matchSelectOption(f.options, v); if (!v) return; }
+      // 數字欄位把「2 間」「7 人座」這種單位去掉，只留數字
+      if (f.type === 'number') { const n = String(v).replace(/[^0-9.]/g, ''); if (!n) return; v = n; }
       if (f.key === 'depCode' || f.key === 'arrCode') v = toAirportCode(v);
       out[f.key] = v;
     });
     return out;
   }
+  // AI 回的列資料可能是陣列、也可能是一串字（「雙床房x2、和室x1」），兩種都盡量收下來
+  function normalizeRowList(cols, raw) {
+    let list = raw;
+    if (typeof list === 'string') {
+      const txt = list.trim(); if (!txt) return [];
+      list = txt.split(/[\n;；]+/).map(s => s.trim()).filter(Boolean).map(s => ({ [cols[0].key]: s }));
+    }
+    if (!Array.isArray(list)) list = [list];
+    const out = [];
+    list.forEach(item => {
+      if (item === null || item === undefined) return;
+      if (typeof item !== 'object') { const s = String(item).trim(); if (s) out.push({ [cols[0].key]: s }); return; }
+      const lower = {};
+      Object.keys(item).forEach(k => { lower[String(k).toLowerCase().replace(/[_\s-]/g,'')] = item[k]; });
+      const row = {};
+      cols.forEach(c => {
+        const cands = [c.key].concat(ROW_COL_ALIAS[c.key] || []);
+        for (const cand of cands) {
+          const v = lower[String(cand).toLowerCase().replace(/[_\s-]/g,'')];
+          if (v === undefined || v === null) continue;
+          let s = Array.isArray(v) ? v.filter(x => x && typeof x !== 'object').join('、') : String(v).trim();
+          if (!s || /^(n\/a|unknown|未知|無|none|null)$/i.test(s)) continue;
+          if (c.type === 'number') { s = s.replace(/[^0-9]/g, ''); if (!s) continue; }
+          row[c.key] = s; break;
+        }
+      });
+      if (Object.keys(row).length) out.push(row);
+    });
+    return out.slice(0, ROW_EDITOR_MAX);
+  }
+  // 把 AI 寫法對回下拉選單的選項：先找完全一樣的，再找互相包含的，都對不上就留空
+  function matchSelectOption(options, v) {
+    const opts = (options || []).filter(Boolean);
+    const s = String(v || '').trim(); if (!s || !opts.length) return '';
+    const exact = opts.find(o => o === s); if (exact) return exact;
+    const low = s.toLowerCase();
+    const loose = opts.find(o => {
+      const ol = o.toLowerCase();
+      return ol.indexOf(low) >= 0 || low.indexOf(ol) >= 0;
+    });
+    if (loose) return loose;
+    // 常見英文／日文寫法的對照
+    const MAP = [
+      [/not\s*included|without\s*breakfast|room\s*only|朝食なし|無早餐|不含/i, '不含早餐'],
+      [/breakfast\s*(is\s*)?included|with\s*breakfast|朝食付|含早/i, '含早餐'],
+      [/automatic|\bat\b|オートマ|自排/i, '自排 AT'],
+      [/manual|\bmt\b|マニュアル|手排/i, '手排 MT'],
+      [/full\s*to\s*full|滿油/i, '滿油取車・滿油還車'],
+      [/pre\s*paid|prepaid|預付/i, '預付油資'],
+      [/economy|エコノミー|經濟/i, '經濟艙'],
+      [/premium\s*economy|豪華經濟/i, '豪華經濟艙'],
+      [/business|ビジネス|商務/i, '商務艙'],
+      [/first\s*class|ファースト|頭等/i, '頭等艙']
+    ];
+    for (const [re, val] of MAP) { if (re.test(s) && opts.indexOf(val) >= 0) return val; }
+    return '';
+  }
   function docAiDraftLabel(type, d) {
     if (type === 'flight') return `${d.label||'航班'} ${d.flightNo||''} ${d.depCode||'?'}→${d.arrCode||'?'} ${d.date||''} ${d.time||''}`.replace(/\s+/g,' ').trim();
-    if (type === 'hotel') return `${d.name||'住宿'} ${d.checkinDate||''}→${d.checkoutDate||''}`.trim();
-    if (type === 'car') return `${d.company||'租車'} ${d.pickupDate||''}→${d.returnDate||''}`.trim();
+    if (type === 'hotel') {
+      const rm = hotelRoomSummary(d);
+      return `${d.name||'住宿'} ${d.checkinDate||''}→${d.checkoutDate||''}${rm?' · '+rm:''}${d.breakfast?' · '+d.breakfast:''}`.replace(/\s+/g,' ').trim();
+    }
+    if (type === 'car') return `${d.company||'租車'} ${d.carModel?d.carModel+' ':''}${d.pickupDate||''}→${d.returnDate||''}`.replace(/\s+/g,' ').trim();
     return d.name || d.label || '一筆資料';
   }
 
+  // 從官網或信箱下載的訂單常常是 PDF 而不是圖片，所以兩種都收。
+  // Gemini 的單次請求有大小上限，太大的檔先擋下來給明確說法，不要讓他等半天才看到失敗
+  const DOC_AI_MAX_MB = 16;
+  function isPdfFile(f) {
+    if (!f) return false;
+    return (f.type === 'application/pdf') || /\.pdf$/i.test(f.name || '');
+  }
   function handleDocAiFile(event) {
     const file = event.target.files[0]; event.target.value = '';
     if (!file) return;
-    docAiFile = file;
+    const isPdf = isPdfFile(file);
+    const isImg = !!(file.type && file.type.indexOf('image/') === 0);
     const el = document.getElementById('dai-filename');
-    if (el) el.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}`;
+    if (!isPdf && !isImg) {
+      docAiFile = null;
+      if (el) el.innerHTML = `<span style="color:var(--warn);"><i class="fa-solid fa-circle-exclamation"></i> 只能選圖片或 PDF，這個檔案格式沒辦法辨識</span>`;
+      return;
+    }
+    if (file.size > DOC_AI_MAX_MB * 1024 * 1024) {
+      docAiFile = null;
+      if (el) el.innerHTML = `<span style="color:var(--warn);"><i class="fa-solid fa-circle-exclamation"></i> 檔案 ${(file.size/1048576).toFixed(1)}MB 太大了（上限 ${DOC_AI_MAX_MB}MB），可以只擷取有訂單資訊的那幾頁再試</span>`;
+      return;
+    }
+    docAiFile = file;
+    if (el) el.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}<span style="color:var(--gray);">（${isPdf ? 'PDF' : '圖片'}・${(file.size/1048576).toFixed(1)}MB）</span>`;
   }
   function docAiStatus(html) { const el = document.getElementById('dai-status'); if (el) el.innerHTML = html; }
   async function runDocAiImport(type) {
@@ -4038,7 +4468,8 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!raw && !docAiFile) { alert('請先貼上訂單內容，或選一張截圖！'); return; }
     const year = (tripSettings && tripSettings.startDate) ? tripSettings.startDate.split('-')[0] : String(new Date().getFullYear());
     const schema = DOC_TYPES[type];
-    const prompt = `你是旅遊訂單整理助理。請從${docAiFile ? '這張截圖' : '以下內容'}中擷取「${schema.label}」資訊，整理成結構化資料。
+    const srcDesc = docAiFile ? (isPdfFile(docAiFile) ? '這份 PDF 訂單檔（可能有多頁，請每一頁都看過）' : '這張截圖') : '以下內容';
+    const prompt = `你是旅遊訂單整理助理。請從${srcDesc}中擷取「${schema.label}」資訊，整理成結構化資料。
 
 規則：
 1. 日期一律輸出 YYYY-MM-DD，時間一律輸出 24 小時制 HH:MM。
@@ -4051,6 +4482,10 @@ Day2 12:00 outlet購物，預計逛一小時
 6. 金額請連同幣別一起寫，例如「NT$ 6,800」或「₩ 120,000」。
 7. 【重要】如果這份訂單包含不只一段（例如來回機票的去程與回程、多段住宿、多張訂單），請回傳一個 JSON 陣列，陣列中每一段各一個物件；只有一段時才回傳單一物件。來回機票請分別把 label 填成「去程」與「回程」。
 8. 畫面上的欄位名稱可能是中文、英文或日文（例如 PNR／訂位代號、Check-in／入住、Pick-up／取車），請自行對應到下面的欄位。
+9. 【住宿】rooms 請一間房型一個物件：同一種房型訂兩間就寫 count:2；訂單上如果分別列出每一間（例如 Room 1 雙床房、Room 2 和室），就拆成兩個物件、count 各填 1，並把該房的住客姓名填進 guests。早餐請判斷訂單上的 Breakfast included／朝食付き／含早餐這類字樣後填 breakfast，沒寫就填「不含早餐」以外的空字串，不要自己猜。
+10. 【機票】pax 請一位旅客一個物件；訂單上沒有列座位就把 seat 留空，不要拿訂位代號或票號充當座位。
+11. 標示「只能填 ... 其中之一」的欄位，請照原字串填，不要自己換句話說；真的對不上就留空字串。
+12. 數字欄位（count、paxCount、guestCount、carCount、seatCount、qty）請只填阿拉伯數字，不要加「間」「位」「台」這些單位。
 
 只回傳 JSON，不要有任何其他文字或 markdown 標記。單筆格式為：
 ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---` : ''}`;
@@ -4072,7 +4507,7 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
         openDocForm(type, null, drafts[0]);
         return;
       }
-      const arr2 = travelDocs[type+'s'] || (travelDocs[type+'s'] = []);
+      const arr2 = docArray(type);
       drafts.forEach(d => arr2.push(Object.assign({ id: docItemSeq++ }, d)));
       saveTravelDocs(); renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
       alert(`已匯入 ${drafts.length} 筆${schema.label}，可以點卡片右上角的鉛筆再修改。`);
@@ -4084,32 +4519,48 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
 
   function openDocForm(type, editId, prefill) {
     const schema = DOC_TYPES[type];
-    const arr = travelDocs[type+'s'] || [];
+    const arr = docArray(type);
     const editing = editId ? arr.find(e => e.id === editId) : null;
     const base = editing || prefill || {};   // prefill 是 AI 辨識後帶進來的草稿
     const hasImageField = schema.fields.some(f => f.type === 'image');
     if (hasImageField) imgEditorInit(imagesOf(editing || prefill));
+    // 可重複列（房型、旅客）要先把目前的內容放進編輯器狀態，表單畫出來才有東西
+    const rowFields = schema.fields.filter(f => f.type === 'rowlist');
+    rowFields.forEach(f => rowEditorInit(`${type}-${f.key}`, f.cols, base[f.key]));
     const fieldsHtml = schema.fields.map(f => {
       const val = base[f.key] || '';
       const id = `docf-${f.key}`;
+      const secHtml = f.section ? `<div class="form-sec"><i class="fa-solid fa-circle-dot"></i><span>${escapeHtml(f.section)}</span></div>` : '';
+      if (f.type === 'rowlist') {
+        return `${secHtml}<div class="input-label">${f.label}</div>${rowEditorHtml(`${type}-${f.key}`)}`;
+      }
+      if (f.type === 'select') {
+        const opts = (f.options||[]).map(o =>
+          `<option value="${escapeHtml(o)}"${String(val) === o ? ' selected' : ''}>${escapeHtml(o || '未指定')}</option>`).join('');
+        return `${secHtml}<div class="input-label">${f.label}</div><select id="${id}" class="form-select">${opts}</select>`;
+      }
       if (f.type === 'textarea') {
-        return `<div class="input-label">${f.label}</div><textarea id="${id}" placeholder="${f.placeholder||''}" style="width:100%; min-height:60px; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">${escapeHtml(val)}</textarea>`;
+        return `${secHtml}<div class="input-label">${f.label}</div><textarea id="${id}" placeholder="${f.placeholder||''}" style="width:100%; min-height:60px; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">${escapeHtml(val)}</textarea>`;
       }
       if (f.type === 'image') {
-        return `<div class="input-label">${f.label}（可放多張，能刪除、也能指定封面）</div>${imgEditorHtml()}`;
+        return `${secHtml}<div class="input-label">${f.label}（可放多張，能刪除、也能指定封面）</div>${imgEditorHtml()}`;
       }
-      return `<div class="input-label">${f.label}</div><input type="${f.type}" id="${id}" placeholder="${f.placeholder||''}" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0;">`;
+      const inputType = (f.type === 'number') ? 'text' : f.type;
+      const extraAttr = (f.type === 'number') ? ' inputmode="numeric"' : '';
+      return `${secHtml}<div class="input-label">${f.label}</div><input type="${inputType}"${extraAttr} id="${id}" placeholder="${f.placeholder||''}" value="${escapeHtml(val)}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; min-width:0;">`;
     }).join('');
 
     if (hasImageField) setTimeout(imgEditorRender, 30);   // 等彈窗的 DOM 出現後再畫縮圖列
+    if (rowFields.length) setTimeout(() => rowFields.forEach(f => rowEditorRender(`${type}-${f.key}`)), 30);
     setupGeneralEdit(`${editing ? '編輯' : (prefill ? 'AI 辨識結果 · 確認' : '新增')}${schema.label}`, fieldsHtml, () => {
       const entry = editing || { id: docItemSeq++ };
       schema.fields.forEach(f => {
         if (f.type === 'image') { entry.images = imgEditorValue(); entry[f.key] = entry.images[0] || ''; return; }
+        if (f.type === 'rowlist') { entry[f.key] = rowEditorValue(`${type}-${f.key}`); return; }
         const el = document.getElementById(`docf-${f.key}`); entry[f.key] = el ? el.value.trim() : '';
       });
       if (!editing) arr.push(entry);
-      travelDocs[type+'s'] = arr;
+      travelDocs[docArrayKey(type)] = arr;
       saveTravelDocs();
       renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
       closeGeneralEdit();
@@ -4119,7 +4570,7 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   function deleteDocEntry(type, id) {
     if (!confirm('確定要刪除這筆資料嗎？')) return;
     // 同樣只刪一筆，避免重複 ID 造成整批消失
-    const _arr = travelDocs[type+'s'] || (travelDocs[type+'s'] = []);
+    const _arr = docArray(type);
     const _i = _arr.findIndex(e => e.id === id);
     if (_i >= 0) _arr.splice(_i, 1);
     saveTravelDocs();
@@ -4732,13 +5183,17 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     if (chev) chev.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
   }
   function applyDocToItinForm(kind, id, which) {
-    const e = (travelDocs[kind+'s']||[]).find(x => x.id === id); if (!e) return;
+    const e = docArray(kind).find(x => x.id === id); if (!e) return;
     let time = '', title = '', place = '', address = '', cat = '', dateStr = '', notes = [];
     if (kind === 'hotel') {
       const nm = e.name || '住宿';
       if (which === 'in') { time = e.checkinTime || '15:00'; title = `入住 ${nm}`; dateStr = e.checkinDate; }
       else { time = e.checkoutTime || '11:00'; title = `退房 ${nm}`; dateStr = e.checkoutDate; }
       place = nm; address = e.address || ''; cat = '住宿';
+      const rmTxt = hotelRoomSummary(e);
+      if (rmTxt) notes.push(`房型 ${rmTxt}`);
+      if (e.guestCount) notes.push(`${e.guestCount} 人入住`);
+      if (e.breakfast) notes.push(e.breakfast);
       if (e.bookingRef) notes.push(`訂單編號 ${e.bookingRef}`);
       if (e.phone) notes.push(`電話 ${e.phone}`);
     } else if (kind === 'car') {
@@ -4746,7 +5201,11 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       if (which === 'pickup') { time = e.pickupTime || ''; title = `取車 ${nm}`; dateStr = e.pickupDate; place = e.pickupLocation || nm; }
       else { time = e.returnTime || ''; title = `還車 ${nm}`; dateStr = e.returnDate; place = e.returnLocation || nm; }
       cat = '交通';
-      if (e.carModel) notes.push(`車型 ${e.carModel}`);
+      if (e.carModel) notes.push(`車型 ${e.carModel}${Number(e.carCount) > 1 ? ' ×' + e.carCount : ''}`);
+      if (e.transmission) notes.push(e.transmission);
+      if (e.insurance) notes.push(`保險 ${e.insurance}`);
+      if (e.fuelPolicy) notes.push(e.fuelPolicy);
+      if (e.driverInfo) notes.push(`駕駛 ${e.driverInfo}`);
       if (e.bookingRef) notes.push(`訂單編號 ${e.bookingRef}`);
       if (e.phone) notes.push(`電話 ${e.phone}`);
     } else {
@@ -4754,6 +5213,9 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       title = `搭機 ${e.depCode||''}→${e.arrCode||''}${e.flightNo?' '+e.flightNo:''}`.trim();
       place = e.depCode || '';
       if (e.airline) notes.push(e.airline);
+      if (e.cabinClass) notes.push(e.cabinClass);
+      const seatTxt = seatSummary(e);
+      if (seatTxt) notes.push(seatTxt);
       if (e.depTerminal) notes.push(`出發航廈 ${e.depTerminal}`);
       if (e.arrTerminal) notes.push(`抵達航廈 ${e.arrTerminal}`);
       if (e.checkedKg) notes.push(`托運 ${e.checkedKg}`);
@@ -5800,9 +6262,21 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const file = event.target.files[0];
     event.target.value = ''; // 清空以便下次可重新選同一張圖
     if (!file) return;
-    receiptSelectedFile = file;
     const nameEl = document.getElementById('receipt-selected-filename');
-    if (nameEl) nameEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}`;
+    const isPdf = isPdfFile(file);
+    const isImg = !!(file.type && file.type.indexOf('image/') === 0);
+    if (!isPdf && !isImg) {
+      receiptSelectedFile = null;
+      if (nameEl) nameEl.innerHTML = `<span style="color:var(--warn);"><i class="fa-solid fa-circle-exclamation"></i> 只能選照片或 PDF</span>`;
+      return;
+    }
+    if (file.size > DOC_AI_MAX_MB * 1024 * 1024) {
+      receiptSelectedFile = null;
+      if (nameEl) nameEl.innerHTML = `<span style="color:var(--warn);"><i class="fa-solid fa-circle-exclamation"></i> 檔案 ${(file.size/1048576).toFixed(1)}MB 太大了（上限 ${DOC_AI_MAX_MB}MB）</span>`;
+      return;
+    }
+    receiptSelectedFile = file;
+    if (nameEl) nameEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}<span style="color:var(--gray);">（${isPdf ? 'PDF' : '圖片'}）</span>`;
   }
 
   function resetReceiptAiInputs() {
@@ -5817,7 +6291,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const showMsg = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
     try {
       await navigator.clipboard.writeText(RECEIPT_AI_PROMPT);
-      const fileNote = receiptSelectedFile ? `，記得一併附上「${escapeHtml(receiptSelectedFile.name)}」這張照片` : '，記得一併附上收據照片';
+      const fileNote = receiptSelectedFile ? `，記得一併附上「${escapeHtml(receiptSelectedFile.name)}」這個檔案` : '，記得一併附上收據照片或 PDF';
       showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--teal); background:#ECFDF5; margin-bottom:0;"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#065F46; line-height:1.6;">已複製提示詞！請貼到你的 AI 對話中${fileNote}，再把回答貼回下方欄位。</p></div>`);
     } catch (err) {
       console.error('複製提示詞失敗:', err);
@@ -5830,7 +6304,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   async function autoRecognizeReceipt() {
     const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
     if (!apiKey) { alert('請先在設定裡填入 Gemini API 金鑰'); return; }
-    if (!receiptSelectedFile) { alert('請先選擇收據照片！'); return; }
+    if (!receiptSelectedFile) { alert('請先選擇收據照片或 PDF！'); return; }
     const statusEl = document.getElementById('receipt-ai-status');
     const showMsg = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
     const showLoading = (msg) => showMsg(`<div class="card" style="text-align:center; padding:18px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">${escapeHtml(msg)}</p></div>`);
@@ -7897,7 +8371,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
   // ===== 首次使用導覽（可跳過；刻意不介紹身分切換，避免長輩不了解而誤觸） =====
   const ONBOARDING_SLIDES = [
-    { icon: 'fa-plane', title: '歡迎使用釜山行旅！', body: '這是專屬這趟旅程的行程小幫手，下方五個分頁分別是：總覽、準備、行程、支出、算帳，點一下就能切換。' },
+    { icon: 'fa-plane', title: '歡迎使用行程小幫手！', body: '這是專屬這趟旅程的行程小幫手，下方五個分頁分別是：總覽、準備、行程、支出、算帳，點一下就能切換。' },
     { icon: 'fa-calendar-days', title: '每日行程一目了然', body: '「行程」頁可依日期查看每天的安排，點一下項目可以展開查看費用與備註。' },
     { icon: 'fa-wallet', title: '輕鬆記帳', body: '「支出」頁可以手動記一筆，或用「AI 拍照記帳」直接拍收據，AI 會自動幫你讀取金額與品項，確認後再存入即可。' },
     { icon: 'fa-mobile-screen-button', title: '加入桌面更方便', body: '建議把這個頁面加到手機桌面，之後點一下圖示就能直接開啟，不用每次找連結。', action: 'install' }
@@ -7977,55 +8451,56 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     };
     const byKey = (k) => (a, b) => String(a[k]||'').localeCompare(String(b[k]||''));
 
-    // ① 重要憑證：依機票／住宿／租車／票券再分一層
+    // ① 重要憑證：依機票／住宿／租車／票券再分一層。
+    // 欄位直接照 DOC_TYPES 跑，之後表單加欄位，離線手冊就會自動跟著有
     let docs = '', docCount = 0;
-    let s1 = '';
-    (travelDocs.flights||[]).slice().sort(byKey('date')).forEach(x => {
-      s1 += item((x.label||'航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
-        [x.depCode||'', x.arrCode||''].filter(Boolean).join(' → '),
-        [['航空公司', x.airline], ['日期時間', [x.date, x.time].filter(Boolean).join(' ')],
-         ['抵達時間', x.arrTime],
-         ['出發航廈', x.depTerminal], ['抵達航廈', x.arrTerminal],
-         ['托運行李', x.checkedKg], ['手提行李', x.carryKg],
-         ['登機門', x.gate], ['行李轉盤', x.baggage], ['訂位代號', x.bookingRef],
-         ['票價', x.price], ['備註', x.notes]]);
+    const docPairs = (type, x, lead) => {
+      const used = new Set((lead || []).map(pr => pr[2]).filter(Boolean));
+      const pairs = (lead || []).map(pr => [pr[0], pr[1]]);
+      DOC_TYPES[type].fields.forEach(f => {
+        if (f.type === 'image' || used.has(f.key)) return;
+        const txt = docFieldText(f, x);
+        if (txt) pairs.push([f.label.replace(/（[^）]*）/g, '').replace(/\s*\([^)]*\)\s*/g, '').trim(), txt]);
+      });
+      return pairs;
+    };
+    const DOC_SECTIONS = [
+      { type:'flight', key:'flights', label:'機票', sortKey:'date',
+        title: x => (x.label || '航班') + (x.flightNo ? ' · ' + x.flightNo : ''),
+        sub: x => [x.depCode || '', x.arrCode || ''].filter(Boolean).join(' → '),
+        lead: x => [['日期時間', [x.date, x.time].filter(Boolean).join(' '), 'date'],
+                    ['', '', 'time'], ['', '', 'label'], ['', '', 'flightNo']] },
+      { type:'hotel', key:'hotels', label:'住宿', sortKey:'checkinDate',
+        title: x => x.name || '住宿',
+        sub: x => [x.checkinDate || '', x.checkoutDate || ''].filter(Boolean).join(' → '),
+        lead: x => [['入住', [x.checkinDate, x.checkinTime].filter(Boolean).join(' '), 'checkinDate'],
+                    ['退房', [x.checkoutDate, x.checkoutTime].filter(Boolean).join(' '), 'checkoutDate'],
+                    ['', '', 'checkinTime'], ['', '', 'checkoutTime'], ['', '', 'name']] },
+      { type:'car', key:'cars', label:'租車', sortKey:'pickupDate',
+        title: x => x.company || '租車',
+        sub: x => x.carModel || '',
+        lead: x => [['取車', [x.pickupDate, x.pickupTime, x.pickupLocation].filter(Boolean).join(' '), 'pickupDate'],
+                    ['還車', [x.returnDate, x.returnTime, x.returnLocation].filter(Boolean).join(' '), 'returnDate'],
+                    ['', '', 'pickupTime'], ['', '', 'pickupLocation'],
+                    ['', '', 'returnTime'], ['', '', 'returnLocation'], ['', '', 'company']] },
+      { type:'pass', key:'passes', label:'票券', sortKey:'startDate',
+        title: x => x.name || '票券',
+        sub: x => x.durationHours ? x.durationHours + ' 小時方案' : '',
+        lead: x => { const ms = calcPassExpiry(x);
+          return [['啟用', [x.startDate, x.startTime].filter(Boolean).join(' '), 'startDate'],
+                  ['到期(當地時間)', ms ? formatKoreaDateTime(ms) : '', ''],
+                  ['', '', 'startTime'], ['', '', 'name']]; } }
+    ];
+    DOC_SECTIONS.forEach(d => {
+      const list = (travelDocs[d.key] || []).slice().sort(byKey(d.sortKey));
+      let body = '';
+      list.forEach(x => {
+        const pairs = docPairs(d.type, x, d.lead(x)).filter(pr => pr[0] && pr[1]);
+        body += item(d.title(x), d.sub(x), pairs);
+      });
+      docCount += list.length;
+      docs += sub(d.label, list.length + ' 筆', body, true);
     });
-    docCount += (travelDocs.flights||[]).length;
-    docs += sub('機票', (travelDocs.flights||[]).length + ' 筆', s1, true);
-
-    let s2 = '';
-    (travelDocs.hotels||[]).slice().sort(byKey('checkinDate')).forEach(x => {
-      s2 += item(x.name||'住宿',
-        [x.checkinDate||'', x.checkoutDate||''].filter(Boolean).join(' → '),
-        [['地址', x.address], ['電話', x.phone],
-         ['入住', [x.checkinDate, x.checkinTime].filter(Boolean).join(' ')],
-         ['退房', [x.checkoutDate, x.checkoutTime].filter(Boolean).join(' ')],
-         ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
-    });
-    docCount += (travelDocs.hotels||[]).length;
-    docs += sub('住宿', (travelDocs.hotels||[]).length + ' 筆', s2, true);
-
-    let s3 = '';
-    (travelDocs.cars||[]).slice().sort(byKey('pickupDate')).forEach(x => {
-      s3 += item(x.company||'租車', x.carModel||'',
-        [['取車', [x.pickupDate, x.pickupTime, x.pickupLocation].filter(Boolean).join(' ')],
-         ['還車', [x.returnDate, x.returnTime, x.returnLocation].filter(Boolean).join(' ')],
-         ['電話', x.phone], ['訂單編號', x.bookingRef], ['費用', x.price], ['備註', x.notes]]);
-    });
-    docCount += (travelDocs.cars||[]).length;
-    docs += sub('租車', (travelDocs.cars||[]).length + ' 筆', s3, true);
-
-    let s4 = '';
-    (travelDocs.passes||[]).slice().sort(byKey('startDate')).forEach(x => {
-      const ms = calcPassExpiry(x);
-      s4 += item(x.name||'票券', x.durationHours ? x.durationHours + ' 小時方案' : '',
-        [['啟用', [x.startDate, x.startTime].filter(Boolean).join(' ')],
-         ['到期(當地時間)', ms ? formatKoreaDateTime(ms) : ''],
-         ['費用', x.price], ['計畫景點', x.plannedSpots],
-         ['憑證編號', x.bookingRef], ['備註', x.notes]]);
-    });
-    docCount += (travelDocs.passes||[]).length;
-    docs += sub('票券', (travelDocs.passes||[]).length + ' 筆', s4, true);
     sec('s-docs', '重要憑證', docs, docCount + ' 筆', true);
 
     // ② 優惠碼：每一張各自收合，摘要就看得到優惠碼本身
@@ -8302,46 +8777,37 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     wsOverview['!cols'] = [{wch:14},{wch:50}];
     XLSX.utils.book_append_sheet(wb, wsOverview, '總覽');
 
-    if ((travelDocs.flights||[]).length) {
-      const flightRows = [['標籤','航空公司','航班編號','出發地','出發航廈','抵達地','抵達航廈','日期','起飛','抵達','托運行李','手提行李','登機門','行李轉盤','訂位代號','票價','備註']];
-      travelDocs.flights.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(f => {
-        flightRows.push([f.label||'', f.airline||'', f.flightNo||'', f.depCode||'', f.depTerminal||'', f.arrCode||'', f.arrTerminal||'', f.date||'', f.time||'', f.arrTime||'', f.checkedKg||'', f.carryKg||'', f.gate||'', f.baggage||'', f.bookingRef||'', f.price||'', f.notes||'']);
+    // 憑證四個分頁：欄位直接照 DOC_TYPES 跑，表單加了欄位 Excel 就會自動多一欄，
+    // 不用再維護四份手寫的欄位清單
+    const xlColWidth = (f) => {
+      if (f.type === 'textarea' || f.type === 'rowlist') return 34;
+      if (f.type === 'date') return 12;
+      if (f.type === 'time' || f.type === 'number') return 9;
+      if (f.key === 'address' || f.key === 'pickupLocation' || f.key === 'returnLocation') return 28;
+      return 14;
+    };
+    [ { type:'flight', key:'flights', sheet:'機票', sortKey:'date' },
+      { type:'hotel',  key:'hotels',  sheet:'住宿', sortKey:'checkinDate' },
+      { type:'car',    key:'cars',    sheet:'租車', sortKey:'pickupDate' },
+      { type:'pass',   key:'passes',  sheet:'票券', sortKey:'startDate',
+        extra:{ label:'到期時間(當地)', value: x => { const ms = calcPassExpiry(x); return ms ? formatKoreaDateTime(ms) : ''; }, width:16 } }
+    ].forEach(d => {
+      const list = travelDocs[d.key] || [];
+      if (!list.length) return;
+      const cols = DOC_TYPES[d.type].fields.filter(f => f.type !== 'image');
+      const header = cols.map(f => f.label.replace(/（[^）]*）/g, '').replace(/\s*\([^)]*\)\s*/g, '').trim());
+      const widths = cols.map(f => ({ wch: xlColWidth(f) }));
+      if (d.extra) { header.push(d.extra.label); widths.push({ wch: d.extra.width || 14 }); }
+      const rows = [header];
+      list.slice().sort((a,b)=>String(a[d.sortKey]||'').localeCompare(String(b[d.sortKey]||''))).forEach(x => {
+        const r = cols.map(f => docFieldText(f, x));
+        if (d.extra) r.push(d.extra.value(x));
+        rows.push(r);
       });
-      const wsFlight = XLSX.utils.aoa_to_sheet(flightRows);
-      wsFlight['!cols'] = [{wch:8},{wch:12},{wch:10},{wch:8},{wch:12},{wch:8},{wch:12},{wch:12},{wch:8},{wch:8},{wch:12},{wch:12},{wch:10},{wch:12},{wch:12},{wch:10},{wch:24}];
-      XLSX.utils.book_append_sheet(wb, wsFlight, '機票');
-    }
-
-    if ((travelDocs.hotels||[]).length) {
-      const hotelRows = [['飯店名稱','地址','入住日期','入住時間','退房日期','退房時間','訂單編號','費用','備註']];
-      travelDocs.hotels.slice().sort((a,b)=>(a.checkinDate||'').localeCompare(b.checkinDate||'')).forEach(h => {
-        hotelRows.push([h.name||'', h.address||'', h.checkinDate||'', h.checkinTime||'', h.checkoutDate||'', h.checkoutTime||'', h.bookingRef||'', h.price||'', h.notes||'']);
-      });
-      const wsHotel = XLSX.utils.aoa_to_sheet(hotelRows);
-      wsHotel['!cols'] = [{wch:22},{wch:30},{wch:12},{wch:8},{wch:12},{wch:8},{wch:12},{wch:10},{wch:24}];
-      XLSX.utils.book_append_sheet(wb, wsHotel, '住宿');
-    }
-
-    if ((travelDocs.cars||[]).length) {
-      const carRows = [['租車公司','車型','取車地點','取車日期','取車時間','還車地點','還車日期','還車時間','訂單編號','費用','備註']];
-      travelDocs.cars.slice().sort((a,b)=>(a.pickupDate||'').localeCompare(b.pickupDate||'')).forEach(c => {
-        carRows.push([c.company||'', c.carModel||'', c.pickupLocation||'', c.pickupDate||'', c.pickupTime||'', c.returnLocation||'', c.returnDate||'', c.returnTime||'', c.bookingRef||'', c.price||'', c.notes||'']);
-      });
-      const wsCar = XLSX.utils.aoa_to_sheet(carRows);
-      wsCar['!cols'] = [{wch:14},{wch:12},{wch:16},{wch:12},{wch:8},{wch:16},{wch:12},{wch:8},{wch:12},{wch:10},{wch:24}];
-      XLSX.utils.book_append_sheet(wb, wsCar, '租車');
-    }
-
-    if ((travelDocs.passes||[]).length) {
-      const passRows = [['票券名稱','方案時數','啟用日期','啟用時間','到期時間(韓國)','費用','計畫景點/美食','憑證編號','備註']];
-      travelDocs.passes.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).forEach(pass => {
-        const expiryMs = calcPassExpiry(pass);
-        passRows.push([pass.name||'', pass.durationHours||'', pass.startDate||'', pass.startTime||'', expiryMs?formatKoreaDateTime(expiryMs):'', pass.price||'', pass.plannedSpots||'', pass.bookingRef||'', pass.notes||'']);
-      });
-      const wsPass = XLSX.utils.aoa_to_sheet(passRows);
-      wsPass['!cols'] = [{wch:20},{wch:10},{wch:12},{wch:8},{wch:14},{wch:10},{wch:26},{wch:12},{wch:20}];
-      XLSX.utils.book_append_sheet(wb, wsPass, '票券');
-    }
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = widths;
+      XLSX.utils.book_append_sheet(wb, ws, d.sheet);
+    });
 
     const itinRows = [['日期','星期','時間','結束時間','分類','行程名稱','地點','交通方式','通勤時間','費用預估','實際花費','停留時間','預約時間','確認碼','票券資訊','同行人','完成','重要提醒','備註']];
     ITIN_DAYS.forEach(d => {
