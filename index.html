@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-10-18 22:10</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.3 (2026-10-19 17:30)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1231,7 +1231,10 @@ Day2 12:00 outlet購物，預計逛一小時
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-stethoscope"></i> 自我檢測</h4>
       <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px; line-height:1.6;">一鍵檢查這個房間的資料與各項功能是否正常，幾秒就跑完，有問題會直接列出來。</p>
-      <button class="ghost-btn" style="font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="runSelfTest()"><i class="fa-solid fa-play"></i> 開始檢測</button>
+      <div style="display:flex; gap:8px;">
+        <button class="ghost-btn" style="width:auto; flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="runSelfTest()"><i class="fa-solid fa-play"></i> 開始檢測</button>
+        <button class="ghost-btn" style="width:auto; flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px; border-color:#2563EB; color:#2563EB;" onclick="runSaveDiagnosis()"><i class="fa-solid fa-floppy-disk"></i> 存檔診斷</button>
+      </div>
       <div id="selftest-result" style="margin-top:12px;"></div>
     </div>
 
@@ -1404,14 +1407,22 @@ Day2 12:00 outlet購物，預計逛一小時
       } catch(e) {}
       return { value: localStorage.getItem(key) };
     },
+    // 回傳是否真的寫進去了。原本不管成功失敗都回 true，瀏覽器空間滿的時候
+    // （購物清單照片放太多最容易遇到）會整筆存不進去，使用者卻完全看不出來
     set: async (key, val) => {
-      try { localStorage.setItem(key, val); } catch(e) {}
+      let ok = false;
+      try {
+        localStorage.setItem(key, val);
+        ok = (localStorage.getItem(key) === val);          // 寫完讀回來比對，才算真的存進去
+        if (!ok) lastStorageError = 'VerifyFailed';
+      }
+      catch(e) { lastStorageError = e && e.name ? e.name : 'StorageError'; }
       try {
         if (window.storage && typeof window.storage.set === 'function') {
-          await window.storage.set(key, val);
+          await window.storage.set(key, val); ok = true;
         }
       } catch(e) {}
-      return true;
+      return ok;
     }
   };
 
@@ -1723,6 +1734,156 @@ Day2 12:00 outlet購物，預計逛一小時
     return res && res.value === 'true';
   }
 
+  // ===== 存檔可靠性 =====
+  // 原本的流程有一個會掉資料的漏洞：
+  //   進房間時一定會把雲端那份整包蓋回本機（含寫回 localStorage），
+  //   但「上傳」只有在『主操作者 + 有開即時同步』時才會發生。
+  //   所以一般使用者改購物清單／店家清單，或主操作者沒開即時同步時改任何東西，
+  //   都只存在本機；下次重開 App 就被雲端的舊資料蓋掉 → 看起來像「沒存進去」。
+  // 解法：每次存檔都把「自己改的那一個欄位」推上雲端（不整包覆蓋，才不會蓋到旅伴同時的修改）；
+  //       推不上去（離線、剛好沒網路）就記成待同步，下次進房間時用本機這份優先、並自動補推。
+  let lastStorageError = '';
+  let storageFullWarned = false;
+  const SYNC_FIELD_GET = {
+    tripSettings:   () => tripSettings,
+    prepData:       () => prepData,
+    itinData:       () => itinData,
+    expenseRecords: () => expenseRecords,
+    travelers:      () => travelers,
+    travelDocs:     () => travelDocs,
+    wishlistData:   () => wishlistData,
+    foodListData:   () => foodListData
+  };
+  // 資料版本號：本機存一次 +1，雲端放在 rooms/<房號>/_rev/<欄位>。
+  // 載入時比對版本，本機比較新就以本機為準——這是「改好的東西被舊資料蓋掉」的根本解法，
+  // 不管上傳當下是失敗、逾時、還是別台裝置用舊資料整包覆蓋，都救得回來。
+  function dataRevKey() { return roomScopedKey('data-rev'); }
+  function readDataRevs() {
+    try { return JSON.parse(localStorage.getItem(dataRevKey()) || '{}') || {}; } catch(e) { return {}; }
+  }
+  function writeDataRevs(o) { try { localStorage.setItem(dataRevKey(), JSON.stringify(o)); } catch(e) {} }
+  function localRev(field) { return Number(readDataRevs()[field]) || 0; }
+  function setLocalRev(field, v) { const o = readDataRevs(); o[field] = Number(v) || 0; writeDataRevs(o); }
+  function bumpLocalRev(field) { const o = readDataRevs(); o[field] = (Number(o[field]) || 0) + 1; writeDataRevs(o); return o[field]; }
+  function allLocalRevs() {
+    const o = {}; Object.keys(SYNC_FIELD_GET).forEach(f => { o[f] = localRev(f); }); return o;
+  }
+  function pendingSyncKey() { return roomScopedKey('pending-sync'); }
+  function readPendingSync() {
+    try { return JSON.parse(localStorage.getItem(pendingSyncKey()) || '{}') || {}; } catch(e) { return {}; }
+  }
+  function writePendingSync(o) {
+    try {
+      if (!o || !Object.keys(o).length) localStorage.removeItem(pendingSyncKey());
+      else localStorage.setItem(pendingSyncKey(), JSON.stringify(o));
+    } catch(e) {}
+    renderHeroSyncStatus();
+  }
+  function markPendingSync(field) { const o = readPendingSync(); o[field] = Date.now(); writePendingSync(o); }
+  function clearPendingSync(field) { const o = readPendingSync(); if (o[field]) { delete o[field]; writePendingSync(o); } }
+  function pendingSyncFields() { return Object.keys(readPendingSync()).filter(f => SYNC_FIELD_GET[f]); }
+
+  const CLOUD_ACK_TIMEOUT_MS = 6000;
+  function withTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; const e = new Error('cloud-timeout'); e.isTimeout = true; reject(e); } }, ms);
+      Promise.resolve(promise).then(
+        v => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+        e => { if (!done) { done = true; clearTimeout(t); reject(e); } }
+      );
+    });
+  }
+  // 只寫某一個欄位，不動整個房間，避免蓋掉旅伴同一時間改的其他部分
+  async function pushFieldToCloud(field, value) {
+    if (!syncRoomId || typeof db === 'undefined' || !db) return false;
+    try {
+      const safe = JSON.parse(JSON.stringify(value === undefined ? '' : value, (k, v) => (v === undefined) ? '' : v));
+      const payload = {}; payload[field] = safe;
+      payload['_rev/' + field] = localRev(field);     // 資料跟版本號一起寫，兩邊才不會對不上
+      await withTimeout(db.ref('rooms/' + syncRoomId).update(payload), CLOUD_ACK_TIMEOUT_MS);
+      return true;
+    } catch (e) {
+      addDebugLog('sync_push_fail', { field: field, message: (e && e.message) || String(e) });
+      return false;
+    }
+  }
+  // 每次存完本機就呼叫這個：localStorage 沒寫進去要講，雲端沒推上去要記起來
+  async function syncAfterSave(localOk, fields) {
+    const list = Array.isArray(fields) ? fields : [fields];
+    list.forEach(f => { if (SYNC_FIELD_GET[f]) bumpLocalRev(f); });   // 先把版本號推進，之後比對才贏得過雲端舊資料
+    if (!localOk) { warnStorageFull(); showSaveToast('fail'); }
+    if (!syncRoomId) { if (localOk) showSaveToast('local'); return; }
+    const autoEnable = localStorage.getItem('sync-auto-enabled') === 'true';
+    if (autoEnable && isMasterMode) {
+      // 主操作者＋即時同步：維持原本整包上傳，旅伴端才收得到完整變更
+      let ok = false;
+      try { ok = await withTimeout(autoUploadIfEnabled(), CLOUD_ACK_TIMEOUT_MS); } catch(e) { ok = false; }
+      if (ok) { writePendingSync({}); if (localOk) showSaveToast('cloud'); return; }
+    }
+    let allOk = true;
+    for (const f of list) {
+      if (!SYNC_FIELD_GET[f]) continue;
+      const ok = await pushFieldToCloud(f, SYNC_FIELD_GET[f]());
+      if (ok) clearPendingSync(f); else { markPendingSync(f); allOk = false; }
+    }
+    if (localOk) showSaveToast(allOk ? 'cloud' : 'local');
+  }
+  // 補推之前沒推成功的部分（重新進房間、網路回來的時候各跑一次）
+  async function retryPendingSync() {
+    const fields = pendingSyncFields();
+    if (!fields.length || !syncRoomId) return;
+    for (const f of fields) {
+      const ok = await pushFieldToCloud(f, SYNC_FIELD_GET[f]());
+      if (ok) clearPendingSync(f);
+    }
+  }
+  // 網路回來就把之前沒推成功的補送上去
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => { if (syncRoomId) retryPendingSync(); });
+  }
+  // 存檔狀態小提示：存到哪一步一眼就知道，不用等重開才發現沒存到
+  let saveToastTimer = null;
+  function showSaveToast(state) {
+    let el = document.getElementById('save-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'save-toast';
+      document.body.appendChild(el);
+    }
+    const map = {
+      cloud: ['fa-circle-check', '#ECFDF5', '#A7F3D0', '#065F46', '已儲存並同步到雲端'],
+      local: ['fa-cloud-arrow-up', '#FFFBEB', '#FDE68A', '#78350F', '已存在這台裝置，待上傳雲端'],
+      fail:  ['fa-triangle-exclamation', '#FEF2F2', '#FECACA', '#991B1B', '沒存進去！請看下方說明']
+    };
+    const [icon, bg, bd, fg, txt] = map[state] || map.cloud;
+    el.style.cssText = 'position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom,0px)); z-index:11500;'
+      + `background:${bg}; border:1px solid ${bd}; color:${fg};`
+      + 'border-radius:14px; padding:9px 15px; font-size:calc(12.5px * var(--font-scale)); font-weight:700;'
+      + 'box-shadow:0 6px 20px rgba(29,53,87,0.16); display:flex; align-items:center; gap:7px; max-width:88vw;'
+      + 'font-family:"SF Pro Display","SF Pro Text","PingFang TC","Noto Sans TC",sans-serif; pointer-events:none;';
+    el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${txt}</span>`;
+    el.style.display = 'flex';
+    if (saveToastTimer) clearTimeout(saveToastTimer);
+    saveToastTimer = setTimeout(() => { if (el) el.style.display = 'none'; }, state === 'fail' ? 4000 : 1800);
+  }
+  function warnStorageFull() {
+    if (storageFullWarned) return;
+    storageFullWarned = true;
+    alert('這台裝置的瀏覽器空間滿了，剛才那一筆沒有存進本機。\n\n最常見的原因是購物清單或優惠碼放了太多張照片。請先刪掉幾張照片（或改成貼圖片網址），再重新存一次。');
+  }
+  // 粗估目前這個網域用掉多少 localStorage，自我檢測會顯示
+  function storageUsageKB() {
+    try {
+      let n = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        n += (k.length + (localStorage.getItem(k) || '').length);
+      }
+      return Math.round(n * 2 / 1024);   // UTF-16，一個字元算 2 bytes
+    } catch (e) { return -1; }
+  }
+
   // 自動上傳防禦性同步
   async function autoUploadIfEnabled() {
     const autoEnable = localStorage.getItem('sync-auto-enabled') === 'true';
@@ -1736,16 +1897,20 @@ Day2 12:00 outlet購物，預計逛一小時
         travelDocs: travelDocs || {},
         travelers: travelers || [],
         wishlistData: wishlistData || [],
-        foodListData: foodListData || []
+        foodListData: foodListData || [],
+        _rev: allLocalRevs()
       };
       const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
       try {
-        await db.ref('rooms/' + syncRoomId).set(finalData);
+        await withTimeout(db.ref('rooms/' + syncRoomId).set(finalData), CLOUD_ACK_TIMEOUT_MS);
         console.log("Auto-synced to Firebase room: " + syncRoomId);
+        return true;
       } catch (e) {
         console.error("Auto-sync failed:", e);
+        return false;
       }
     }
+    return false;
   }
 
   // ===== 自製數字鍵盤 =====
@@ -1815,9 +1980,9 @@ Day2 12:00 outlet購物，預計逛一小時
 
   async function saveTripSettings() {
     try { 
-      await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings)); 
+      const ok = await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings)); 
       renderTripSettingsUI(); 
-      await autoUploadIfEnabled();
+      await syncAfterSave(ok, 'tripSettings');
     } catch(e) { console.error(e); }
   }
 
@@ -2471,7 +2636,7 @@ Day2 12:00 outlet購物，預計逛一小時
       saveWishlist(); renderWishlist(); closeGeneralEdit();
     });
   }
-  async function saveWishlist() { try { await storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData)); await autoUploadIfEnabled(); } catch(e) {} }
+  async function saveWishlist() { try { const ok = await storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData)); await syncAfterSave(ok, 'wishlistData'); } catch(e) {} }
   async function loadWishlist() {
     await migrateToRoomScopedStorage('wishlist');
     try { const res = await storage.get(roomScopedKey('wishlist')); if (res && res.value) { wishlistData = JSON.parse(res.value); } } catch(e) {}
@@ -2708,7 +2873,7 @@ Day2 12:00 outlet購物，預計逛一小時
       saveFoodList(); renderFoodList(); closeGeneralEdit();
     });
   }
-  async function saveFoodList() { try { await storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData)); await autoUploadIfEnabled(); } catch(e) {} }
+  async function saveFoodList() { try { const ok = await storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData)); await syncAfterSave(ok, 'foodListData'); } catch(e) {} }
   async function loadFoodList() {
     await migrateToRoomScopedStorage('food-list');
     try { const res = await storage.get(roomScopedKey('food-list')); if (res && res.value) { foodListData = JSON.parse(res.value); } } catch(e) {}
@@ -2779,6 +2944,86 @@ Day2 12:00 outlet購物，預計逛一小時
     return log.map(e => JSON.stringify(e)).join('\n');
   }
   // ===== 自我檢測：把常見的壞掉點一次掃過，取代人工一個一個功能點 =====
+  // 存檔診斷：拿一筆假資料真的跑一次「寫本機 → 讀回本機 → 推雲端 → 從雲端讀回」，
+  // 每一關分開報，哪一關斷掉一眼就知道，不用再靠猜的
+  async function runSaveDiagnosis() {
+    const box = document.getElementById('selftest-result'); if (!box) return;
+    box.innerHTML = `<p style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-spinner fa-spin"></i> 存檔診斷中...</p>`;
+    const R = [];
+    const ok = (n,d) => R.push({s:'ok', n, d});
+    const warn = (n,d) => R.push({s:'warn', n, d});
+    const bad = (n,d) => R.push({s:'bad', n, d});
+
+    ok('目前身分', isMasterMode ? '主操作者模式' : '一般使用者模式');
+    ok('房號', syncRoomId || '（沒有房號，只會存在這台裝置）');
+    ok('即時同步設定', localStorage.getItem('sync-auto-enabled') === 'true' ? '已開啟' : '未開啟');
+
+    // 1. 本機讀寫
+    const probeKey = roomScopedKey('__save_probe');
+    const probeVal = 'probe-' + Date.now();
+    let localOk = false;
+    try {
+      localStorage.setItem(probeKey, probeVal);
+      localOk = (localStorage.getItem(probeKey) === probeVal);
+      localStorage.removeItem(probeKey);
+    } catch(e) { lastStorageError = (e && e.name) || 'StorageError'; }
+    if (localOk) ok('① 寫入這台裝置', '可以寫入，也讀得回來');
+    else bad('① 寫入這台裝置', `寫不進去（${lastStorageError || '未知原因'}）。如果是無痕／私密瀏覽模式，關掉 App 資料就會消失；如果是空間滿了，請刪掉購物清單或優惠碼裡的照片`);
+
+    const usedKB = storageUsageKB();
+    if (usedKB > 4200) bad('② 本機空間', `已用約 ${usedKB} KB，快到上限（約 5000 KB），再存就會失敗`);
+    else if (usedKB > 3000) warn('② 本機空間', `已用約 ${usedKB} KB，接近上限（約 5000 KB）`);
+    else ok('② 本機空間', `已用約 ${usedKB} KB，還夠`);
+
+    // 2. 真的存一筆購物清單再讀回來（一般使用者最常用的存檔路徑）
+    const before = JSON.stringify(wishlistData || []);
+    const probeId = 900000 + Math.floor(Math.random() * 90000);
+    try {
+      wishlistData.push({ id: probeId, name: '【存檔測試】等一下會自動刪除', qty: 1, bought: false });
+      await saveWishlist();
+      const res = await storage.get(roomScopedKey('wishlist'));
+      const back = JSON.parse((res && res.value) || '[]');
+      if (back.some(x => x.id === probeId)) ok('③ 購物清單存到本機', '存進去而且讀得回來');
+      else bad('③ 購物清單存到本機', '存完之後讀不回來，這台裝置的瀏覽器沒有真的保留資料');
+    } catch (e) { bad('③ 購物清單存到本機', '存檔過程出錯：' + ((e && e.message) || e)); }
+
+    // 3. 推上雲端並從雲端讀回來驗證
+    if (!syncRoomId) {
+      warn('④ 上傳雲端', '沒有房號，資料只會留在這台裝置');
+    } else {
+      try {
+        const pushed = await pushFieldToCloud('wishlistData', wishlistData);
+        if (!pushed) {
+          bad('④ 上傳雲端', '推不上去（可能沒網路或雲端拒絕寫入）。改動會先留在本機，連線後會自動補送');
+        } else {
+          const snap = await withTimeout(db.ref('rooms/' + syncRoomId + '/wishlistData').once('value'), CLOUD_ACK_TIMEOUT_MS);
+          const arr = snap && snap.val();
+          if (Array.isArray(arr) ? arr.some(x => x && x.id === probeId) : false) ok('④ 上傳雲端', '寫上去而且讀得回來');
+          else bad('④ 上傳雲端', '寫入沒有報錯，但從雲端讀回來找不到這筆（雲端可能有寫入限制）');
+        }
+      } catch (e) {
+        bad('④ 上傳雲端', (e && e.isTimeout) ? '等不到雲端回應（可能沒網路），改動會先留在本機' : '雲端錯誤：' + ((e && e.message) || e));
+      }
+    }
+
+    // 4. 收尾：把測試用那筆刪掉，資料還原
+    try {
+      const i = wishlistData.findIndex(x => x.id === probeId);
+      if (i >= 0) wishlistData.splice(i, 1);
+      await saveWishlist();
+      renderWishlist();
+      const nowStr = JSON.stringify(wishlistData || []);
+      if (nowStr === before) ok('⑤ 測試資料已清除', '你的購物清單沒有被更動');
+      else warn('⑤ 測試資料已清除', '測試項目已移除，但清單內容與測試前不同（可能同時有旅伴在改）');
+    } catch (e) { warn('⑤ 測試資料已清除', '清除時出錯，請手動刪掉名稱為「【存檔測試】」的項目'); }
+
+    const pend = pendingSyncFields();
+    if (pend.length) warn('⑥ 待上傳', `還有 ${pend.length} 項沒上傳，連上網路後會自動補送`);
+    else ok('⑥ 待上傳', '沒有待上傳的東西');
+
+    renderSelfTestResult(box, R);
+  }
+
   async function runSelfTest() {
     const box = document.getElementById('selftest-result'); if (!box) return;
     box.innerHTML = `<p style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-spinner fa-spin"></i> 檢測中...</p>`;
@@ -2807,6 +3052,31 @@ Day2 12:00 outlet購物，預計逛一小時
     const docCount = ['flights','cars','hotels','passes','coupons'].reduce((s,k)=>s+((travelDocs&&travelDocs[k])?travelDocs[k].length:0),0);
     ok('憑證資訊', `${docCount} 筆`);
     ok('購物／店家清單', `${(wishlistData||[]).length} / ${(foodListData||[]).length} 筆`);
+
+    // 2-1. 存檔與同步：「改了卻沒存到」幾乎都是這兩件事造成的
+    const usedKB = storageUsageKB();
+    if (usedKB < 0) warn('本機儲存空間', '讀不到用量（可能是無痕模式，資料不會被保留）');
+    else if (usedKB > 4200) bad('本機儲存空間', `已用約 ${usedKB} KB，快到瀏覽器上限（約 5000 KB），再存就會失敗。請刪掉購物清單／優惠碼裡的照片，或改貼圖片網址`);
+    else if (usedKB > 3000) warn('本機儲存空間', `已用約 ${usedKB} KB，接近瀏覽器上限（約 5000 KB），建議減少照片數量`);
+    else ok('本機儲存空間', `已用約 ${usedKB} KB`);
+
+    const pend = pendingSyncFields();
+    const FIELD_LABEL = { tripSettings:'旅程設定', prepData:'打包清單', itinData:'行程', expenseRecords:'支出',
+      travelers:'成員', travelDocs:'憑證', wishlistData:'購物清單', foodListData:'店家清單' };
+    if (!syncRoomId) warn('雲端同步', '沒有房號，資料只存在這台裝置');
+    else if (pend.length) warn('雲端同步', `有 ${pend.length} 項還沒上傳：${pend.map(f=>FIELD_LABEL[f]||f).join('、')}（連上網路後會自動補送，不會被雲端蓋掉）`);
+    else ok('雲端同步', '本機的修改都已經上傳');
+
+    // 實際往雲端寫一筆再刪掉，確認這台裝置真的推得上去
+    if (syncRoomId) {
+      try {
+        await withTimeout(db.ref('rooms/' + syncRoomId + '/_selftest').set(Date.now()), CLOUD_ACK_TIMEOUT_MS);
+        try { await withTimeout(db.ref('rooms/' + syncRoomId + '/_selftest').remove(), CLOUD_ACK_TIMEOUT_MS); } catch(e) {}
+        ok('雲端寫入測試', '這台裝置可以把修改寫到雲端');
+      } catch (e) {
+        bad('雲端寫入測試', e && e.isTimeout ? '寫不上去（可能沒網路），改動會先留在本機等連線恢復' : '寫入失敗：' + ((e && e.message) || e));
+      }
+    }
 
     // 3. 每一天的城市判斷（最容易出錯的地方）
     let cityOk = 0, cityFail = [];
@@ -2853,6 +3123,10 @@ Day2 12:00 outlet購物，預計逛一小時
     const autoOn = localStorage.getItem('sync-auto-enabled')==='true';
     ok('即時同步', autoOn ? '已開啟' : '未開啟（修改只存在本機，旅伴看不到）');
 
+    renderSelfTestResult(box, R);
+  }
+  // 檢測結果的共用版面（自我檢測與存檔診斷都用這個）
+  function renderSelfTestResult(box, R) {
     const icon = s => s==='ok'?'<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i>' : s==='warn'?'<i class="fa-solid fa-triangle-exclamation" style="color:var(--gold);"></i>' : '<i class="fa-solid fa-circle-xmark" style="color:var(--warn);"></i>';
     const nBad = R.filter(r=>r.s==='bad').length, nWarn = R.filter(r=>r.s==='warn').length;
     const summary = nBad ? `發現 ${nBad} 個問題${nWarn?`、${nWarn} 個提醒`:''}` : nWarn ? `沒有錯誤，有 ${nWarn} 個提醒` : '全部正常';
@@ -3553,7 +3827,7 @@ Day2 12:00 outlet購物，預計逛一小時
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
   }
   async function saveTravelDocs() {
-    try { await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs)); await autoUploadIfEnabled(); } catch(e) {}
+    try { const ok = await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs)); await syncAfterSave(ok, 'travelDocs'); } catch(e) {}
   }
 
   function renderDocTypeNav() {
@@ -4622,8 +4896,8 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   }
   async function savePrep() { 
     try { 
-      await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData)); 
-      await autoUploadIfEnabled();
+      const ok = await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData)); 
+      await syncAfterSave(ok, 'prepData');
     } catch(e) {} 
     renderReminder(true);
   }
@@ -4782,9 +5056,9 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
   }
   async function saveItin() { 
     try { 
-      await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData)); 
+      const ok = await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData)); 
       updateDayPillStatuses(); renderNowBar(); 
-      await autoUploadIfEnabled();
+      await syncAfterSave(ok, 'itinData');
     } catch(e) {} 
   }
 
@@ -5761,8 +6035,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   async function saveExpense() {
     invalidateAllocCache(); 
     try { 
-      await storage.set(roomScopedKey('expense-data'), JSON.stringify({records:expenseRecords, travelers})); 
-      await autoUploadIfEnabled();
+      const ok = await storage.set(roomScopedKey('expense-data'), JSON.stringify({records:expenseRecords, travelers})); 
+      await syncAfterSave(ok, ['expenseRecords', 'travelers']);
     } catch(e) {} 
   }
 
@@ -5790,9 +6064,14 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
   function renderHeroSyncStatus() {
     const wrap = document.getElementById('hero-sync-status'); if (!wrap) return;
-    wrap.innerHTML = syncRoomId
-      ? `<i class="fa-solid fa-cloud" style="font-size:calc(13px * var(--font-scale)); opacity:0.9;"></i><span style="font-size:calc(10.5px * var(--font-scale)); opacity:0.85; font-weight:700;">房號</span><span style="font-size:calc(14px * var(--font-scale)); font-weight:800; letter-spacing:0.4px;">${escapeHtml(syncRoomId)}</span>`
-      : `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(13px * var(--font-scale));"></i><span style="font-size:calc(11.5px * var(--font-scale)); font-weight:700;">未同步</span>`;
+    if (!syncRoomId) {
+      wrap.innerHTML = `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(13px * var(--font-scale));"></i><span style="font-size:calc(11.5px * var(--font-scale)); font-weight:700;">未同步</span>`;
+      return;
+    }
+    // 有還沒推上雲端的修改就直接顯示出來，不要讓人以為已經存好了
+    const pend = (typeof pendingSyncFields === 'function') ? pendingSyncFields().length : 0;
+    wrap.innerHTML = `<i class="fa-solid ${pend ? 'fa-cloud-arrow-up' : 'fa-cloud'}" style="font-size:calc(13px * var(--font-scale)); opacity:0.9;"></i><span style="font-size:calc(10.5px * var(--font-scale)); opacity:0.85; font-weight:700;">房號</span><span style="font-size:calc(14px * var(--font-scale)); font-weight:800; letter-spacing:0.4px;">${escapeHtml(syncRoomId)}</span>`
+      + (pend ? `<span style="font-size:calc(10px * var(--font-scale)); font-weight:800; background:#FDE68A; color:#78350F; border-radius:7px; padding:2px 6px; margin-left:2px;">待上傳 ${pend}</span>` : '');
   }
   function addMemberFromSettings() {
     const inp = document.getElementById('setting-new-member'); const name = inp.value.trim(); if (!name) return;
@@ -7834,6 +8113,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           await updateLocalData(snapshot.val());
           rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
         }
+        await retryPendingSync();   // 上次離線時改的東西，進房間順便補推上去
       } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
       registerRoom(roomId, tripSettings.title);
       fetchRates();
@@ -8133,6 +8413,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   let lastSyncedHash = '';
   async function updateLocalData(data) {
     if (!data) return;
+    // 比版本號決定誰比較新：本機版本比雲端大就以本機為準，並把本機這份補推上去。
+    // 這是「改好的東西重開就不見」的根本解法——不管當初是沒上傳成功、逾時，
+    // 還是別台裝置拿舊資料整包覆蓋過雲端，本機比較新的部分都不會再被洗掉。
+    const cloudRev = (data && data._rev) || {};
+    const keepLocal = [];
+    Object.keys(SYNC_FIELD_GET).forEach(f => {
+      if (localRev(f) > (Number(cloudRev[f]) || 0)) { keepLocal.push(f); data[f] = SYNC_FIELD_GET[f](); }
+    });
+    // 標成待同步的也一律以本機為準（可能是離線時改的，版本號還沒推上雲端）
+    pendingSyncFields().forEach(f => {
+      if (keepLocal.indexOf(f) < 0) { keepLocal.push(f); data[f] = SYNC_FIELD_GET[f](); }
+    });
+    const pendFields = keepLocal;
     // 跟上次收到的完全一樣就不用再重畫一次：自動同步每次推送都整頁重繪是卡頓主因之一
     try {
       const h = JSON.stringify([data.tripSettings, data.prepData, data.itinData, data.expenseRecords, data.travelDocs, data.travelers, data.wishlistData, data.foodListData]);
@@ -8165,6 +8458,14 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData)),
       storage.set(roomScopedKey('app-initialized'), 'true')
     ]);
+    // 雲端比較新的部分，把本機版本號對齊過去，避免下次又誤判成本機比較新
+    Object.keys(SYNC_FIELD_GET).forEach(f => {
+      if (pendFields.indexOf(f) < 0 && cloudRev[f] !== undefined) setLocalRev(f, cloudRev[f]);
+    });
+    if (pendFields.length) {
+      pendFields.forEach(f => markPendingSync(f));   // 保住的這幾筆要確保補得上去
+      retryPendingSync();
+    }
 
     renderTripSettingsUI(); renderPrep(); renderDayTabs();
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
