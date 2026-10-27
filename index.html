@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.3 (2026-10-19 17:30)</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.4 (2026-10-27 23:30)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -2331,11 +2331,23 @@ Day2 12:00 outlet購物，預計逛一小時
     const el = document.getElementById('overview-rate'); if (!el) return;
     if (info.currency === 'TWD') { el.innerText = '當地即為台幣'; return; }
     const twdPerUnit = rate ? (1 / rate) : 0;
-    el.innerText = `1 ${info.currency} ≈ NT$ ${twdPerUnit.toFixed(2)}`;
+    el.innerText = `1 ${info.currency} ≈ NT$ ${fmtRate(twdPerUnit)}`;
   }
 
   function f(v) { return isNaN(v) ? "0" : Math.round(v).toLocaleString(); }
   function p(s) { return parseFloat(s.toString().replace(/,/g, '')) || 0; }
+  // 匯率顯示：固定小數兩位對韓元這種很小的數字完全不夠（0.02 vs 0.0237，金額一大就差很多），
+  // 改成依數值大小自動給足有效位數
+  function fmtRate(v) {
+    const n = Number(v);
+    if (!isFinite(n) || n <= 0) return '0';
+    const dp = (n >= 1000) ? 2 : (n >= 100) ? 3 : (n >= 1) ? 4 : (n >= 0.01) ? 5 : 6;
+    let s = n.toFixed(dp);
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');   // 去掉尾端沒意義的 0
+    if (s.indexOf('.') < 0) s += '.00';                                     // 但至少留兩位，看起來才像匯率
+    else if (s.split('.')[1].length === 1) s += '0';
+    return s;
+  }
   
   function showP(id, b) {
     // 離開支出頁時關掉沒送出的記帳表單，不然下次回來會看到它還開著
@@ -2389,7 +2401,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const rateMsgEl = document.getElementById('rate-msg');
     if (rateMsgEl) {
       if (cur === 'TWD') { rateMsgEl.innerText = '當地即為台幣'; }
-      else { const rate = currentRateForCurrency(cur); rateMsgEl.innerText = rate ? `1 ${cur} ≈ NT$ ${(1/rate).toFixed(2)}` : '正在同步匯率...'; }
+      else { const rate = currentRateForCurrency(cur); rateMsgEl.innerText = rate ? `1 ${cur} ≈ NT$ ${fmtRate(1/rate)}` : '正在同步匯率...'; }
     }
   }
 
@@ -3092,7 +3104,7 @@ Day2 12:00 outlet購物，預計逛一小時
     // 4. 匯率
     const cur = getCountryInfo().currency;
     const rate = currentRateForCurrency(cur);
-    if (rate && rate > 0) ok('匯率', `1 ${cur} ≈ NT$ ${(1/rate).toFixed(3)}`); else bad('匯率', `${cur} 匯率取得失敗`);
+    if (rate && rate > 0) ok('匯率', `1 ${cur} ≈ NT$ ${fmtRate(1/rate)}`); else bad('匯率', `${cur} 匯率取得失敗`);
 
     // 5. AI 金鑰
     const key = (tripSettings && tripSettings.geminiApiKey || '').trim();
@@ -5461,8 +5473,8 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     let time = '', title = '', place = '', address = '', cat = '', dateStr = '', notes = [];
     if (kind === 'hotel') {
       const nm = e.name || '住宿';
-      if (which === 'in') { time = e.checkinTime || '15:00'; title = `入住 ${nm}`; dateStr = e.checkinDate; }
-      else { time = e.checkoutTime || '11:00'; title = `退房 ${nm}`; dateStr = e.checkoutDate; }
+      if (which === 'in') { time = e.checkinTime || ''; title = `入住 ${nm}`; dateStr = e.checkinDate; }
+      else { time = e.checkoutTime || ''; title = `退房 ${nm}`; dateStr = e.checkoutDate; }
       place = nm; address = e.address || ''; cat = '住宿';
       const rmTxt = hotelRoomSummary(e);
       if (rmTxt) notes.push(`房型 ${rmTxt}`);
@@ -5511,8 +5523,18 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
       }
     }
 
-    const set = (elId, v) => { const el = document.getElementById(elId); if (el && v) el.value = v; };
-    set('af-time', time); set('af-title', title); set('af-place', place); set('af-address', address);
+    // 只填空白的欄位：使用者已經自己打好的內容（例如先寫了 13:00 要提早去 check-in）不覆蓋，
+    // 被保留的欄位會在下面列出來，要改成憑證上的值自己清掉再按一次就好
+    const kept = [];
+    const set = (elId, v, label) => {
+      const el = document.getElementById(elId);
+      if (!el || !v) return;
+      const cur = (el.value || '').trim();
+      if (!cur) { el.value = v; return; }
+      if (cur !== String(v)) kept.push(`${label}保留你填的「${cur}」`);
+    };
+    set('af-time', time, '時間'); set('af-title', title, '名稱');
+    set('af-place', place, '地點'); set('af-address', address, '地址');
     const noteEl = document.getElementById('af-notes');
     if (noteEl && notes.length && !noteEl.value.trim()) noteEl.value = notes.join('　');
     if (cat && ITIN_CATS.includes(cat)) {
@@ -5522,7 +5544,8 @@ ${DOC_AI_SCHEMA[type]}${raw ? `\n\n使用者提供的內容：\n---\n${raw}\n---
     const more = document.getElementById('af-more-details');
     if (more && more.style.display === 'none') toggleAfMoreDetails();   // 地點／地址在收合區裡，順便打開讓使用者看到
     const box = document.getElementById('af-doc-pick');
-    if (box) box.innerHTML = `<div style="padding:10px 12px; background:#ECFDF5; border:1.5px solid #A7F3D0; border-radius:12px; font-size:calc(12px * var(--font-scale)); color:#065F46; line-height:1.6;"><i class="fa-solid fa-circle-check"></i> 已帶入「${escapeHtml(title)}」，可以再自行修改後儲存。</div>`;
+    if (box) box.innerHTML = `<div style="padding:10px 12px; background:#ECFDF5; border:1.5px solid #A7F3D0; border-radius:12px; font-size:calc(12px * var(--font-scale)); color:#065F46; line-height:1.6;"><i class="fa-solid fa-circle-check"></i> 已帶入「${escapeHtml(title)}」，可以再自行修改後儲存。</div>`
+      + (kept.length ? `<div style="margin-top:7px; padding:9px 12px; background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:12px; font-size:calc(11.5px * var(--font-scale)); color:#78350F; line-height:1.6;"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(kept.join('、'))}（沒有被憑證蓋掉；想換成憑證上的值，把那一欄清空再按一次）</div>` : '');
   }
 
   function renderAddForm(editId) {
@@ -6108,14 +6131,56 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     if (mode === 'items') { if (!qaAllocItems.length) addAllocItem(); else renderAllocItems(); }
   }
   function addAllocItem() {
-    qaAllocItems.push({ _id: allocSeq++, name: '', unitPrice: 0, alloc: [] });
+    qaAllocItems.push({ _id: allocSeq++, name: '', unitPrice: 0, totalPrice: 0, priceMode: 'unit', alloc: [] });
+    renderAllocItems();
+  }
+  // 金額可以填單價，也可以直接填這一項的總價（例如三張機票共 39,954，不用自己先除以 3）
+  function allocUnitPrice(it) {
+    if (!it) return 0;
+    if (it.priceMode === 'total') {
+      const q = Number(it.totalQty) || 0;
+      return q > 0 ? (Number(it.totalPrice) || 0) / q : 0;
+    }
+    return Number(it.unitPrice) || 0;
+  }
+  function allocPriceInputValue(it) {
+    if (!it) return '';
+    return (it.priceMode === 'total') ? (it.totalPrice || '') : (it.unitPrice || '');
+  }
+  function toggleAllocPriceMode(id) {
+    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
+    const q = Number(it.totalQty) || 0;
+    if (it.priceMode === 'total') {
+      it.priceMode = 'unit';
+      it.unitPrice = allocUnitPrice(it);              // 換成單價時，用剛剛的總價換算回來，數字不會跑掉
+    } else {
+      it.priceMode = 'total';
+      it.totalPrice = (Number(it.unitPrice) || 0) * (q > 0 ? q : 1);
+    }
     renderAllocItems();
   }
   function removeAllocItem(id) { qaAllocItems = qaAllocItems.filter(i => i._id !== id); renderAllocItems(); }
   function updateAllocItem(id, field, val) {
     const it = qaAllocItems.find(i => i._id === id); if (!it) return;
-    it[field] = (field === 'unitPrice') ? p(val) : (field === 'totalQty') ? (parseInt(val,10)||0) : val;
-    if (field === 'unitPrice' || field === 'totalQty') refreshAllocTotal(); // 打字時不整段重畫，游標才不會跳掉
+    if (field === 'price') {                                   // 金額欄：依目前是單價還是總價存到對應欄位
+      if (it.priceMode === 'total') it.totalPrice = p(val); else it.unitPrice = p(val);
+    } else if (field === 'totalQty') {
+      it.totalQty = parseInt(val, 10) || 0;
+    } else {
+      it[field] = val;
+    }
+    if (field === 'price' || field === 'totalQty') refreshAllocSubtotal(id); // 打字時不整段重畫，游標才不會跳掉
+  }
+  // 只更新這一列的小計與總計，不重畫整個區塊
+  function refreshAllocSubtotal(id) {
+    const it = qaAllocItems.find(i => i._id === id);
+    const el = document.getElementById('alloc-sub-' + id);
+    if (it && el) {
+      const assigned = (it.alloc||[]).reduce((s,a)=>s+(Number(a.qty)||0),0);
+      const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
+      el.innerText = `小計 ${symbol}${f(allocUnitPrice(it) * assigned)}`;
+    }
+    refreshAllocTotal();
   }
 
   // 每件商品直接在同一列點名字分配，不用再切換到別的區塊
@@ -6168,7 +6233,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const el = document.getElementById('qa-alloc-total'); if (!el) return;
     const total = allocItemsTotal(qaAllocItems);
     const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
-    const unassigned = qaAllocItems.filter(it => ((it.name||'').trim() || (Number(it.unitPrice)||0) > 0) && !(it.alloc||[]).length).length;
+    const unassigned = qaAllocItems.filter(it => ((it.name||'').trim() || allocUnitPrice(it) > 0) && !(it.alloc||[]).length).length;
     el.innerHTML = `這筆總金額：${symbol} ${f(total)}`
       + (unassigned ? `<div style="color:var(--warn); font-weight:600; font-size:calc(11.5px * var(--font-scale)); margin-top:4px;">還有 ${unassigned} 樣商品沒分配給任何人</div>` : '');
   }
@@ -6180,7 +6245,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const assigned = (it.alloc||[]).reduce((s,a)=>s+(Number(a.qty)||0),0);
       const total = Number(it.totalQty)||0;
       const remain = total ? total - assigned : 0;
-      const subtotal = (Number(it.unitPrice)||0) * assigned;
+      const unit = allocUnitPrice(it);
+      const subtotal = unit * assigned;
+      const isTotalMode = it.priceMode === 'total';
       const proxies = (it.alloc||[]).map((a,i)=>({a,i})).filter(x => (x.a.proxyFor||'').trim() !== '' || (x.a.qty && x.a.proxyFor === '' && false));
       // 認 isProxy 旗標：剛按下「代購」、名字還沒填的那一列也要畫出來，不然使用者沒地方填
       const proxyRows = (it.alloc||[]).map((a,i)=>({a,i})).filter(x => x.a.isProxy === true || String(x.a.proxyFor||'').trim() !== '');
@@ -6206,12 +6273,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         </div>`).join('');
       return `
       <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:11px; margin-bottom:9px;">
-        <div style="display:flex; gap:5px; align-items:center; margin-bottom:8px;">
+        <div style="display:flex; gap:5px; align-items:center; margin-bottom:6px;">
           <input type="text" value="${escapeHtml(it.name)}" placeholder="商品名稱" oninput="updateAllocItem(${it._id},'name',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale));">
-          <input type="text" inputmode="decimal" value="${it.unitPrice||''}" placeholder="單價" oninput="updateAllocItem(${it._id},'unitPrice',this.value)" style="width:72px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
-          <input type="number" min="0" value="${it.totalQty||''}" placeholder="數量" oninput="updateAllocItem(${it._id},'totalQty',this.value)" style="width:58px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; text-align:center;">
           <button type="button" onclick="removeAllocItem(${it._id})" style="flex-shrink:0; background:#FEF2F2; border:none; width:30px; height:30px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
         </div>
+        <div style="display:flex; gap:5px; align-items:center; margin-bottom:8px;">
+          <button type="button" onclick="toggleAllocPriceMode(${it._id})" title="切換：填單價或填這一項的總價"
+            style="flex:0 0 auto; padding:8px 9px; border-radius:8px; border:1px solid ${isTotalMode?'var(--teal)':'#ccc'}; background:${isTotalMode?'#ECFDF5':'#fff'}; color:${isTotalMode?'#065F46':'var(--navy)'}; font-size:calc(11.5px * var(--font-scale)); font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap;">
+            ${isTotalMode ? '總價' : '單價'} <i class="fa-solid fa-right-left" style="font-size:calc(9px * var(--font-scale)); opacity:0.7;"></i>
+          </button>
+          <input type="text" inputmode="decimal" value="${allocPriceInputValue(it)}" placeholder="${isTotalMode ? '這項總共多少錢' : '一個多少錢'}" oninput="updateAllocItem(${it._id},'price',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
+          <input type="number" min="0" value="${it.totalQty||''}" placeholder="數量" oninput="updateAllocItem(${it._id},'totalQty',this.value)" style="width:58px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; text-align:center;">
+        </div>
+        ${isTotalMode ? `<div style="font-size:calc(10.5px * var(--font-scale)); color:#065F46; margin:-4px 0 8px; line-height:1.5;"><i class="fa-solid fa-circle-info"></i> 填的是總價，系統自動換算成單價 ${CURRENCY_SYMBOL[qaCurrency]||(qaCurrency+' ')}${unit ? f(unit) : '—'}${(Number(it.totalQty)||0) ? ` × ${it.totalQty}` : '（請先填數量）'}</div>` : ''}
         <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
           ${chips}
           ${travelers.length > 1 ? `<button type="button" onclick="splitAllocEvenly(${it._id})" style="background:#E2E7EC; border:none; border-radius:11px; padding:6px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">平均分</button>` : ''}
@@ -6220,7 +6294,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         ${proxyHint}${proxyHtml}
         <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:calc(11.5px * var(--font-scale));">
           <span style="color:${total && remain !== 0 ? 'var(--warn)' : 'var(--gray)'};">${total ? (remain === 0 ? '已分配完畢' : remain > 0 ? `還有 ${remain} 個沒分` : `超出 ${-remain} 個`) : `已分配 ${assigned} 個`}</span>
-          <span style="color:var(--gray);">小計 ${symbol}${f(subtotal)}</span>
+          <span style="color:var(--gray);" id="alloc-sub-${it._id}">小計 ${symbol}${f(subtotal)}</span>
         </div>
       </div>`;
     }).join('');
@@ -6248,6 +6322,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   function setQaCurrency(cur, btn) {
+    const prev = qaCurrency;
     qaCurrency = cur;
     if (btn && btn.parentElement) {
       Array.from(btn.parentElement.children).forEach(b => { b.style.background = '#E2E7EC'; b.style.color = 'var(--gray)'; });
@@ -6255,6 +6330,32 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
     const amtInput = document.getElementById('qa-amount');
     if (amtInput) amtInput.placeholder = `金額 (${cur})`;
+    if (prev !== cur) {
+      const rateEl = document.getElementById('qa-rate');
+      if (rateEl) rateEl.value = '';   // 上一個幣別的匯率留著會變成「1 TWD ≈ 4.8 TWD」這種看不懂的東西
+    }
+    refreshQaRateUI();
+    if (qaSplitMode === 'items') renderAllocItems();   // 逐項分配的金額符號要跟著換
+  }
+  // 記帳表單的匯率欄位：台幣不用換算就整塊收起來，其他幣別則把現在的即時匯率寫在提示裡
+  function refreshQaRateUI() {
+    const block = document.getElementById('qa-rate-block');
+    const label = document.getElementById('qa-rate-label');
+    const hint = document.getElementById('qa-rate-hint');
+    const refHint = document.getElementById('qa-refno-hint');
+    if (!block) return;
+    if (qaCurrency === 'TWD') {
+      block.style.display = 'none';
+      if (refHint) refHint.innerText = '編號可寫在實體收據上方便核對。這筆是台幣，不需要換算匯率。';
+      return;
+    }
+    block.style.display = 'block';
+    if (label) label.innerText = `當下匯率（1 TWD ≈ ? ${qaCurrency}）`;
+    if (refHint) refHint.innerText = '編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。';
+    if (hint) {
+      const live = currentRateForCurrency(qaCurrency);
+      hint.innerText = live ? `留空就用即時匯率：1 TWD ≈ ${fmtRate(live)} ${qaCurrency}（1 ${qaCurrency} ≈ NT$ ${fmtRate(1/live)}）` : '';
+    }
   }
 
   function toggleQaMoreDetails() {
@@ -6322,7 +6423,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
 
         <!-- 逐項分配：先列出買了什麼，再切換到每個人、勾選他拿了哪幾樣、各幾個 -->
         <div id="qa-items-box" style="display:none; margin-bottom:12px;">
-          <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">填入商品與單價，直接點下面的名字分配：點一下加一個，點數字歸零。幫旅程外的人買的按「代購」。</p>
+          <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">填好商品與金額，直接點下面的名字分配：點一下加一個，點數字歸零。幫旅程外的人買的按「代購」。<br>金額左邊可以切換<b>單價</b>或<b>總價</b>——三張機票共 39,954 就選「總價」填 39954、數量填 3，不用自己先除。</p>
 
           <div id="qa-alloc-list"></div>
           <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="addAllocItem()"><i class="fa-solid fa-plus"></i> 新增商品</button>
@@ -6358,12 +6459,13 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
               <div class="input-label">編號</div>
               <input type="number" id="qa-refno" min="1" value="${pf.refNo || ''}" placeholder="${editId ? '選填' : String(nextRefNo())}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
             </div>
-            <div style="flex:1; min-width:0;">
-              <div class="input-label">當下匯率（1 TWD ≈ ? ${qaCurrency}）</div>
-              <input type="text" inputmode="decimal" id="qa-rate" value="${pf.rateAtTime || ''}" placeholder="留空用即時匯率" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+            <div style="flex:1; min-width:0;" id="qa-rate-block">
+              <div class="input-label" id="qa-rate-label">當下匯率（1 TWD ≈ ? ${qaCurrency}）</div>
+              <input type="text" inputmode="decimal" id="qa-rate" value="${(qaCurrency === 'TWD') ? '' : (pf.rateAtTime || '')}" placeholder="留空用即時匯率" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+              <div id="qa-rate-hint" style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:4px; line-height:1.5;"></div>
             </div>
           </div>
-          <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:-6px 0 12px; line-height:1.6;">編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。</p>
+          <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:-6px 0 12px; line-height:1.6;" id="qa-refno-hint">編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。</p>
           <div class="input-label">消費地點</div>
           <input type="text" id="qa-location" placeholder="店家或地點名稱" value="${escapeHtml(prefillLocation)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
           <div class="input-label">優惠券／折扣</div>
@@ -6389,13 +6491,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       ? pf.items.map(it => {
           const q = Number(it.quantity)||1;
           return { _id: allocSeq++, name: it.nameZh || it.nameOriginal || '', unitPrice: q > 0 ? (Number(it.price)||0)/q : (Number(it.price)||0),
+                   totalPrice: Number(it.price)||0, priceMode: 'unit',
                    totalQty: q, alloc: (it.owners||[]).map(o => ({ who: o.who||'', qty: Number(o.qty)||0, proxyFor: o.proxyFor||'', isProxy: !!o.isProxy })) };
         })
       : (Array.isArray(pf.allocItems) && pf.allocItems.length)
-        ? pf.allocItems.map(it => ({ _id: allocSeq++, name: it.name||'', unitPrice: Number(it.unitPrice)||0, totalQty: Number(it.totalQty)||Number(it.qty)||0, alloc: (it.alloc||[]).map(a => ({ who: a.who||'', qty: Number(a.qty)||0, proxyFor: a.proxyFor||'', isProxy: !!a.isProxy })) }))
+        ? pf.allocItems.map(it => ({ _id: allocSeq++, name: it.name||'', unitPrice: Number(it.unitPrice)||0, priceMode: 'unit',
+            totalPrice: (Number(it.unitPrice)||0) * (Number(it.totalQty)||Number(it.qty)||1),
+            totalQty: Number(it.totalQty)||Number(it.qty)||0, alloc: (it.alloc||[]).map(a => ({ who: a.who||'', qty: Number(a.qty)||0, proxyFor: a.proxyFor||'', isProxy: !!a.isProxy })) }))
         : [];
     box.querySelectorAll('.qa-mode-btn').forEach(b => b.addEventListener('click', () => setQaSplitMode(b.dataset.mode)));
     setQaSplitMode(pf.splitMode === 'items' ? 'items' : 'even');
+    refreshQaRateUI();
     // 直接在這個表單容器上綁事件，並把容器傳進去做範圍查詢：
     // 之前用字串 onclick + 全域 getElementById，只要畫面上同時存在兩份表單就會抓錯欄位而靜默失敗
     const submitBtn = box.querySelector('.qa-submit-btn');
@@ -6448,13 +6554,13 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     // 逐項分配：跟「AI 收據匯入」走同一套資料格式，
     // 手動填的商品一樣會存進商品明細，支出卡、分帳、Excel 才抓得到是哪些品項
     if (qaSplitMode === 'items' && qaAllocItems.length) {
-      const valid = qaAllocItems.filter(it => (it.name||'').trim() || (Number(it.unitPrice)||0) > 0);
+      const valid = qaAllocItems.filter(it => (it.name||'').trim() || allocUnitPrice(it) > 0);
       data.splitMode = 'items';
       data.items = valid.map(it => {
         const qty = Number(it.totalQty) || (it.alloc||[]).reduce((x,a)=>x+(Number(a.qty)||0),0) || 1;
         return {
           nameOriginal: '', nameZh: (it.name||'').trim() || '未命名商品',
-          price: (Number(it.unitPrice)||0) * qty,   // 商品明細記的是該品項總價
+          price: allocUnitPrice(it) * qty,   // 商品明細記的是該品項總價（總價模式會先換算回單價）
           quantity: qty,
           owners: (it.alloc||[]).filter(a=>a.who && (Number(a.qty)||0) > 0)
                     .map(a => ({ who: a.who, qty: Number(a.qty)||0, proxyFor: (a.proxyFor||'').trim(), isProxy: !!a.isProxy }))
@@ -6919,7 +7025,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   //   who = 實際付這筆錢的旅伴；proxyFor 有值代表這幾件是幫這個人代購（那個人通常不在旅程成員內）
   function allocItemsTotal(allocItems) {
     return (allocItems || []).reduce((s, it) => {
-      const unit = Number(it.unitPrice) || 0;
+      // 編輯中的項目可能是用「總價」模式填的，要換算回單價再乘數量
+      const unit = (typeof allocUnitPrice === 'function') ? allocUnitPrice(it) : (Number(it.unitPrice) || 0);
       return s + (it.alloc || []).reduce((s2, a) => s2 + unit * (Number(a.qty) || 0), 0);
     }, 0);
   }
@@ -7677,7 +7784,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       r.location ? `<div class="detail-row"><i class="fa-solid fa-location-dot"></i><span><b>消費地點：</b>${escapeHtml(r.location)}</span></div>` : '',
       r.coupon ? `<div class="detail-row"><i class="fa-solid fa-tag"></i><span><b>優惠券/折扣：</b>${escapeHtml(r.coupon)}</span></div>` : '',
       r.taxRefund ? `<div class="detail-row"><i class="fa-solid fa-receipt"></i><span><b>退稅金額：</b>${escapeHtml(r.taxRefund)}</span></div>` : '',
-      (r.rateAtTime && cur !== 'TWD') ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>當下匯率：</b>1 TWD ≈ ${Number(r.rateAtTime).toFixed(2)} ${cur}</span></div>` : '',
+      (r.rateAtTime && cur !== 'TWD') ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>當下匯率：</b>1 TWD ≈ ${fmtRate(r.rateAtTime)} ${cur}　(1 ${cur} ≈ NT$ ${fmtRate(1/Number(r.rateAtTime))})</span></div>` : '',
       r.note ? `<div class="detail-row"><i class="fa-solid fa-note-sticky"></i><span><b>備註：</b>${escapeHtml(r.note)}</span></div>` : ''
     ].filter(Boolean).join('') + itemsBlock;
 
