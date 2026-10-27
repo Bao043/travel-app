@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.4 (2026-10-27 23:30)</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.5 (2026-10-28 00:20)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -6188,11 +6188,16 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const row = (item.alloc||[]).find(a => a.who === who && !(a.proxyFor||'').trim() && !a.isProxy);
     return row ? (Number(row.qty)||0) : 0;
   }
-  function tapAllocPerson(itemId, who) { // 點一下加一個
+  function tapAllocPerson(itemId, who) { // 點一下加一份；已經是小數份（按過平均分）就不再往上加，避免金額亂掉
     const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
     it.alloc = it.alloc || [];
     const idx = it.alloc.findIndex(a => a.who === who && !(a.proxyFor||'').trim() && !a.isProxy);
-    if (idx >= 0) it.alloc[idx].qty = (Number(it.alloc[idx].qty)||0) + 1;
+    if (idx >= 0) {
+      const cur = Number(it.alloc[idx].qty) || 0;
+      const isWhole = Math.abs(cur - Math.round(cur)) < 1e-9;
+      if (isWhole) it.alloc[idx].qty = cur + 1;
+      else { it.alloc.splice(idx, 1); }       // 平分出來的份額再點一下＝把這個人移除
+    }
     else it.alloc.push({ who, qty: 1, proxyFor: '' });
     renderAllocItems();
   }
@@ -6201,18 +6206,41 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     it.alloc = (it.alloc||[]).filter(a => !(a.who === who && !(a.proxyFor||'').trim() && !a.isProxy));
     renderAllocItems();
   }
-  function splitAllocEvenly(itemId) { // 依「數量」平均分給所有成員，除不盡的從前面的人多給一個
+  // 把這一項的「金額」平均分，不是把個數平均分。
+  // 兩間房共 51,760 要四個人分攤時，每人就是 0.5 間 ＝ 12,940，
+  // 不會再因為數量只有 2 就只分到兩個人。
+  // 已經先點好人的話，只在那幾個人之間平分；沒點人就分給全部成員。
+  function splitAllocEvenly(itemId) {
     const it = qaAllocItems.find(i => i._id === itemId); if (!it || !travelers.length) return;
-    const total = Number(it.totalQty)||0;
-    if (!total) { alert('請先填這項商品的數量'); return; }
+    const picked = (it.alloc||[]).filter(a => a.who && !(a.proxyFor||'').trim() && !a.isProxy).map(a => a.who);
+    const people = picked.length ? travelers.filter(t => picked.indexOf(t) >= 0) : travelers.slice();
+    if (!people.length) return;
+    const units = Number(it.totalQty) || 1;        // 數量留空時視為一份，照樣可以平分
     it.alloc = (it.alloc||[]).filter(a => (a.proxyFor||'').trim() || a.isProxy); // 保留代購列
-    const base = Math.floor(total / travelers.length);
-    let rest = total - base * travelers.length;
-    travelers.forEach(t => {
-      const q = base + (rest > 0 ? 1 : 0); if (rest > 0) rest--;
-      if (q > 0) it.alloc.push({ who: t, qty: q, proxyFor: '' });
+    // 除不盡時（例如 2 份分給 3 個人）最後一個人補差額，加總才會剛好等於總份數，
+    // 不然小計會出現 3,000.0015 這種尾差
+    let acc = 0;
+    people.forEach((t, i) => {
+      const q = (i === people.length - 1) ? roundQty(units - acc) : roundQty(units / people.length);
+      acc = roundQty(acc + q);
+      it.alloc.push({ who: t, qty: q, proxyFor: '' });
     });
     renderAllocItems();
+  }
+  // 份額允許小數（0.5 間房），但要收斂浮點誤差，不然小計會出現 51759.99 這種數字
+  function roundQty(v) { return Math.round((Number(v) || 0) * 1e6) / 1e6; }
+  // 份額顯示：整數就寫個數，小數就寫成 1/4 這種分數，看起來才直覺
+  function fmtQty(v) {
+    const n = Number(v) || 0;
+    if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+    for (let d = 2; d <= 12; d++) {
+      const num = n * d;
+      if (Math.abs(num - Math.round(num)) < 1e-6) {
+        const w = Math.floor(n), rem = Math.round((n - w) * d);
+        return (w ? w + ' ' : '') + rem + '/' + d;
+      }
+    }
+    return n.toFixed(2);
   }
   function addProxyRow(itemId) {
     const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
@@ -6243,6 +6271,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
     wrap.innerHTML = qaAllocItems.map(it => {
       const assigned = (it.alloc||[]).reduce((s,a)=>s+(Number(a.qty)||0),0);
+      const peopleCount = (it.alloc||[]).filter(a => a.who && !(a.proxyFor||'').trim() && !a.isProxy && (Number(a.qty)||0) > 0).length;
       const total = Number(it.totalQty)||0;
       const remain = total ? total - assigned : 0;
       const unit = allocUnitPrice(it);
@@ -6254,9 +6283,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const chips = travelers.map(t => {
         const q = allocQtyOf(it, t);
         const on = q > 0;
+        const amt = unit * q;
         return `<span style="display:inline-flex; align-items:center; gap:5px; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:11px; padding:6px 10px; font-size:calc(12px * var(--font-scale)); font-weight:700;">
           <span onclick="tapAllocPerson(${it._id},'${escapeHtml(t)}')" style="cursor:pointer;">${escapeHtml(t)}</span>
-          ${on ? `<span onclick="clearAllocPerson(${it._id},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:7px; padding:1px 6px;">${q}</span>` : ''}
+          ${on ? `<span onclick="clearAllocPerson(${it._id},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:7px; padding:1px 6px;">${fmtQty(q)}${amt ? `・${symbol}${f(amt)}` : ''}</span>` : ''}
         </span>`;
       }).join('');
       const proxyHint = proxyRows.length
@@ -6283,17 +6313,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
             ${isTotalMode ? '總價' : '單價'} <i class="fa-solid fa-right-left" style="font-size:calc(9px * var(--font-scale)); opacity:0.7;"></i>
           </button>
           <input type="text" inputmode="decimal" value="${allocPriceInputValue(it)}" placeholder="${isTotalMode ? '這項總共多少錢' : '一個多少錢'}" oninput="updateAllocItem(${it._id},'price',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
-          <input type="number" min="0" value="${it.totalQty||''}" placeholder="數量" oninput="updateAllocItem(${it._id},'totalQty',this.value)" style="width:58px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; text-align:center;">
+          <input type="number" min="0" value="${it.totalQty||''}" placeholder="${isTotalMode ? '份數' : '數量'}" oninput="updateAllocItem(${it._id},'totalQty',this.value)" style="width:58px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; text-align:center;">
         </div>
         ${isTotalMode ? `<div style="font-size:calc(10.5px * var(--font-scale)); color:#065F46; margin:-4px 0 8px; line-height:1.5;"><i class="fa-solid fa-circle-info"></i> 填的是總價，系統自動換算成單價 ${CURRENCY_SYMBOL[qaCurrency]||(qaCurrency+' ')}${unit ? f(unit) : '—'}${(Number(it.totalQty)||0) ? ` × ${it.totalQty}` : '（請先填數量）'}</div>` : ''}
         <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
           ${chips}
-          ${travelers.length > 1 ? `<button type="button" onclick="splitAllocEvenly(${it._id})" style="background:#E2E7EC; border:none; border-radius:11px; padding:6px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">平均分</button>` : ''}
+          ${travelers.length > 1 ? `<button type="button" onclick="splitAllocEvenly(${it._id})" title="把這一項的金額平均分給已點選的人；沒點人就分給全部成員" style="background:#E2E7EC; border:none; border-radius:11px; padding:6px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">金額均分</button>` : ''}
           <button type="button" onclick="addProxyRow(${it._id})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:11px; padding:5px 10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
         </div>
         ${proxyHint}${proxyHtml}
         <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:calc(11.5px * var(--font-scale));">
-          <span style="color:${total && remain !== 0 ? 'var(--warn)' : 'var(--gray)'};">${total ? (remain === 0 ? '已分配完畢' : remain > 0 ? `還有 ${remain} 個沒分` : `超出 ${-remain} 個`) : `已分配 ${assigned} 個`}</span>
+          <span style="color:${total && Math.abs(remain) > 1e-6 ? 'var(--warn)' : 'var(--gray)'};">${total ? (Math.abs(remain) <= 1e-6 ? `已分配完畢${peopleCount > 1 ? `・${peopleCount} 人分攤` : ''}` : remain > 0 ? `還有 ${fmtQty(remain)} 份沒分（可按「金額均分」一次分完）` : `超出 ${fmtQty(-remain)} 份`) : `已分配 ${fmtQty(assigned)} 份`}</span>
           <span style="color:var(--gray);" id="alloc-sub-${it._id}">小計 ${symbol}${f(subtotal)}</span>
         </div>
       </div>`;
@@ -6337,12 +6367,30 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     refreshQaRateUI();
     if (qaSplitMode === 'items') renderAllocItems();   // 逐項分配的金額符號要跟著換
   }
+  // 匯率的填法：'perTWD' = 1 TWD ≈ ? 外幣（程式內部存的方向）
+  //             'perUnit' = 1 外幣 ≈ ? 台幣（信用卡帳單、換匯單上通常是這個方向）
+  let qaRateDir = 'perUnit';
+  function toggleQaRateDir() {
+    const el = document.getElementById('qa-rate');
+    const cur = el ? p(el.value) : 0;
+    qaRateDir = (qaRateDir === 'perTWD') ? 'perUnit' : 'perTWD';
+    if (el && cur > 0) el.value = String(Math.round((1 / cur) * 1e8) / 1e8);   // 換方向時把數字一起倒過來，不用重打
+    refreshQaRateUI();
+  }
+  // 把畫面上填的值換算成程式內部用的方向（1 TWD ≈ ? 外幣）
+  function qaRateToPerTWD(v) {
+    const n = Number(v) || 0;
+    if (n <= 0) return 0;
+    return (qaRateDir === 'perUnit') ? (1 / n) : n;
+  }
   // 記帳表單的匯率欄位：台幣不用換算就整塊收起來，其他幣別則把現在的即時匯率寫在提示裡
   function refreshQaRateUI() {
     const block = document.getElementById('qa-rate-block');
     const label = document.getElementById('qa-rate-label');
     const hint = document.getElementById('qa-rate-hint');
     const refHint = document.getElementById('qa-refno-hint');
+    const dirBtn = document.getElementById('qa-rate-dir-btn');
+    const rateEl = document.getElementById('qa-rate');
     if (!block) return;
     if (qaCurrency === 'TWD') {
       block.style.display = 'none';
@@ -6350,11 +6398,22 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       return;
     }
     block.style.display = 'block';
-    if (label) label.innerText = `當下匯率（1 TWD ≈ ? ${qaCurrency}）`;
+    const perUnit = (qaRateDir === 'perUnit');
+    if (label) label.innerText = perUnit ? `當下匯率（1 ${qaCurrency} ≈ ? 台幣）` : `當下匯率（1 台幣 ≈ ? ${qaCurrency}）`;
+    if (dirBtn) dirBtn.innerHTML = `1 ${perUnit ? qaCurrency : 'TWD'} <i class="fa-solid fa-right-left" style="font-size:calc(9px * var(--font-scale)); opacity:0.7;"></i>`;
+    if (rateEl) rateEl.placeholder = perUnit ? '例如刷卡帳單的 0.2085' : '留空用即時匯率';
     if (refHint) refHint.innerText = '編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。';
     if (hint) {
       const live = currentRateForCurrency(qaCurrency);
-      hint.innerText = live ? `留空就用即時匯率：1 TWD ≈ ${fmtRate(live)} ${qaCurrency}（1 ${qaCurrency} ≈ NT$ ${fmtRate(1/live)}）` : '';
+      const typed = rateEl ? p(rateEl.value) : 0;
+      let s = live ? `留空就用即時匯率：1 ${qaCurrency} ≈ NT$ ${fmtRate(1/live)}` : '';
+      if (typed > 0) {
+        const perTWD = qaRateToPerTWD(typed);
+        s = `這筆會用：1 ${qaCurrency} ≈ NT$ ${fmtRate(1/perTWD)}（左邊按鈕可切換填法；刷卡帳單多半是這個方向）`;
+      } else if (s) {
+        s += '　左邊按鈕可切換填法';
+      }
+      hint.innerText = s;
     }
   }
 
@@ -6460,8 +6519,12 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
               <input type="number" id="qa-refno" min="1" value="${pf.refNo || ''}" placeholder="${editId ? '選填' : String(nextRefNo())}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
             </div>
             <div style="flex:1; min-width:0;" id="qa-rate-block">
-              <div class="input-label" id="qa-rate-label">當下匯率（1 TWD ≈ ? ${qaCurrency}）</div>
-              <input type="text" inputmode="decimal" id="qa-rate" value="${(qaCurrency === 'TWD') ? '' : (pf.rateAtTime || '')}" placeholder="留空用即時匯率" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+              <div class="input-label" id="qa-rate-label">當下匯率</div>
+              <div style="display:flex; gap:5px; align-items:center;">
+                <button type="button" id="qa-rate-dir-btn" onclick="toggleQaRateDir()" title="切換匯率的填法：刷卡帳單通常寫成「1 外幣 = ? 台幣」"
+                  style="flex:0 0 auto; padding:10px 9px; border-radius:12px; border:1px solid #ccc; background:#fff; color:var(--navy); font-size:calc(11px * var(--font-scale)); font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap;"></button>
+                <input type="text" inputmode="decimal" id="qa-rate" oninput="refreshQaRateUI()" value="${(qaCurrency === 'TWD' || !pf.rateAtTime) ? '' : (Math.round((1 / Number(pf.rateAtTime)) * 1e8) / 1e8)}" placeholder="例如刷卡帳單的 0.2085" style="flex:1; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+              </div>
               <div id="qa-rate-hint" style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:4px; line-height:1.5;"></div>
             </div>
           </div>
@@ -6501,6 +6564,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         : [];
     box.querySelectorAll('.qa-mode-btn').forEach(b => b.addEventListener('click', () => setQaSplitMode(b.dataset.mode)));
     setQaSplitMode(pf.splitMode === 'items' ? 'items' : 'even');
+    qaRateDir = 'perUnit';     // 每次打開都回到「1 外幣 ≈ ? 台幣」，跟刷卡帳單同一個方向
     refreshQaRateUI();
     // 直接在這個表單容器上綁事件，並把容器傳進去做範圍查詢：
     // 之前用字串 onclick + 全域 getElementById，只要畫面上同時存在兩份表單就會抓錯欄位而靜默失敗
@@ -6549,7 +6613,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const taxEl = q('qa-taxrefund'); const taxRefund = taxEl ? taxEl.value.trim() : '';
     const noteEl = q('qa-note'); const note = noteEl ? noteEl.value.trim() : '';
     const refEl = q('qa-refno'); const refNo = (refEl && parseInt(refEl.value,10) > 0) ? parseInt(refEl.value,10) : null;
-    const rateEl = q('qa-rate'); const manualRate = (rateEl && p(rateEl.value) > 0) ? p(rateEl.value) : null;
+    // 匯率欄可能是用「1 外幣 ≈ ? 台幣」的方向填的，存進紀錄前一律換算成內部用的 1 TWD ≈ ? 外幣
+    const rateEl = q('qa-rate');
+    const typedRate = rateEl ? p(rateEl.value) : 0;
+    const manualRate = (typedRate > 0 && qaCurrency !== 'TWD') ? qaRateToPerTWD(typedRate) : null;
     const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, refNo, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
     // 逐項分配：跟「AI 收據匯入」走同一套資料格式，
     // 手動填的商品一樣會存進商品明細，支出卡、分帳、Excel 才抓得到是哪些品項
