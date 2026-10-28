@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.5 (2026-10-28 00:20)</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.6 (2026-10-28 01:10)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1369,7 +1369,9 @@ Day2 12:00 outlet購物，預計逛一小時
     <textarea id="rr-note" placeholder="其他補充說明（選填）" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:16px;"></textarea>
 
     <div class="input-label">商品明細（原文＋中文翻譯）</div>
+    <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:-4px 0 8px; line-height:1.6;">金額左邊可切換<b>單價</b>或<b>總價</b>：兩間房一間 25,880 就選「單價」填 25880、數量填 2，小計會自動變成 51,760。</p>
     <div id="receipt-items-list"></div>
+    <div id="rr-sum-bar" style="margin:2px 0 10px;"></div>
     <button type="button" class="ghost-btn" style="margin-bottom:16px; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="addReceiptItemRow()"><i class="fa-solid fa-plus"></i> 新增品項</button>
 
     <button class="save-btn" id="receipt-review-confirm-btn" onclick="confirmReceiptImport()">確認匯入</button>
@@ -6843,13 +6845,15 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     }
 
     rrItemSeq = 0;
-    receiptReviewItemsState = normalized.items.map(it => ({ _ridx: rrItemSeq++, nameOriginal: it.nameOriginal || '', nameZh: it.nameZh || '', price: it.price || 0, quantity: it.quantity || 1 }));
+    receiptReviewItemsState = normalized.items.map(it => ({ _ridx: rrItemSeq++, nameOriginal: it.nameOriginal || '', nameZh: it.nameZh || '', price: it.price || 0, quantity: it.quantity || 1, priceMode: 'total' }));
     rrCurrency = normalized.currency;
     rrCategory = normalized.category;
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
 
     document.getElementById('rr-item-name').value = normalized.item;
-    document.getElementById('rr-amount').value = normalized.amount || '';
+    const rrAmtEl = document.getElementById('rr-amount');
+    rrAmtEl.value = normalized.amount || '';
+    rrAmtEl.oninput = rrRefreshSumBar;   // 手動改總金額時，下面的「品項合計」差額提示要跟著更新
     document.getElementById('rr-date').value = (normalized.date && /^\d{4}-\d{2}-\d{2}$/.test(normalized.date)) ? normalized.date : todayOrTripDate();
     document.getElementById('rr-location').value = normalized.location;
     document.getElementById('rr-note').value = normalized.note || '';
@@ -6869,6 +6873,81 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       const active = b.dataset.cur === rrCurrency;
       b.style.background = active ? 'var(--navy)' : '#E2E7EC'; b.style.color = active ? '#fff' : 'var(--gray)';
     });
+  }
+
+  // 收據確認畫面的金額：price 一律存「這一列的總價」（跟匯入後的資料格式一致），
+  // priceMode 只決定輸入框裡填的是單價還是總價
+  function rrLineTotal(it) {
+    if (!it) return 0;
+    const q = Number(it.quantity) || 1;
+    return (it.priceMode === 'unit') ? (Number(it.price) || 0) * q : (Number(it.price) || 0);
+  }
+  function rrUnitPrice(it) {
+    if (!it) return 0;
+    const q = Number(it.quantity) || 1;
+    return (it.priceMode === 'unit') ? (Number(it.price) || 0) : (q > 0 ? (Number(it.price) || 0) / q : 0);
+  }
+  // 欄位一邊打字一邊寫回狀態。沒有這個的話，按一下名字或「平均分」就會整段重畫，
+  // 剛打好的數量與價格會被還原成 AI 辨識當下的值
+  function rrUpdateItem(ridx, field, val) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    if (field === 'price') it.price = p(val);
+    else if (field === 'quantity') it.quantity = Math.max(1, parseInt(val, 10) || 1);
+    else it[field] = val;
+    if (field === 'price' || field === 'quantity') rrRefreshTotals(ridx);
+  }
+  function rrTogglePriceMode(ridx) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    const q = Number(it.quantity) || 1;
+    if (it.priceMode === 'unit') { it.priceMode = 'total'; it.price = (Number(it.price) || 0) * q; }
+    else { it.priceMode = 'unit'; it.price = q > 0 ? (Number(it.price) || 0) / q : (Number(it.price) || 0); }
+    renderReceiptItemsList();
+  }
+  function rrItemsSum() { return receiptReviewItemsState.reduce((s, it) => s + rrLineTotal(it), 0); }
+  // 只更新金額相關的文字，不重畫輸入框，游標才不會跳掉
+  function rrRefreshTotals(ridx) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx);
+    const symbol = CURRENCY_SYMBOL[rrCurrency] || (rrCurrency + ' ');
+    if (it) {
+      const el = document.getElementById('rr-line-' + ridx);
+      if (el) el.innerHTML = rrLineHintHtml(it, symbol);
+      const sp = document.getElementById('rr-split-' + ridx);
+      if (sp && it.evenSplit) sp.innerHTML = rrEvenHintHtml(it, symbol);   // 平均分的每人金額也要跟著重算
+    }
+    rrRefreshSumBar();
+  }
+  function rrEvenHintHtml(it, symbol) {
+    const people = (it.evenWith && it.evenWith.length) ? it.evenWith : travelers;
+    const line = rrLineTotal(it);
+    return `<i class="fa-solid fa-check"></i> ${symbol}${f(line)} 由 ${people.length} 人平均分攤，每人 ${symbol}${f(line / Math.max(1, people.length))}`
+      + (people.length < travelers.length ? `（${people.join('、')}）` : '');
+  }
+  function rrLineHintHtml(it, symbol) {
+    const q = Number(it.quantity) || 1;
+    const unit = rrUnitPrice(it), line = rrLineTotal(it);
+    if (q <= 1) return `<span style="color:var(--gray);">小計 ${symbol}${f(line)}</span>`;
+    return `<span style="color:var(--gray);">單價 ${symbol}${f(unit)} × ${q} ＝ <b style="color:var(--navy);">小計 ${symbol}${f(line)}</b></span>`;
+  }
+  // 品項加總跟上面填的「總金額」對不起來時講出來，並給一鍵同步
+  function rrRefreshSumBar() {
+    const bar = document.getElementById('rr-sum-bar'); if (!bar) return;
+    const symbol = CURRENCY_SYMBOL[rrCurrency] || (rrCurrency + ' ');
+    const sum = rrItemsSum();
+    const amtEl = document.getElementById('rr-amount');
+    const amt = amtEl ? p(amtEl.value) : 0;
+    if (!receiptReviewItemsState.length) { bar.innerHTML = ''; return; }
+    const diff = Math.round(sum - amt);
+    bar.innerHTML = `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:9px 11px; border-radius:12px; background:${diff ? '#FFFBEB' : '#F8FAFC'}; border:1px solid ${diff ? '#FDE68A' : 'var(--line)'};">
+        <span style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy);">品項合計 ${symbol}${f(sum)}</span>
+        ${diff ? `<span style="font-size:calc(11px * var(--font-scale)); color:#78350F;">上面填的總金額是 ${symbol}${f(amt)}，差 ${symbol}${f(Math.abs(diff))}</span>
+          <button type="button" onclick="rrSyncAmountToSum()" style="margin-left:auto; background:#fff; border:1px solid #FDE68A; color:#78350F; border-radius:9px; padding:5px 10px; font-size:calc(11px * var(--font-scale)); font-weight:800; cursor:pointer;">用品項合計更新</button>`
+          : `<span style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">與總金額一致</span>`}
+      </div>`;
+  }
+  function rrSyncAmountToSum() {
+    const amtEl = document.getElementById('rr-amount'); if (!amtEl) return;
+    amtEl.value = Math.round(rrItemsSum());
+    rrRefreshSumBar();
   }
 
   // 品項的「誰買的」分配：點名字加一個、點數字歸零；不影響金額，只是記錄歸屬
@@ -6907,17 +6986,27 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   function rrSplitEven(ridx) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it || !travelers.length) return;
     it.evenSplit = !it.evenSplit;
-    if (it.evenSplit) it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim() || o.isProxy); // 保留代購列
+    if (it.evenSplit) {
+      // 已經先點好人就只分給那幾個人，沒點人才分給全部成員（跟手動逐項分配同一套邏輯）
+      const picked = (it.owners||[]).filter(o => o.who && !(o.proxyFor||'').trim() && !o.isProxy).map(o => o.who);
+      it.evenWith = picked.length ? travelers.filter(t => picked.indexOf(t) >= 0) : travelers.slice();
+      it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim() || o.isProxy); // 保留代購列
+    } else {
+      it.evenWith = [];
+    }
     renderReceiptItemsList();
   }
 
   function renderReceiptItemsList() {
     const wrap = document.getElementById('receipt-items-list'); if (!wrap) return;
-    if (!receiptReviewItemsState.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">尚無商品明細，可按下方按鈕手動新增</p>`; return; }
+    if (!receiptReviewItemsState.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">尚無商品明細，可按下方按鈕手動新增</p>`; rrRefreshSumBar(); return; }
+    const symbol = CURRENCY_SYMBOL[rrCurrency] || (rrCurrency + ' ');
     wrap.innerHTML = receiptReviewItemsState.map(it => {
       const assigned = (it.owners||[]).reduce((s,o)=>s+(Number(o.qty)||0),0);
       const total = Number(it.quantity)||0;
       const remain = total - assigned;
+      const isUnitMode = it.priceMode === 'unit';
+      const evenPeople = (it.evenWith && it.evenWith.length) ? it.evenWith : travelers;
       const chips = travelers.map(t => {
         const q = rrOwnerQty(it, t); const on = q > 0 && !it.evenSplit;
         return `<span style="display:inline-flex; align-items:center; gap:4px; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:10px; padding:5px 9px; font-size:calc(11.5px * var(--font-scale)); font-weight:700;">
@@ -6940,14 +7029,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       return `
       <div class="card" id="rr-item-${it._ridx}" style="border:1px solid var(--line); padding:10px; margin-bottom:8px;">
         <div style="display:flex; gap:6px; margin-bottom:6px;">
-          <input type="text" id="rr-orig-${it._ridx}" value="${escapeHtml(it.nameOriginal)}" placeholder="原文名稱" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
-          <input type="text" id="rr-zh-${it._ridx}" value="${escapeHtml(it.nameZh)}" placeholder="中文翻譯" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
-        </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <input type="number" id="rr-price-${it._ridx}" inputmode="decimal" value="${it.price}" placeholder="價格" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
-          <input type="number" id="rr-qty-${it._ridx}" min="1" value="${it.quantity}" placeholder="數量" style="width:56px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale)); text-align:center;">
+          <input type="text" id="rr-orig-${it._ridx}" oninput="rrUpdateItem(${it._ridx},'nameOriginal',this.value)" value="${escapeHtml(it.nameOriginal)}" placeholder="原文名稱" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
+          <input type="text" id="rr-zh-${it._ridx}" oninput="rrUpdateItem(${it._ridx},'nameZh',this.value)" value="${escapeHtml(it.nameZh)}" placeholder="中文翻譯" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
           <button onclick="removeReceiptItemRow(${it._ridx})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
         </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" onclick="rrTogglePriceMode(${it._ridx})" title="切換：填一個多少錢，還是這一列總共多少錢"
+            style="flex:0 0 auto; padding:8px 9px; border-radius:8px; border:1px solid ${isUnitMode?'var(--teal)':'#ccc'}; background:${isUnitMode?'#ECFDF5':'#fff'}; color:${isUnitMode?'#065F46':'var(--navy)'}; font-size:calc(11.5px * var(--font-scale)); font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap;">
+            ${isUnitMode ? '單價' : '總價'} <i class="fa-solid fa-right-left" style="font-size:calc(9px * var(--font-scale)); opacity:0.7;"></i>
+          </button>
+          <input type="number" id="rr-price-${it._ridx}" inputmode="decimal" oninput="rrUpdateItem(${it._ridx},'price',this.value)" value="${it.price}" placeholder="${isUnitMode ? '一個多少錢' : '這列總共多少'}" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
+          <input type="number" id="rr-qty-${it._ridx}" min="1" oninput="rrUpdateItem(${it._ridx},'quantity',this.value)" value="${it.quantity}" placeholder="數量" style="width:56px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale)); text-align:center;">
+        </div>
+        <div id="rr-line-${it._ridx}" style="font-size:calc(10.5px * var(--font-scale)); margin-top:5px; padding-left:2px;">${rrLineHintHtml(it, symbol)}</div>
         ${travelers.length ? `
         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
           <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-bottom:5px;">這項誰買的？（點名字加一個，點數字歸零）</div>
@@ -6957,8 +7051,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
             <button type="button" onclick="rrAddProxy(${it._ridx})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:10px; padding:4px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
           </div>
           ${proxyHtml}
-          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${it.evenSplit ? 'var(--teal)' : (total && remain < 0 ? 'var(--warn)' : 'var(--gray)')};">
-            ${it.evenSplit ? `<i class="fa-solid fa-check"></i> 金額由 ${travelers.length} 人平均分攤`
+          <div id="rr-split-${it._ridx}" style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${it.evenSplit ? 'var(--teal)' : (total && remain < 0 ? 'var(--warn)' : 'var(--gray)')};">
+            ${it.evenSplit ? rrEvenHintHtml(it, symbol)
               : total ? (remain === 0 ? '<i class="fa-solid fa-check"></i> 已分配完畢'
               : remain > 0 ? (assigned === 0 ? `沒特別分配，這 ${total} 個算付款人的` : `其餘 ${remain} 個算付款人的`)
               : `超出 ${-remain} 個，請檢查`) : `已分配 ${assigned} 個`}
@@ -6966,10 +7060,11 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         </div>` : ''}
       </div>
     `;}).join('');
+    rrRefreshSumBar();
   }
 
   function addReceiptItemRow() {
-    receiptReviewItemsState.push({ _ridx: rrItemSeq++, nameOriginal: '', nameZh: '', price: 0, quantity: 1 });
+    receiptReviewItemsState.push({ _ridx: rrItemSeq++, nameOriginal: '', nameZh: '', price: 0, quantity: 1, priceMode: 'total' });
     renderReceiptItemsList();
   }
 
@@ -6986,17 +7081,26 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     rrItemSeq = 0;
     receiptReviewItemsState = r.items.map(it => ({
       _ridx: rrItemSeq++, nameOriginal: it.nameOriginal||'', nameZh: it.nameZh||'',
-      price: it.price||0, quantity: it.quantity||1, evenSplit: !!it.evenSplit,
+      price: it.price||0, quantity: it.quantity||1, priceMode: 'total',
+      evenSplit: !!it.evenSplit, evenWith: (it.evenWith||[]).slice(),
       owners: (it.owners||[]).map(o => ({ ...o }))
     }));
     const fields = `<div id="receipt-items-list"></div>`;
     setupGeneralEdit('編輯：這些東西是誰買的', fields, () => {
       const rec = expenseRecords.find(x => x.id === ownerEditTargetId); if (!rec) { closeGeneralEdit(); return; }
       receiptReviewItemsState.forEach((st, i) => {
-        if (rec.items[i]) rec.items[i].owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0)
+        const tgt = rec.items[i]; if (!tgt) return;
+        tgt.owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0)
           .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }));
+        // 這個畫面的金額與數量也可以改，一併存回去（只存歸屬的話，改了數量等於沒改）
+        tgt.nameOriginal = (st.nameOriginal||'').trim();
+        tgt.nameZh = (st.nameZh||'').trim();
+        tgt.price = rrLineTotal(st);
+        tgt.quantity = Math.max(1, parseInt(st.quantity,10) || 1);
+        tgt.evenSplit = !!st.evenSplit;
+        tgt.evenWith = (st.evenSplit && st.evenWith && st.evenWith.length) ? st.evenWith.slice() : [];
       });
-      const anyOwner = rec.items.some(it => (it.owners||[]).length);
+      const anyOwner = rec.items.some(it => (it.owners||[]).length || it.evenSplit);
       if (anyOwner) {
         rec.splitMode = 'items';
         rec.allocItems = rec.items.map(it => ({
@@ -7004,7 +7108,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
           qty: Number(it.quantity)||1,
           mode: it.evenSplit ? 'even' : 'qty',
-          evenWith: it.evenSplit ? travelers.slice() : [],
+          evenWith: it.evenSplit ? ((it.evenWith && it.evenWith.length) ? it.evenWith.slice() : travelers.slice()) : [],
           alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
         }));
         rec.paidTotal = Number(rec.amount)||0;
@@ -7028,21 +7132,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const noteEl = document.getElementById('rr-note');
     const note = noteEl ? noteEl.value.trim() : '';
 
-    const items = receiptReviewItemsState.map(it => {
-      const origEl = document.getElementById(`rr-orig-${it._ridx}`);
-      const zhEl = document.getElementById(`rr-zh-${it._ridx}`);
-      const priceEl = document.getElementById(`rr-price-${it._ridx}`);
-      const qtyEl = document.getElementById(`rr-qty-${it._ridx}`);
-      return {
-        nameOriginal: origEl ? origEl.value.trim() : it.nameOriginal,
-        nameZh: zhEl ? zhEl.value.trim() : it.nameZh,
-        price: priceEl ? p(priceEl.value) : it.price,
-        quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1,
-        evenSplit: !!it.evenSplit,
-        owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
-          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
-      };
-    }).filter(it => it.nameOriginal || it.nameZh);
+    // 欄位都會即時寫回狀態，所以直接用狀態就好；price 一律換算成「這一列的總價」
+    const items = receiptReviewItemsState.map(it => ({
+      nameOriginal: (it.nameOriginal || '').trim(),
+      nameZh: (it.nameZh || '').trim(),
+      price: rrLineTotal(it),
+      quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+      evenSplit: !!it.evenSplit,
+      evenWith: (it.evenSplit && it.evenWith && it.evenWith.length) ? it.evenWith.slice() : [],
+      owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
+        .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
+    })).filter(it => it.nameOriginal || it.nameZh);
 
     // 有指定歸屬的話，轉成分帳引擎看得懂的格式；沒指定的品項會落到「未分配」由全員均分
     const anyOwner = items.some(it => (it.owners||[]).length || it.evenSplit);
@@ -7051,7 +7151,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
       qty: Number(it.quantity)||1,
       mode: it.evenSplit ? 'even' : 'qty',              // 平均分＝按金額平分，不受數量限制
-      evenWith: it.evenSplit ? travelers.slice() : [],
+      evenWith: it.evenSplit ? ((it.evenWith && it.evenWith.length) ? it.evenWith.slice() : travelers.slice()) : [],
       alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim(), isProxy: !!o.isProxy }))
     })) : [];
 
@@ -7103,6 +7203,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const rate = record.currency === 'TWD' ? 1 : (record.rateAtTime || currentRateForCurrency(record.currency) || 1);
     (record.allocItems || []).forEach(it => {
       const unit = Number(it.unitPrice) || 0;
+      // 平均分的品項沒有 alloc，是整筆由 evenWith 的人均分，之前這裡會直接漏掉
+      if ((it.mode || 'qty') === 'even') {
+        const people = (it.evenWith || []).filter(Boolean);
+        if (!people.length) return;
+        const each = (unit * (Number(it.qty) || 0)) / people.length;
+        people.forEach(w => {
+          const twd = record.currency === 'TWD' ? each : each / rate;
+          out[w] = (out[w] || 0) + twd;
+        });
+        return;
+      }
       (it.alloc || []).forEach(a => {
         const amt = unit * (Number(a.qty) || 0);
         const twd = record.currency === 'TWD' ? amt : amt / rate;
