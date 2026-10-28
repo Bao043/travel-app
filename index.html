@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.6 (2026-10-28 01:10)</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.7 (2026-10-28 11:20)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -7925,6 +7925,34 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         ${mfProxy.map(p => `<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:#92400E; padding:2px 0;"><span style="flex:1; min-width:0;">${escapeHtml(p.name)}${p.qty>1?` ×${p.qty}`:''} → ${escapeHtml(p.forWhom||'未填對象')}</span><span style="flex-shrink:0;">${symbol}${f(p.amt)}</span></div>`).join('')}
       </div>` : '';
 
+    // 品項加總與總金額的差額：這筆差額會整筆算在付款人身上（分帳引擎的既有行為），
+    // 以前卡片上看不出來，才會出現「明細加起來跟總金額對不起來」卻不知道原因
+    let gapBlock = '';
+    if (!mf && Array.isArray(r.items) && r.items.length) {
+      const itemsSum = r.items.reduce((s, it) => s + (Number(it.price) || 0), 0);
+      const paid = Number(r.paidTotal !== undefined ? r.paidTotal : r.amount) || 0;
+      const gap = Math.round(paid - itemsSum);
+      if (Math.abs(gap) > 0.5) {
+        const gapRecord = { amount: Math.abs(gap), currency: cur, rateAtTime: r.rateAtTime };
+        const gapTwd = isTwd ? '' : `（≈ NT$${f(recordToTWD(gapRecord))}）`;
+        const who = escapeHtml(r.payer || '付款人');
+        gapBlock = `
+          <div style="margin-top:8px; padding:9px 11px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; line-height:1.6;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:calc(11.5px * var(--font-scale)); color:#78350F; font-weight:800;">
+              <span style="flex:1; min-width:0;">品項加總</span><span style="flex-shrink:0; white-space:nowrap;">${symbol}${f(itemsSum)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:calc(11.5px * var(--font-scale)); color:#78350F; font-weight:800; margin-top:2px;">
+              <span style="flex:1; min-width:0;">${gap > 0 ? '未列在明細裡' : '明細比總金額多出'}</span><span style="flex-shrink:0; white-space:nowrap; text-align:right;">${gap > 0 ? '' : '-'}${symbol}${f(Math.abs(gap))}${gapTwd ? `<br><small style="font-weight:600; color:#92400E;">${gapTwd.replace(/[（）]/g,'')}</small>` : ''}</span>
+            </div>
+            <div style="font-size:calc(10.5px * var(--font-scale)); color:#92400E; margin-top:4px;">
+              <i class="fa-solid fa-circle-info"></i> ${gap > 0
+                ? `這筆差額目前整筆算在付款人 <b>${who}</b> 頭上。如果是大家一起的，請點鉛筆把它補進商品明細，或把總金額改成 ${symbol}${f(itemsSum)}。`
+                : `明細加起來超過這筆的總金額，多出來的部分會從 <b>${who}</b> 的分攤扣掉。請點鉛筆確認是哪一邊填錯。`}
+            </div>
+          </div>`;
+      }
+    }
+
     const itemsBlock = (shownItems.length || mfProxy.length) ? `
       <div style="margin-top:8px; padding-top:10px; border-top:1px dashed var(--line);">
         ${mfHeader}
@@ -7954,6 +7982,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           </div>`;
         }).join('')}
         ${mfProxyBlock}
+        ${gapBlock}
       </div>
     ` : '';
 
