@@ -1121,7 +1121,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.7 (2026-10-28 11:20)</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">v2.9 (2026-11-06 16:10)</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -6117,6 +6117,17 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   let qaSplitMode = 'even';
   let qaAllocItems = [];
   let allocSeq = 1;
+  // 編輯既有紀錄時原本記的總金額。逐項模式下金額欄是藏起來的，
+  // 預設一律以品項加總為準；原本的總金額跟品項對不起來時會問要不要保留。
+  let qaOrigAmount = 0;
+  let qaKeepOrigAmount = false;
+  function toggleKeepOrigAmount() { qaKeepOrigAmount = !qaKeepOrigAmount; refreshAllocTotal(); }
+  // 這筆要存進去的總金額（逐項模式）
+  function qaItemsAmount() {
+    const t = allocItemsTotal(qaAllocItems);
+    if (qaKeepOrigAmount && qaOrigAmount > 0) return Math.round(qaOrigAmount);
+    return t > 0 ? Math.round(t) : Math.round(qaOrigAmount || 0);
+  }
 
   function setQaSplitMode(mode) {
     qaSplitMode = mode;
@@ -6260,12 +6271,30 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
   }
 
   function refreshAllocTotal() {
+    if (typeof refreshQaMoney === 'function') refreshQaMoney();   // 逐項金額變了，匯率與實際刷卡的試算都要重算
     const el = document.getElementById('qa-alloc-total'); if (!el) return;
     const total = allocItemsTotal(qaAllocItems);
     const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
     const unassigned = qaAllocItems.filter(it => ((it.name||'').trim() || allocUnitPrice(it) > 0) && !(it.alloc||[]).length).length;
-    el.innerHTML = `這筆總金額：${symbol} ${f(total)}`
-      + (unassigned ? `<div style="color:var(--warn); font-weight:600; font-size:calc(11.5px * var(--font-scale)); margin-top:4px;">還有 ${unassigned} 樣商品沒分配給任何人</div>` : '');
+    // 原本記的總金額跟品項加總對不起來時要講清楚，並讓使用者自己決定要用哪一個
+    const gap = (qaOrigAmount > 0) ? Math.round(qaOrigAmount - total) : 0;
+    const saveAmt = qaItemsAmount();
+    el.innerHTML = `這筆總金額：${symbol} ${f(saveAmt)}`
+      + (unassigned ? `<div style="color:var(--warn); font-weight:600; font-size:calc(11.5px * var(--font-scale)); margin-top:4px;">還有 ${unassigned} 樣商品沒分配給任何人</div>` : '')
+      + ((gap && total > 0) ? `
+        <div style="margin-top:8px; padding:9px 11px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; font-weight:600; line-height:1.6;">
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:#78350F;">
+            品項加總是 <b>${symbol}${f(total)}</b>，原本記的總金額是 <b>${symbol}${f(qaOrigAmount)}</b>（差 ${symbol}${f(Math.abs(gap))}）。
+          </div>
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:#92400E; margin-top:3px;">
+            ${qaKeepOrigAmount
+              ? `目前會存 <b>${symbol}${f(qaOrigAmount)}</b>，差額算在付款人頭上。`
+              : `存檔會改成品項加總 <b>${symbol}${f(total)}</b>。`}
+          </div>
+          <button type="button" onclick="toggleKeepOrigAmount()" style="margin-top:6px; background:#fff; border:1px solid #FDE68A; color:#78350F; border-radius:9px; padding:5px 10px; font-size:calc(11px * var(--font-scale)); font-weight:800; cursor:pointer; font-family:inherit;">
+            ${qaKeepOrigAmount ? `改用品項加總 ${symbol}${f(total)}` : `保留原本的 ${symbol}${f(qaOrigAmount)}`}
+          </button>
+        </div>` : '');
   }
 
   function renderAllocItems() {
@@ -6365,9 +6394,56 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     if (prev !== cur) {
       const rateEl = document.getElementById('qa-rate');
       if (rateEl) rateEl.value = '';   // 上一個幣別的匯率留著會變成「1 TWD ≈ 4.8 TWD」這種看不懂的東西
+      const actEl = document.getElementById('qa-actual');
+      if (actEl && cur === 'TWD') actEl.value = '';   // 台幣沒有匯差，清掉才不會留著誤導
     }
-    refreshQaRateUI();
+    refreshQaMoney();
     if (qaSplitMode === 'items') renderAllocItems();   // 逐項分配的金額符號要跟著換
+  }
+  // 這筆的外幣金額：平分模式看金額欄，逐項分配看品項加總
+  function qaForeignAmount() {
+    if (qaSplitMode === 'items') {
+      const t = allocItemsTotal(qaAllocItems);
+      if (t > 0) return t;
+    }
+    const el = document.getElementById('qa-amount');
+    return el ? p(el.value) : 0;
+  }
+  // 實際刷卡金額：填了就以它回推匯率，讓整個 App 的台幣金額都是真正付出去的錢
+  function qaActualCharge() {
+    if (qaCurrency === 'TWD') return 0;
+    const el = document.getElementById('qa-actual');
+    const v = el ? p(el.value) : 0;
+    return v > 0 ? v : 0;
+  }
+  function refreshQaActualUI() {
+    const block = document.getElementById('qa-actual-block');
+    const hint = document.getElementById('qa-actual-hint');
+    if (!block) return;
+    if (qaCurrency === 'TWD') { block.style.display = 'none'; return; }   // 台幣沒有匯差問題
+    block.style.display = 'block';
+    if (!hint) return;
+    const actual = qaActualCharge();
+    const foreign = qaForeignAmount();
+    if (!actual) {
+      hint.innerHTML = `刷卡會有匯差與國外交易手續費，帳單金額通常比換算值高一點。填了這裡，這筆的台幣金額、分帳與統計就會用<b>實際付出去的錢</b>計算。`;
+      hint.style.color = 'var(--gray)';
+      return;
+    }
+    if (!foreign) {
+      hint.innerHTML = `請先填上面的${qaCurrency}金額，才能算出實際匯率。`;
+      hint.style.color = 'var(--warn)';
+      return;
+    }
+    const realPerUnit = actual / foreign;                 // 1 外幣實際花了多少台幣
+    const market = currentRateForCurrency(qaCurrency);    // 1 TWD ≈ ? 外幣
+    const marketTwd = market ? foreign / market : 0;      // 用市場匯率換算會是多少台幣
+    const extra = marketTwd ? actual - marketTwd : 0;
+    const pct = marketTwd ? (extra / marketTwd) * 100 : 0;
+    hint.innerHTML = `實際匯率：1 ${qaCurrency} ≈ NT$ ${fmtRate(realPerUnit)}`
+      + (marketTwd ? `　｜　市場匯率換算是 NT$ ${f(marketTwd)}，<b style="color:${extra >= 0 ? '#92400E' : '#065F46'};">${extra >= 0 ? '多付' : '少付'} NT$ ${f(Math.abs(extra))}（${Math.abs(pct).toFixed(1)}% 匯差＋手續費）</b>` : '')
+      + `<br>這筆會以 NT$ ${f(actual)} 計算分帳與統計。`;
+    hint.style.color = 'var(--gray)';
   }
   // 匯率的填法：'perTWD' = 1 TWD ≈ ? 外幣（程式內部存的方向）
   //             'perUnit' = 1 外幣 ≈ ? 台幣（信用卡帳單、換匯單上通常是這個方向）
@@ -6377,7 +6453,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     const cur = el ? p(el.value) : 0;
     qaRateDir = (qaRateDir === 'perTWD') ? 'perUnit' : 'perTWD';
     if (el && cur > 0) el.value = String(Math.round((1 / cur) * 1e8) / 1e8);   // 換方向時把數字一起倒過來，不用重打
-    refreshQaRateUI();
+    refreshQaMoney();
   }
   // 把畫面上填的值換算成程式內部用的方向（1 TWD ≈ ? 外幣）
   function qaRateToPerTWD(v) {
@@ -6400,6 +6476,23 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       return;
     }
     block.style.display = 'block';
+    // 有填實際刷卡金額就以它為準，匯率欄位讓它看起來是被接管的狀態
+    const hasActual = qaActualCharge() > 0;
+    if (rateEl) {
+      rateEl.disabled = hasActual;
+      rateEl.style.background = hasActual ? '#F1F5F9' : '#fff';
+      rateEl.style.color = hasActual ? 'var(--gray)' : '';
+    }
+    if (dirBtn) dirBtn.disabled = hasActual;
+    if (hasActual) {
+      const foreign = qaForeignAmount(), actual = qaActualCharge();
+      if (label) label.innerText = '當下匯率（以實際刷卡金額為準）';
+      if (hint) hint.innerHTML = foreign
+        ? `已改用實際刷卡金額回推：1 ${qaCurrency} ≈ NT$ ${fmtRate(actual / foreign)}。想手動填匯率的話，把下面的實際刷卡金額清空就好。`
+        : `已填實際刷卡金額，請先補上 ${qaCurrency} 金額。`;
+      if (dirBtn) dirBtn.innerHTML = `1 ${qaCurrency} <i class="fa-solid fa-lock" style="font-size:calc(9px * var(--font-scale)); opacity:0.6;"></i>`;
+      return;
+    }
     const perUnit = (qaRateDir === 'perUnit');
     if (label) label.innerText = perUnit ? `當下匯率（1 ${qaCurrency} ≈ ? 台幣）` : `當下匯率（1 台幣 ≈ ? ${qaCurrency}）`;
     if (dirBtn) dirBtn.innerHTML = `1 ${perUnit ? qaCurrency : 'TWD'} <i class="fa-solid fa-right-left" style="font-size:calc(9px * var(--font-scale)); opacity:0.7;"></i>`;
@@ -6418,6 +6511,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       hint.innerText = s;
     }
   }
+  // 金額、匯率、實際刷卡金額三者互相影響，統一從這裡一次更新，
+  // 兩個 refresh 互相呼叫會無限遞迴，所以它們各自只管自己那一塊
+  function refreshQaMoney() { refreshQaRateUI(); refreshQaActualUI(); }
 
   function toggleQaMoreDetails() {
     const el = document.getElementById('qa-more-details'); const chevron = document.getElementById('qa-more-chevron');
@@ -6499,7 +6595,7 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
           <button type="button" onclick="setQaCurrency('USD', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='USD'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='USD'?'#fff':'var(--gray)'};">$ 美元</button>
           <button type="button" onclick="setQaCurrency('EUR', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='EUR'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='EUR'?'#fff':'var(--gray)'};">€ 歐元</button>
         </div>
-        <input type="number" id="qa-amount" inputmode="decimal" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+        <input type="number" id="qa-amount" inputmode="decimal" oninput="refreshQaMoney()" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
         <div id="qa-basic-fields" style="display:flex; gap:8px; margin-bottom:12px;">
           <div style="flex:1; min-width:0;">
             <div class="input-label">品項名稱</div>
@@ -6525,10 +6621,15 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
               <div style="display:flex; gap:5px; align-items:center;">
                 <button type="button" id="qa-rate-dir-btn" onclick="toggleQaRateDir()" title="切換匯率的填法：刷卡帳單通常寫成「1 外幣 = ? 台幣」"
                   style="flex:0 0 auto; padding:10px 9px; border-radius:12px; border:1px solid #ccc; background:#fff; color:var(--navy); font-size:calc(11px * var(--font-scale)); font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap;"></button>
-                <input type="text" inputmode="decimal" id="qa-rate" oninput="refreshQaRateUI()" value="${(qaCurrency === 'TWD' || !pf.rateAtTime) ? '' : (Math.round((1 / Number(pf.rateAtTime)) * 1e8) / 1e8)}" placeholder="例如刷卡帳單的 0.2085" style="flex:1; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+                <input type="text" inputmode="decimal" id="qa-rate" oninput="refreshQaMoney()" value="${(qaCurrency === 'TWD' || !pf.rateAtTime) ? '' : (Math.round((1 / Number(pf.rateAtTime)) * 1e8) / 1e8)}" placeholder="例如刷卡帳單的 0.2085" style="flex:1; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
               </div>
               <div id="qa-rate-hint" style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:4px; line-height:1.5;"></div>
             </div>
+          </div>
+          <div id="qa-actual-block" style="margin-bottom:12px;">
+            <div class="input-label" id="qa-actual-label">實際刷卡／扣款金額（台幣・選填）</div>
+            <input type="text" inputmode="decimal" id="qa-actual" oninput="refreshQaMoney()" value="${pf.actualCharge || ''}" placeholder="帳單上實際入帳的台幣金額" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+            <div id="qa-actual-hint" style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:4px; line-height:1.5;"></div>
           </div>
           <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:-6px 0 12px; line-height:1.6;" id="qa-refno-hint">編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。</p>
           <div class="input-label">消費地點</div>
@@ -6567,7 +6668,10 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     box.querySelectorAll('.qa-mode-btn').forEach(b => b.addEventListener('click', () => setQaSplitMode(b.dataset.mode)));
     setQaSplitMode(pf.splitMode === 'items' ? 'items' : 'even');
     qaRateDir = 'perUnit';     // 每次打開都回到「1 外幣 ≈ ? 台幣」，跟刷卡帳單同一個方向
-    refreshQaRateUI();
+    qaOrigAmount = Number(pf.amount) || 0;   // 編輯既有紀錄時原本的總金額，用來比對品項加總
+    qaKeepOrigAmount = false;
+    refreshQaMoney();
+    if (qaSplitMode === 'items') refreshAllocTotal();
     // 直接在這個表單容器上綁事件，並把容器傳進去做範圍查詢：
     // 之前用字串 onclick + 全域 getElementById，只要畫面上同時存在兩份表單就會抓錯欄位而靜默失敗
     const submitBtn = box.querySelector('.qa-submit-btn');
@@ -6618,8 +6722,11 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     // 匯率欄可能是用「1 外幣 ≈ ? 台幣」的方向填的，存進紀錄前一律換算成內部用的 1 TWD ≈ ? 外幣
     const rateEl = q('qa-rate');
     const typedRate = rateEl ? p(rateEl.value) : 0;
-    const manualRate = (typedRate > 0 && qaCurrency !== 'TWD') ? qaRateToPerTWD(typedRate) : null;
-    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, refNo, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
+    let manualRate = (typedRate > 0 && qaCurrency !== 'TWD') ? qaRateToPerTWD(typedRate) : null;
+    // 實際刷卡金額優先：用它回推匯率，整個 App 的台幣金額就會是真正付出去的錢
+    const actEl = q('qa-actual');
+    const actualCharge = (qaCurrency !== 'TWD' && actEl && p(actEl.value) > 0) ? p(actEl.value) : 0;
+    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, refNo, actualCharge: actualCharge || '', participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
     // 逐項分配：跟「AI 收據匯入」走同一套資料格式，
     // 手動填的商品一樣會存進商品明細，支出卡、分帳、Excel 才抓得到是哪些品項
     if (qaSplitMode === 'items' && qaAllocItems.length) {
@@ -6639,8 +6746,11 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
         name: it.nameZh, unitPrice: (Number(it.quantity)||1) > 0 ? it.price / it.quantity : it.price,
         qty: Number(it.quantity)||1, totalQty: Number(it.quantity)||1, mode: 'qty', alloc: it.owners
       }));
+      // 逐項模式的金額欄是藏起來的，使用者看到的「這筆總金額」就是品項加總，
+      // 所以一律以它為準；只有使用者明確按了「保留原本的總金額」才用舊的數字
       const t = data.items.reduce((x,it)=>x + (Number(it.price)||0), 0);
-      if (t > 0 && !amt) data.amount = Math.round(t); // 沒手動填總額才用品項加總
+      if (t > 0) data.amount = (qaKeepOrigAmount && qaOrigAmount > 0) ? Math.round(qaOrigAmount) : Math.round(t);
+      else if (!amt && qaOrigAmount > 0) data.amount = Math.round(qaOrigAmount);
       data.paidTotal = data.amount;
       const sub = data.allocItems.reduce((x,it)=>x + it.unitPrice * (Number(it.qty)||0), 0);
       const diff = data.paidTotal - sub;
@@ -6650,6 +6760,9 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       data.allocItems = [];
       data.extras = [];
     }
+    // 有填實際刷卡金額就以它為準：rateAtTime = 外幣金額 ÷ 實際台幣，
+    // 這樣 recordToTWD 算出來剛好等於帳單上的台幣金額
+    if (actualCharge > 0 && (data.amount || 0) > 0) manualRate = (data.amount || 0) / actualCharge;
     if (editId) {
       const existing = expenseRecords.find(r => r.id === editId);
       if (existing) {
@@ -7740,6 +7853,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       return Math.round((r.currency === 'TWD' ? share : share / rate) * rateTWD);
     } catch(e) { return recordToKRW(r); }
   }
+  // 支出卡上的「實際刷卡金額」那一列：順便算出跟市場匯率比多付了多少（匯差＋手續費）
+  function actualChargeRow(r, cur) {
+    const actual = Number(r && r.actualCharge) || 0;
+    if (!actual || cur === 'TWD') return '';
+    const market = currentRateForCurrency(cur);
+    const marketTwd = market ? (Number(r.amount) || 0) / market : 0;
+    const extra = marketTwd ? actual - marketTwd : 0;
+    const pct = marketTwd ? (extra / marketTwd) * 100 : 0;
+    const diffTxt = marketTwd
+      ? `　<small style="color:${extra >= 0 ? '#92400E' : '#065F46'};">(比目前市場匯率${extra >= 0 ? '多' : '少'} NT$ ${f(Math.abs(extra))}・${Math.abs(pct).toFixed(1)}% 匯差與手續費)</small>`
+      : '';
+    return `<div class="detail-row"><i class="fa-solid fa-credit-card"></i><span><b>實際刷卡／扣款：</b>NT$ ${f(actual)}${diffTxt}</span></div>`;
+  }
   function recordToKRW(r) {
     if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
     // TWD 記錄的 rateAtTime 語意固定是「1」（代表換成TWD不用另外查匯率），不是「兌韓元的匯率」，
@@ -7991,7 +8117,8 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
       r.location ? `<div class="detail-row"><i class="fa-solid fa-location-dot"></i><span><b>消費地點：</b>${escapeHtml(r.location)}</span></div>` : '',
       r.coupon ? `<div class="detail-row"><i class="fa-solid fa-tag"></i><span><b>優惠券/折扣：</b>${escapeHtml(r.coupon)}</span></div>` : '',
       r.taxRefund ? `<div class="detail-row"><i class="fa-solid fa-receipt"></i><span><b>退稅金額：</b>${escapeHtml(r.taxRefund)}</span></div>` : '',
-      (r.rateAtTime && cur !== 'TWD') ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>當下匯率：</b>1 TWD ≈ ${fmtRate(r.rateAtTime)} ${cur}　(1 ${cur} ≈ NT$ ${fmtRate(1/Number(r.rateAtTime))})</span></div>` : '',
+      (r.rateAtTime && cur !== 'TWD') ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>${Number(r.actualCharge) > 0 ? '實際匯率' : '當下匯率'}：</b>1 TWD ≈ ${fmtRate(r.rateAtTime)} ${cur}　(1 ${cur} ≈ NT$ ${fmtRate(1/Number(r.rateAtTime))})</span></div>` : '',
+      actualChargeRow(r, cur),
       r.note ? `<div class="detail-row"><i class="fa-solid fa-note-sticky"></i><span><b>備註：</b>${escapeHtml(r.note)}</span></div>` : ''
     ].filter(Boolean).join('') + itemsBlock;
 
@@ -9436,19 +9563,19 @@ veg 請從「全素」「蛋奶素」「有素食選項」「無」四個選項�
     XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
 
     const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
-    const expRows = [['編號','日期','類別','品項','數量','原始金額','幣別','當下匯率','約當KRW','約當TWD','付款人','分攤對象','分攤人數','每人分攤(TWD)','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
+    const expRows = [['編號','日期','類別','品項','數量','原始金額','幣別','當下匯率','實際刷卡(TWD)','約當KRW','約當TWD','付款人','分攤對象','分攤人數','每人分攤(TWD)','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
     expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
       const itemsStr = Array.isArray(r.items) && r.items.length
         ? r.items.map(it => `${it.nameOriginal||''}${it.nameZh?`(${it.nameZh})`:''} x${it.quantity||1} ${it.price||0}`).join('; ')
         : '';
       const parts = (Array.isArray(r.participants) && r.participants.length) ? r.participants : travelers;
       const perHead = parts.length ? Math.round(recordToTWD(r)/parts.length) : recordToTWD(r);
-      expRows.push([r.refNo||'', r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', r.rateAtTime||'', recordToKRW(r), recordToTWD(r), r.payer||'', parts.join('、'), parts.length, perHead, r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
+      expRows.push([r.refNo||'', r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', r.rateAtTime||'', Number(r.actualCharge)||'', recordToKRW(r), recordToTWD(r), r.payer||'', parts.join('、'), parts.length, perHead, r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
     });
     expRows.push([]);
     expRows.push(['', '', '總計', '', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '', '', '', '', '', '']);
     const wsExp = XLSX.utils.aoa_to_sheet(expRows);
-    wsExp['!cols'] = [{wch:6},{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:12},{wch:10},{wch:20},{wch:10},{wch:14},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
+    wsExp['!cols'] = [{wch:6},{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:14},{wch:12},{wch:12},{wch:10},{wch:20},{wch:10},{wch:14},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
     XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
 
     // ===== 分帳結算：每人應付/實付/差額，加上實際該怎麼轉帳才結清 =====
